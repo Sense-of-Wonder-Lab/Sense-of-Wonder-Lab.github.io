@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水分子1molの中に水素原子は何mol？「分子のmol」と「原子のmol」を混同しない考え方｜化学基礎</title>
+<meta name="description" content="水分子1molに含まれる水素原子のmolを問う問題で詰まっていませんか？「分子のmol」と「原子のmol」を混同することが原因です。この記事では考え方の本質からわかりやすく解説します。">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #555;
+    --light: #888;
+    --bg: #fafaf8;
+    --card: #ffffff;
+    --accent: #1a4a8a;
+    --accent-light: #e8f0fb;
+    --line: #e0ddd8;
+    --warn-bg: #fff8e8;
+    --warn-border: #e6c44a;
+    --success-bg: #edf6f0;
+    --success-border: #3a9e6a;
+    --line-bg: #06C755;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Serif JP', 'Georgia', serif;
+    font-size: 17px;
+    line-height: 1.9;
+    color: var(--ink);
+    background: var(--bg);
+    padding: 0 0 80px;
+  }
+
+  /* ─── Header ─── */
+  .article-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 48px 24px 40px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .article-meta {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: var(--light);
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  h1 {
+    font-size: clamp(22px, 4vw, 30px);
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+
+  .article-intro {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.8;
+    font-family: 'Noto Sans JP', sans-serif;
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+    margin-top: 20px;
+  }
+
+  /* ─── Body ─── */
+  .article-body {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+    background: var(--card);
+  }
+
+  .article-body > * + * { margin-top: 1.6em; }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-top: 2.8em;
+    margin-bottom: 0.6em;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+    font-family: 'Noto Serif JP', serif;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: 2em;
+    margin-bottom: 0.5em;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+
+  p {
+    font-size: 16.5px;
+    line-height: 1.95;
+  }
+
+  /* 強調 */
+  strong { font-weight: 700; color: var(--ink); }
+  em { font-style: normal; font-weight: 700; color: var(--accent); }
+
+  /* ─── 注意ボックス ─── */
+  .box-warn {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn-border);
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .box-warn .box-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #9a7000;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  /* ─── ポイントボックス ─── */
+  .box-point {
+    background: var(--accent-light);
+    border: 1.5px solid var(--accent);
+    border-radius: 6px;
+    padding: 18px 22px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    line-height: 1.85;
+  }
+
+  .box-point .box-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  /* ─── 正解ボックス ─── */
+  .box-answer {
+    background: var(--success-bg);
+    border-left: 4px solid var(--success-border);
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    line-height: 1.85;
+  }
+
+  .box-answer .box-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #2a7a4a;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  /* ─── 問題文ボックス ─── */
+  .box-problem {
+    background: #f5f4f0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 22px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    line-height: 1.85;
+  }
+
+  .box-problem .box-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--light);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  /* ─── 図解エリア ─── */
+  .fig-wrap {
+    background: #f9f9f7;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .fig-title {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: var(--light);
+    margin-bottom: 16px;
+    letter-spacing: 0.08em;
+  }
+
+  .molecule-grid {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .molecule {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .molecule-visual {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .atom {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .atom-H { background: #dce8fb; color: #1a4a8a; border: 2px solid #9bbde0; }
+  .atom-O { background: #fde8e8; color: #992222; border: 2px solid #e8a0a0; }
+
+  .molecule-label {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .mol-count {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 4px 10px;
+    margin-top: 4px;
+  }
+
+  /* ─── 仕切り ─── */
+  .divider {
+    height: 1px;
+    background: var(--line);
+    margin: 2.4em 0;
+  }
+
+  /* ─── LINE誘導バナー ─── */
+  .line-banner {
+    background: linear-gradient(135deg, #07c160 0%, #06a84e 100%);
+    border-radius: 10px;
+    padding: 24px 28px;
+    color: #fff;
+    font-family: 'Noto Sans JP', sans-serif;
+    margin: 2.8em 0;
+  }
+
+  .line-banner-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    opacity: 0.85;
+    margin-bottom: 6px;
+  }
+
+  .line-banner p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .line-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    color: #06a84e;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px 22px;
+    border-radius: 100px;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+
+  .line-btn:hover { opacity: 0.9; }
+
+  /* ─── 著者欄 ─── */
+  .author-box {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    font-family: 'Noto Sans JP', sans-serif;
+    margin-top: 3em;
+  }
+
+  .author-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .author-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .author-bio {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ─── 数式っぽい表示 ─── */
+  .formula {
+    font-family: 'Courier New', monospace;
+    background: #f0eeea;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 15px;
+  }
+
+  sub { font-size: 0.72em; }
+
+  /* ─── 計算ステップ ─── */
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+  }
+
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .steps li:last-child { border-bottom: none; }
+
+  .steps li::before {
+    content: counter(step);
+    min-width: 28px;
+    height: 28px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+</style>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     ヘッダー
+════════════════════════════════════════ -->
+<header class="article-header">
+  <div class="article-meta">
+    <span class="tag">化学基礎</span>
+    <span class="tag">mol計算</span>
+    <span>物質量・アボガドロ定数</span>
+  </div>
+
+  <h1>水分子1molの中に水素原子は何mol？<br>「分子のmol」と「原子のmol」を混同しない考え方</h1>
+
+  <p class="article-intro">
+    「水分子が1molなのに、水素原子が2molになるの？　おかしくない？」──この疑問、とても正直な反応です。この記事では、なぜそうなるのかを<strong>考え方の根っこ</strong>から解説します。
+  </p>
+</header>
+
+<!-- ═══════════════════════════════════════
+     本文
+════════════════════════════════════════ -->
+<main class="article-body">
+
+  <!-- ───────────────────────────
+       まず問題を確認する
+  ──────────────────────────── -->
+  <h2>まず問題を確認しよう</h2>
+
+  <div class="box-problem">
+    <div class="box-title">▶ よく出る問題</div>
+    水分子（H<sub>2</sub>O）1.0 mol に含まれる水素原子（H）の物質量を求めよ。
+  </div>
+
+  <p>
+    答えは <em>2.0 mol</em> です。<br>
+    「えっ、水分子は1molなのに、水素原子は2molになるの？　全体より多くなるのはおかしくない？」<br>
+    そう感じた人、その感覚は実はとても大事です。
+  </p>
+
+  <div class="box-warn">
+    <div class="box-title">⚠ よくある誤答</div>
+    「水分子が1molだから、水素原子も1mol」──<strong>これは×</strong>です。<br>
+    「全体（分子）のmolより多くなるはずがない」という思い込みが原因です。
+  </div>
+
+  <!-- ───────────────────────────
+       molとは「個数の単位」
+  ──────────────────────────── -->
+  <h2>molとは「個数をまとめて数える単位」</h2>
+
+  <p>
+    まず原点に戻ります。<strong>molは「個数の単位」</strong>です。<br>
+    1 mol ＝ 約6.0×10<sup>23</sup>個（アボガドロ定数）。
+  </p>
+
+  <p>
+    「12個をひとまとめにして『1ダース』と呼ぶ」のと同じ発想です。ただし、原子や分子は途方もない数があるので、6.0×10<sup>23</sup>個をひとまとめにして「1 mol」と呼ぶことにした。それだけのことです。
+  </p>
+
+  <div class="box-point">
+    <div class="box-title">📌 ポイント</div>
+    mol は「何種類の物質か」ではなく、「<strong>何個あるか</strong>」を数える単位。<br>
+    だから、分子と原子は<strong>別々に</strong>数えてよい。
+  </div>
+
+  <!-- ───────────────────────────
+       図解：水分子の中身
+  ──────────────────────────── -->
+  <h2>水分子の「中身」を見てみよう</h2>
+
+  <p>
+    水分子（H<sub>2</sub>O）1個の中には何が入っているか。<br>
+    化学式 <span class="formula">H<sub>2</sub>O</span> を見ればわかります。<strong>水素原子2個と酸素原子1個</strong>です。
+  </p>
+
+  <div class="fig-wrap">
+    <div class="fig-title">水分子（H₂O）1個の構成</div>
+    <div class="molecule-grid">
+      <div class="molecule">
+        <div class="molecule-visual">
+          <div class="atom atom-H">H</div>
+          <div class="atom atom-H">H</div>
+          <div class="atom atom-O">O</div>
+        </div>
+        <div class="molecule-label">水分子 1個</div>
+      </div>
+    </div>
+    <p style="font-size:14px; color:#555; font-family:'Noto Sans JP',sans-serif; margin-top:8px;">
+      ─ 水素原子 2個 ＋ 酸素原子 1個 ─
+    </p>
+  </div>
+
+  <p>
+    では、水分子が <strong>1 mol（＝ 6.0×10<sup>23</sup>個）</strong> あったとき、<br>
+    その中の水素原子は何個でしょうか？
+  </p>
+
+  <div class="fig-wrap">
+    <div class="fig-title">水分子 1 mol の中に含まれる各原子</div>
+    <div style="font-family:'Noto Sans JP',sans-serif; font-size:15px; line-height:2.2; text-align:left; display:inline-block;">
+      <div>水分子　　<span style="font-weight:700;">1 mol</span>　　= 6.0×10<sup>23</sup> <strong>個</strong></div>
+      <div>　　↓　水分子1個につき <strong>水素原子2個</strong> 含む</div>
+      <div>水素原子　<span style="color:#1a4a8a; font-weight:700;">2 mol</span>　　= 12.0×10<sup>23</sup> <strong>個</strong></div>
+      <div>　　↓　水分子1個につき <strong>酸素原子1個</strong> 含む</div>
+      <div>酸素原子　<span style="color:#992222; font-weight:700;">1 mol</span>　　= 6.0×10<sup>23</sup> <strong>個</strong></div>
+    </div>
+  </div>
+
+  <p>
+    水分子1個の中に水素原子が2個入っているのだから、<br>
+    水分子が6.0×10<sup>23</sup>個（＝1 mol）あれば、水素原子は<strong>その2倍の12.0×10<sup>23</sup>個（＝2 mol）</strong>ある。
+  </p>
+
+  <p>
+    「全体（分子）より多い？」と感じるのは、分子と原子を同じ土俵で比べているからです。<strong>分子は原子が集まってできたもの</strong>なので、原子のほうが多くて当然なのです。
+  </p>
+
+  <!-- ───────────────────────────
+       LINE誘導（中盤）
+  ──────────────────────────── -->
+  <div class="line-banner">
+    <div class="line-banner-label">💬 ここまで読んで、まだもやっとする人へ</div>
+    <p>「なんとなくわかったけど、問題を解くとやっぱり詰まる」──そういう場合は、具体的な問題を送ってください。あなたのつまずきポイントに合わせて解説します。</p>
+    <a class="line-btn" href="https://lin.ee/XXXXXXX">
+      <!-- ↑ ここにLINE公式アカウントのURLを入れてください -->
+      📱 LINEで質問する（無料）
+    </a>
+  </div>
+
+  <!-- ───────────────────────────
+       解き方のステップ
+  ──────────────────────────── -->
+  <h2>解き方：3ステップで確実に解く</h2>
+
+  <p>
+    「わかった気がするけど、答えが出せない」という人は、手順を固定すると解決します。
+  </p>
+
+  <ul class="steps">
+    <li>
+      <strong>化学式で「1分子に各原子が何個か」を確認する</strong><br>
+      H<sub>2</sub>O → 水素原子 2個・酸素原子 1個
+    </li>
+    <li>
+      <strong>「分子のmol × 原子の個数」で原子のmolを出す</strong><br>
+      水素原子 = 1.0 mol × 2 = <em>2.0 mol</em><br>
+      酸素原子 = 1.0 mol × 1 = 1.0 mol
+    </li>
+    <li>
+      <strong>（必要なら）個数に直す</strong><br>
+      水素原子の個数 = 2.0 mol × 6.0×10<sup>23</sup> = 1.2×10<sup>24</sup> 個
+    </li>
+  </ul>
+
+  <div class="box-answer">
+    <div class="box-title">✅ まとめ・答え</div>
+    水分子（H<sub>2</sub>O）1.0 mol に含まれる水素原子のmol ＝ <strong>2.0 mol</strong><br>
+    <span style="font-size:13px; color:#2a7a4a; margin-top:4px; display:block;">「分子のmol＞原子のmol」になるはずという先入観を捨てること。molは個数の単位なので、含まれる原子の数だけ多くなる。</span>
+  </div>
+
+  <!-- ───────────────────────────
+       発展：アンモニア問題
+  ──────────────────────────── -->
+  <h2>確認問題：アンモニアで同じことをやってみよう</h2>
+
+  <div class="box-problem">
+    <div class="box-title">▶ 確認問題</div>
+    アンモニア（NH<sub>3</sub>）2.0 mol に含まれる水素原子（H）の物質量を求めよ。
+  </div>
+
+  <p>
+    NH<sub>3</sub> という化学式より、アンモニア1分子には水素原子が <strong>3個</strong>。<br>
+    したがって、水素原子のmol ＝ 2.0 mol × 3 ＝ <em>6.0 mol</em>
+  </p>
+
+  <p>
+    分子が2 molなのに水素原子が6 mol──もうおかしいとは思わないはずです。<strong>「分子の中に何個の原子が入っているか」をかけるだけ</strong>です。
+  </p>
+
+  <div class="divider"></div>
+
+  <!-- ───────────────────────────
+       まとめ
+  ──────────────────────────── -->
+  <h2>この記事のまとめ</h2>
+
+  <div class="box-point">
+    <div class="box-title">📌 覚えておくべきこと</div>
+    ① molは「個数の単位」。分子と原子は別々に数える。<br>
+    ② 分子に含まれる原子の数は化学式（下付き数字）を見ればわかる。<br>
+    ③ 原子のmol ＝ 分子のmol × （分子1個に含まれるその原子の個数）
+  </div>
+
+  <!-- ───────────────────────────
+       LINE誘導（末尾）
+  ──────────────────────────── -->
+  <div class="line-banner">
+    <div class="line-banner-label">📚 もっと理解を深めたい方へ</div>
+    <p>「他のmol計算問題も教えてほしい」「定期テストに向けて総復習したい」──そんなときは公式LINEから気軽にどうぞ。早稲田大学院卒・10年以上の指導経験から、あなたのつまずきに合わせて丁寧に返信します。</p>
+    <a class="line-btn" href="https://lin.ee/XXXXXXX">
+      📱 公式LINEに登録する（無料）
+    </a>
+  </div>
+
+  <!-- ───────────────────────────
+       著者欄
+  ──────────────────────────── -->
+  <div class="author-box">
+    <div class="author-avatar">🧪</div>
+    <div>
+      <div class="author-name">鈴木　先生</div>
+      <div class="author-bio">
+        早稲田大学大学院卒。進学校で10年以上、化学のトップクラス指導に携わる。東大・京大・東工大・医学部への合格者を多数輩出。「暗記ではなく理解で解く」化学を大切にしている。
+      </div>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>
