@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sense of Wonder Lab｜化学の「なぜ」がわかる解説サイト</title>
+<meta name="description" content="早稲田大学院卒・10年以上の指導歴。東大・京大・医学部合格者多数輩出。化学を暗記ではなく理解で解く。解説記事＋LINEで質問対応。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1c1c1c;
+  --muted: #5a5a5a;
+  --light: #909090;
+  --bg: #f7f5f0;
+  --card: #ffffff;
+  --accent: #1a3a6a;
+  --accent2: #c8a84b;
+  --line-green: #06C755;
+  --border: #e0ddd6;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(247,245,240,0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.nav-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--line-green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 16px;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.nav-line:hover { opacity: 0.88; }
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 100px 32px 80px;
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent2);
+  font-weight: 500;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 32px;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+  position: relative;
+  display: inline-block;
+}
+
+.hero h1 em::after {
+  content: '';
+  position: absolute;
+  bottom: 2px; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent2);
+  border-radius: 2px;
+}
+
+.hero-desc {
+  font-size: 16px;
+  color: var(--muted);
+  line-height: 1.9;
+  max-width: 560px;
+  margin-bottom: 48px;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--line-green);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 28px;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.btn-line:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1.5px solid var(--accent);
+  padding-bottom: 2px;
+  transition: opacity 0.2s;
+}
+.btn-ghost:hover { opacity: 0.7; }
+
+.hero-scroll {
+  position: absolute;
+  bottom: 40px;
+  left: 32px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--light);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hero-scroll::before {
+  content: '';
+  width: 40px;
+  height: 1px;
+  background: var(--light);
+}
+
+/* ── Stats ── */
+.stats {
+  background: var(--accent);
+  padding: 60px 32px;
+}
+
+.stats-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.stat {
+  text-align: center;
+  color: #fff;
+}
+
+.stat-num {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--accent2);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.6;
+}
+
+/* ── Section ── */
+section {
+  padding: 100px 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.section-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent2);
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+  margin-bottom: 48px;
+}
+
+/* ── Features ── */
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.feature-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 28px;
+}
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.feature-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ── Articles ── */
+.articles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.article-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+  display: block;
+}
+.article-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.article-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  background: rgba(26,58,106,0.08);
+  padding: 3px 10px;
+  border-radius: 100px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.article-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.article-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.article-arrow {
+  font-size: 13px;
+  color: var(--accent);
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── LINE Banner ── */
+.line-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 56px 48px;
+  text-align: center;
+  margin: 0 32px 100px;
+  max-width: 836px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.line-section .section-eyebrow { text-align: center; }
+
+.line-section .section-title {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.line-desc {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.9;
+  max-width: 500px;
+  margin: 0 auto 40px;
+}
+
+/* ── Profile ── */
+.profile {
+  background: var(--ink);
+  padding: 100px 32px;
+}
+
+.profile-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 64px;
+  align-items: start;
+}
+
+.profile-left {
+  position: sticky;
+  top: 80px;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(200,168,75,0.2);
+  border: 2px solid var(--accent2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin-bottom: 24px;
+}
+
+.profile-name {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.profile-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+}
+
+.profile-right .section-eyebrow { color: var(--accent2); }
+
+.profile-right .section-title {
+  color: #fff;
+  margin-bottom: 24px;
+}
+
+.profile-text {
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
+  line-height: 2;
+  margin-bottom: 16px;
+}
+
+.profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 32px;
+}
+
+.badge {
+  font-size: 12px;
+  color: var(--accent2);
+  border: 1px solid rgba(200,168,75,0.4);
+  padding: 5px 14px;
+  border-radius: 100px;
+}
+
+/* ── Footer ── */
+footer {
+  background: #111;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── Divider ── */
+.divider {
+  width: 48px;
+  height: 2px;
+  background: var(--accent2);
+  margin: 0 auto 48px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  nav { padding: 0 20px; }
+  .hero { padding: 90px 20px 70px; }
+  .stats-inner { grid-template-columns: 1fr; gap: 24px; }
+  section { padding: 70px 20px; }
+  .features { grid-template-columns: 1fr; }
+  .articles { grid-template-columns: 1fr; }
+  .profile-inner { grid-template-columns: 1fr; gap: 32px; }
+  .profile { padding: 70px 20px; }
+  .line-section { padding: 40px 24px; margin: 0 20px 70px; }
+}
+
+/* ── Fade in animation ── */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-logo" href="/">Sense of Wonder Lab</a>
+  <a class="nav-line" href="https://line.me/R/ti/p/@130dwwoi?ts=03160111&oat_content=url" target="_blank">
+    📱 LINEで質問する
+  </a>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <p class="hero-eyebrow">化学基礎 ・ 大学受験化学</p>
+  <h1>化学の<em>「なぜ」</em>がわかる。<br>暗記じゃなく、<br>理解で解く。</h1>
+  <p class="hero-desc">
+    丸暗記では解けない問題がある。でも、「なぜそうなるか」を知れば、初めて見る問題でも筋道が立つ。このサイトは、化学の本質的な理解を大切にした解説と、LINEで直接質問できる場を提供します。
+  </p>
+  <div class="hero-cta">
+    <a class="btn-line" href="https://line.me/R/ti/p/@130dwwoi?ts=03160111&oat_content=url" target="_blank">
+      📱 LINEで無料相談する
+    </a>
+    <a class="btn-ghost" href="#articles">解説記事を読む →</a>
+  </div>
+  <div class="hero-scroll">Scroll</div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stats-inner">
+    <div class="stat fade-in">
+      <div class="stat-num">10年+</div>
+      <div class="stat-label">進学校トップクラスでの<br>指導歴</div>
+    </div>
+    <div class="stat fade-in">
+      <div class="stat-num">多数</div>
+      <div class="stat-label">東大・京大・東工大・<br>医学部 合格者輩出</div>
+    </div>
+    <div class="stat fade-in">
+      <div class="stat-num">早大院</div>
+      <div class="stat-label">早稲田大学大学院卒<br>化学専攻</div>
+    </div>
+  </div>
+</div>
+
+<!-- Features -->
+<section>
+  <p class="section-eyebrow">このサイトでできること</p>
+  <h2 class="section-title">3つの学び方</h2>
+  <div class="features">
+    <div class="feature-card fade-in">
+      <div class="feature-icon">📖</div>
+      <div class="feature-title">解説記事を読む</div>
+      <div class="feature-desc">「なぜ」から丁寧に解説した記事を無料で読めます。Google検索でわからない問題を調べてみてください。</div>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">💬</div>
+      <div class="feature-title">LINEで質問する</div>
+      <div class="feature-desc">読んでもわからなければLINEで質問を。早稲田院卒の講師が、あなたのつまずきに合わせて直接返信します。</div>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-title">個別指導を受ける</div>
+      <div class="feature-desc">より本格的に大学受験に向けて取り組みたい人はZoomでの個別指導も対応しています。まずはLINEでご相談を。</div>
+    </div>
+  </div>
+</section>
+
+<!-- Articles -->
+<section id="articles" style="padding-top: 0;">
+  <p class="section-eyebrow">解説記事</p>
+  <h2 class="section-title">化学基礎から読む</h2>
+  <div class="articles">
+    <a class="article-card fade-in" href="article_mol_water.html">
+      <span class="article-tag">化学基礎 ・ mol計算</span>
+      <div class="article-title">水分子1molの中に水素原子は何mol？「分子のmol」と「原子のmol」を混同しない考え方</div>
+      <div class="article-desc">「水分子が1molなのに水素原子が2molになるのはなぜ？」この疑問に正面から答えます。</div>
+      <div class="article-arrow">読む →</div>
+    </a>
+    <div class="article-card fade-in" style="background: var(--bg); border-style: dashed; cursor: default;">
+      <span class="article-tag">化学基礎</span>
+      <div class="article-title" style="color: var(--light);">元素と単体の違い<br>（近日公開）</div>
+      <div class="article-desc" style="color: var(--light);">「水素」は元素？単体？この混乱を一度解消すれば、後が楽になります。</div>
+    </div>
+    <div class="article-card fade-in" style="background: var(--bg); border-style: dashed; cursor: default;">
+      <span class="article-tag">化学基礎</span>
+      <div class="article-title" style="color: var(--light);">化学式と組成式の違い<br>（近日公開）</div>
+      <div class="article-desc" style="color: var(--light);">同じ物質なのになぜ書き方が違う？書き分けの理由から解説します。</div>
+    </div>
+    <div class="article-card fade-in" style="background: var(--bg); border-style: dashed; cursor: default;">
+      <span class="article-tag">化学基礎</span>
+      <div class="article-title" style="color: var(--light);">もっと記事を追加予定</div>
+      <div class="article-desc" style="color: var(--light);">わからない問題はLINEで気軽に質問してください。</div>
+    </div>
+  </div>
+</section>
+
+<!-- LINE Banner -->
+<div class="line-section fade-in">
+  <p class="section-eyebrow">質問対応</p>
+  <h2 class="section-title">わからない問題、<br>LINEで送ってください。</h2>
+  <p class="line-desc">
+    記事を読んでもまだ解決しないとき、問題をそのまま写真で送ってください。早稲田院卒・10年以上の経験から、あなたのつまずきに合わせて丁寧に返信します。
+  </p>
+  <a class="btn-line" href="https://line.me/R/ti/p/@130dwwoi?ts=03160111&oat_content=url" target="_blank" style="font-size:16px; padding: 16px 36px; display: inline-flex;">
+    📱 公式LINEに登録する（無料）
+  </a>
+</div>
+
+<!-- Profile -->
+<div class="profile">
+  <div class="profile-inner">
+    <div class="profile-left fade-in">
+      <div class="profile-avatar">🧪</div>
+      <div class="profile-name">ニャンシー</div>
+      <div class="profile-sub">化学講師</div>
+    </div>
+    <div class="profile-right fade-in">
+      <p class="section-eyebrow">講師について</p>
+      <h2 class="section-title">Sense of Wonder ──<br>化学の驚きを、あなたに。</h2>
+      <p class="profile-text">
+        化学は暗記科目ではありません。ガリレオがそうしたように、「なぜ？」と問い続けることで、自然の法則は必然として見えてくる。その驚きと面白さを伝えたくて、このサイトを作りました。
+      </p>
+      <p class="profile-text">
+        進学校でのトップクラス指導を10年以上続け、東大・京大・東工大・医学部への合格者を多数輩出してきました。難関大を目指す生徒には特に「考え方の本質」を大切にした指導を行っています。
+      </p>
+      <div class="profile-badges">
+        <span class="badge">早稲田大学大学院卒</span>
+        <span class="badge">指導歴10年以上</span>
+        <span class="badge">東大・京大合格者多数</span>
+        <span class="badge">医学部合格者多数</span>
+        <span class="badge">東工大合格者多数</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">Sense of Wonder Lab</div>
+  <p class="footer-text">© 2025 Sense of Wonder Lab. All rights reserved.</p>
+</footer>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
