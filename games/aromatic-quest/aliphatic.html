@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a8a">
+<title>脂肪族クエスト 〜反応系統図を完成させよう〜</title>
+<style>
+:root{
+  --ink:#1e293b;
+  --bg:#f6f7f4;
+  --board:#fbfbf8;
+  --grid:#e8eae3;
+  --accent:#f59e0b;
+  --accent-deep:#d97706;
+  --blue:#2563eb;
+  --green:#16a34a;
+  --red:#dc2626;
+  --gray:#94a3b8;
+  --card:#ffffff;
+  --line:#475569;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column;height:100dvh;
+}
+header{
+  background:#1e3a8a;color:#fff;padding:8px 12px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  flex:none;display:flex;align-items:center;gap:10px;
+}
+header .title{font-weight:700;font-size:15px;letter-spacing:.02em}
+header .sub{font-size:10px;opacity:.75}
+.progress-wrap{flex:1;min-width:60px}
+.progress-label{font-size:10px;text-align:right;opacity:.9;margin-bottom:2px}
+.progress-bar{height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden}
+.progress-bar>div{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px;transition:width .5s}
+#btnReset{background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;font-size:11px;padding:4px 8px}
+main{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:none}
+.view.active{display:block}
+#view-map.active{display:flex;flex-direction:column}
+/* ---- map ---- */
+#mapWrap{position:relative;flex:1;touch-action:none;background:
+  linear-gradient(var(--grid) 1px,transparent 1px),
+  linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:36px 36px;background-color:var(--board);cursor:grab;overflow:hidden}
+#mapSvg{width:100%;height:100%;display:block}
+.zoombtns{position:absolute;right:10px;bottom:12px;display:flex;flex-direction:column;gap:8px}
+.zoombtns button{width:40px;height:40px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;font-size:17px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.maphint{position:absolute;left:10px;top:8px;background:rgba(255,255,255,.92);border:1px solid #e2e8f0;border-radius:10px;padding:6px 10px;font-size:11px;color:#475569;pointer-events:none;max-width:72%}
+/* map svg pieces */
+.node-card{fill:var(--card);stroke:#cbd5e1;stroke-width:1.5}
+.node-start .node-card{fill:#eff6ff;stroke:#93c5fd}
+.node-locked .node-card{fill:#f8fafc;stroke:#cbd5e1;stroke-dasharray:5 4}
+.node-slot .node-card{fill:#fffbeb;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4}
+.node-name{font-size:11.5px;fill:var(--ink);text-anchor:middle;font-weight:600}
+.qmark{font-size:30px;font-weight:700;fill:#cbd5e1;text-anchor:middle}
+.node-slot .qmark{fill:var(--accent)}
+.edge-line{stroke:var(--line);stroke-width:2;fill:none}
+.edge-locked .edge-line{stroke:#cbd5e1;stroke-dasharray:6 5}
+.edge-slot .edge-line{stroke:var(--accent);stroke-dasharray:6 5;stroke-width:2.4}
+.edge-part .edge-line{stroke:var(--accent-deep);stroke-width:2.2}
+.edge-co .edge-line{stroke-dasharray:2 4;stroke-width:1.6;opacity:.8}
+.edge-label-bg{fill:#fff;stroke:#e2e8f0}
+.edge-label{font-size:10.5px;fill:#334155;text-anchor:middle}
+.edge-q-circle{fill:#fff;stroke:var(--accent);stroke-width:2}
+.edge-q-text{font-size:16px;font-weight:700;fill:var(--accent);text-anchor:middle}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.struct text{fill:var(--ink)}
+.struct line,.struct polygon,.struct circle,.struct path{stroke:var(--ink)}
+.drophot .node-card{fill:#dbeafe !important;stroke:var(--blue) !important;stroke-width:3 !important}
+.drophot .edge-q-circle{fill:#dbeafe;stroke:var(--blue);stroke-width:3}
+.drophot .edge-q-text{fill:var(--blue)}
+/* ---- tray ---- */
+#tray{flex:none;background:#fff;border-top:2px solid #e2e8f0}
+.ttabs{display:flex;gap:6px;padding:6px 8px 0}
+.ttabs button{flex:1;border:none;border-radius:10px 10px 0 0;padding:7px 4px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b}
+.ttabs button.active{background:#fffbeb;color:var(--accent-deep);border:1.5px solid var(--accent);border-bottom:none}
+.tscroll{display:flex;gap:8px;overflow-x:auto;padding:8px;background:#fffdf5;-webkit-overflow-scrolling:touch}
+.tscroll::-webkit-scrollbar{height:6px}
+.tscroll::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
+.tcard{flex:none;width:104px;height:92px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:pan-x;user-select:none;-webkit-user-select:none;box-shadow:0 1px 3px rgba(0,0,0,.05);cursor:grab}
+.tcard:active{cursor:grabbing}
+.tcard.done{cursor:default}
+.tcard .tname{font-size:8.5px;font-weight:600;text-align:center;line-height:1.25;padding:0 3px;color:var(--ink)}
+.tcard .treag{font-size:10.5px;font-weight:700;text-align:center;line-height:1.4;padding:0 5px;color:#3730a3}
+.tcard.reag{background:#eef2ff;border-color:#c7d2fe}
+.tcard.done{opacity:.35;position:relative}
+.tcard.done::after{content:'✓';position:absolute;right:4px;top:1px;color:var(--green);font-weight:900;font-size:14px}
+.trayhint{font-size:10px;color:#94a3b8;padding:0 10px 6px;background:#fffdf5}
+#ghost{position:fixed;z-index:99;pointer-events:none;opacity:.92;transform:scale(1.08);display:none}
+/* ---- generic panel views ---- */
+.panel{height:100%;overflow-y:auto;padding:16px 14px calc(20px + env(safe-area-inset-bottom));max-width:620px;margin:0 auto}
+.panel h2{font-size:17px;margin:6px 0 12px}
+.card-ui{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:12px}
+.bigbtn{display:block;width:100%;padding:14px;border-radius:14px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;margin-top:10px}
+.bigbtn.secondary{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.bigbtn.amber{background:var(--accent-deep)}
+.bigbtn:disabled{background:#cbd5e1;color:#f1f5f9;border:none}
+.muted{color:#64748b;font-size:12px;line-height:1.6}
+/* ---- bottom nav ---- */
+nav{flex:none;display:flex;background:#fff;border-top:1px solid #e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:8px 0 6px;border:none;background:none;font-size:11px;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav button .ico{font-size:20px;line-height:1}
+nav button.active{color:var(--blue);font-weight:700}
+.badge{position:absolute;top:2px;right:calc(50% - 24px);background:var(--red);color:#fff;border-radius:9px;font-size:10px;min-width:17px;height:17px;line-height:17px;padding:0 4px;font-weight:700}
+/* ---- modal ---- */
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.open{display:flex}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;padding:16px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media(min-width:640px){
+  .modal{align-items:center;padding:20px}
+  .sheet{border-radius:20px;max-height:86vh}
+}
+.sheet h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.modebadge{font-size:10px;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe;border-radius:99px;padding:2px 8px;font-weight:700}
+.closex{margin-left:auto;border:none;background:#f1f5f9;border-radius:99px;width:30px;height:30px;font-size:14px;color:#64748b;flex:none}
+.eqbox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:12.5px;font-weight:600;margin:8px 0;line-height:1.6}
+/* quiz layout */
+.rxn{display:flex;flex-direction:column;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px 8px;margin-bottom:12px}
+.rxn-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.cblock{display:flex;flex-direction:column;align-items:center;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:6px 8px 4px;min-width:104px}
+.cblock .cname{font-size:11px;font-weight:600;margin-top:1px;text-align:center}
+.qblock{display:flex;align-items:center;justify-content:center;background:#fffbeb;border:2px dashed var(--accent);border-radius:12px;min-width:104px;min-height:86px;font-size:34px;font-weight:800;color:var(--accent)}
+.qblock.small{min-height:44px;font-size:22px;min-width:150px}
+.reagent-chip{background:#eef2ff;border:1.5px solid #c7d2fe;color:#3730a3;border-radius:99px;padding:5px 12px;font-size:12.5px;font-weight:600;text-align:center;max-width:100%}
+.plus{font-size:16px;font-weight:700;color:#64748b}
+.darrow{font-size:20px;color:#64748b;line-height:1}
+.qprompt{font-size:14px;font-weight:700;margin-bottom:8px;text-align:center}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.choices.textmode{grid-template-columns:1fr}
+.choice{border:2px solid #e2e8f0;border-radius:14px;background:#fff;padding:8px 6px;display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:600;color:var(--ink);min-height:52px;justify-content:center;text-align:center;line-height:1.45}
+.choice:active{background:#f8fafc}
+.choice.correct{border-color:var(--green);background:#f0fdf4}
+.choice.wrong{border-color:var(--red);background:#fef2f2;animation:shake .3s}
+.choice.dim{opacity:.45}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.explain{margin-top:12px;border-radius:14px;padding:12px;font-size:13px;line-height:1.7;display:none}
+.explain.ok{display:block;background:#f0fdf4;border:1.5px solid #86efac}
+.explain.ng{display:block;background:#fef2f2;border:1.5px solid #fca5a5}
+.explain .rname{font-weight:800;font-size:13.5px;margin-bottom:3px}
+.explain .eq{background:#fff;border-radius:8px;padding:6px 8px;margin:6px 0;font-size:12px;font-weight:600;border:1px solid #e2e8f0}
+/* challenge */
+.chal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:#475569}
+.rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
+.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
+.review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
+.review-item .ok{color:var(--green);font-weight:700}
+.review-item .ng{color:var(--red);font-weight:700}
+.scopebtns{display:flex;gap:8px;margin-top:10px}
+.scopebtns button{flex:1;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
+.scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
+#toast.show{opacity:1}
+/* onboarding */
+#onboard{position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:60;display:none;align-items:center;justify-content:center;padding:24px}
+#onboard.open{display:flex}
+#onboard .ob{background:#fff;border-radius:20px;padding:22px 20px;max-width:420px;font-size:13.5px;line-height:1.8}
+#onboard h2{font-size:18px;margin-bottom:10px}
+.detail-rxns{margin-top:10px}
+.detail-rxns div{font-size:12.5px;padding:7px 4px;border-bottom:1px solid #f1f5f9;line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="title">🧪 脂肪族クエスト</div>
+    <div class="sub">反応系統図を完成させよう</div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label" id="progLabel">0 / 0 反応</div>
+    <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
+  </div>
+  <button id="btnReset">リセット</button>
+</header>
+
+<main>
+  <div class="view active" id="view-map">
+    <div id="mapWrap">
+      <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="maphint">下のトレイからカードを <b style="color:#d97706">?</b> へドラッグ!<br>試薬は矢印の ? へ、化合物は枠の ? へ</div>
+      <div class="zoombtns">
+        <button id="zin">＋</button>
+        <button id="zout">－</button>
+        <button id="zfit">⌂</button>
+      </div>
+    </div>
+    <div id="tray">
+      <div class="ttabs">
+        <button data-tab="comp" class="active">⬡ 化合物 <span id="compCnt"></span></button>
+        <button data-tab="reag">🧪 試薬</button>
+      </div>
+      <div class="tscroll" id="trayComp"></div>
+      <div class="tscroll" id="trayReag" style="display:none"></div>
+      <div class="trayhint">カードを上のマップへドラッグ / 横スクロールでカードを探す</div>
+    </div>
+  </div>
+
+  <div class="view" id="view-challenge">
+    <div class="panel" id="chalPanel"></div>
+  </div>
+
+  <div class="view" id="view-weak">
+    <div class="panel" id="weakPanel"></div>
+  </div>
+</main>
+
+<nav>
+  <button data-view="map" class="active"><span class="ico">🗺️</span>マップ</button>
+  <button data-view="challenge"><span class="ico">⚡</span>チャレンジ</button>
+  <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
+</nav>
+
+<div class="modal" id="infoModal"><div class="sheet" id="infoSheet"></div></div>
+
+<div id="onboard"><div class="ob">
+  <h2>🧪 脂肪族クエストへようこそ!</h2>
+  <p>ホワイトボードには出発物質だけが置かれています。</p>
+  <p>① 下のトレイから<b>化合物カード</b>や<b>試薬カード</b>を選ぶ<br>
+     ② マップのオレンジの「?」へ<b>ドラッグ</b>!<br>
+     ③ 正解ならカードが固定され、系統図が育っていく。</p>
+  <p class="muted">試薬(矢印の?)と生成物(枠の?)の両方が揃うと反応完成。全部そろえて脂肪族の反応系統図を完成させよう。⚡チャレンジで実力試しも!</p>
+  <button class="bigbtn" onclick="closeOnboard()">はじめる</button>
+</div></div>
+
+<div id="toast"></div>
+<div id="ghost"></div>
+<svg id="meas" style="position:fixed;left:-9999px;top:0;width:500px;height:400px;visibility:hidden" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<script>
+'use strict';
+/* ================= データ(教材「有機化学学習の朋」準拠) ================= */
+const NW=150, NH=112;
+
+const COMPOUNDS={
+  ethylene:{name:'エチレン',x:380,y:480,start:true,kind:'text',text:'CH₂=CH₂'},
+  acetylene:{name:'アセチレン',x:380,y:740,start:true,kind:'text',text:'CH≡CH'},
+  propene:{name:'プロペン',alt:'臭素水を脱色する(アルケンの検出反応)。',x:380,y:1000,start:true},
+  methanol:{name:'メタノール',x:380,y:1260,start:true,kind:'text',text:'CH₃OH'},
+
+  ethane:{name:'エタン',x:680,y:320,kind:'text',text:'CH₃-CH₃'},
+  chloroethane:{name:'クロロエタン',alt:'ハロゲン化アルキル。銅線につけて燃やすと青緑色の炎になる(バイルシュタイン反応)でハロゲンを検出できる。',x:680,y:480,kind:'text',text:'CH₃-CH₂-Cl'},
+  dibromoethane:{name:'1,2-ジブロモエタン',x:680,y:640,kind:'text',text:'CH₂Br-CH₂Br'},
+  ethanol:{name:'エタノール',alt:'ヨードホルム反応陽性(CH₃CH(OH)-の構造をもつため)。',x:680,y:800},
+  vinylChloride:{name:'塩化ビニル',alt:'付加重合するとポリ塩化ビニル(PVC)になる。',x:680,y:960},
+  vinylAlcohol:{name:'ビニルアルコール',alt:'不安定でただちにアセトアルデヒドに異性化する。',x:680,y:1120},
+  twoPropanol:{name:'2-プロパノール',alt:'ヨードホルム反応陽性(第二級アルコール、CH₃CH(OH)-構造)。',x:680,y:1280},
+  formaldehyde:{name:'ホルムアルデヒド',alt:'還元性をもち、銀鏡反応・フェーリング反応を示す。',x:680,y:1440},
+
+  diethylEther:{name:'ジエチルエーテル',x:1000,y:640,kind:'text',text:'C₂H₅-O-C₂H₅'},
+  acetaldehyde:{name:'アセトアルデヒド',alt:'還元性をもち、銀鏡反応・フェーリング反応を示す。ヨードホルム反応も陽性。',x:1000,y:940},
+  acetone:{name:'アセトン',alt:'ヨードホルム反応陽性(アセチル基CH₃CO-をもつため)。',x:1000,y:1280},
+  formicAcid:{name:'ギ酸',alt:'カルボキシ基とアルデヒド基の両方をもつ特殊なカルボン酸。還元性を示し銀鏡反応も陽性。',x:1000,y:1440},
+
+  aceticAcid:{name:'酢酸',x:1320,y:940},
+
+  aceticAnhydride:{name:'無水酢酸',x:1640,y:780},
+  ethylAcetate:{name:'酢酸エチル',x:1640,y:1100},
+};
+
+const REACTIONS=[
+ {id:'a1',from:['ethylene'],to:['ethane'],reagent:'水素H₂(Ni触媒)',short:'H₂, Ni',name:'水素の付加',
+  note:'触媒下でC=Cに水素が付加し、単結合のみのエタンになる。'},
+ {id:'a2',from:['ethylene'],to:['chloroethane'],reagent:'塩化水素HCl',short:'HCl',name:'ハロゲン化水素の付加',
+  note:'エチレンにHClが付加してクロロエタンが生成する。エチレンは左右対称なのでどちらの炭素にClが付いても同じ生成物になる(マルコフニコフ則を気にしなくてよい)。'},
+ {id:'a3',from:['ethylene'],to:['dibromoethane'],reagent:'臭素水Br₂',short:'Br₂水',name:'臭素の付加',
+  note:'C=Cに臭素が付加し、臭素水の赤褐色が脱色される。アルケン・アルキンの代表的な検出反応。'},
+ {id:'a4',from:['ethylene'],to:['ethanol'],reagent:'水H₂O(リン酸などの酸触媒)',short:'H₂O, 酸触媒',name:'水の付加(水和)',
+  note:'酸触媒下でエチレンに水が付加してエタノールが得られる。工業的なエタノールの製法の一つ。'},
+ {id:'a5',from:['ethylene'],to:['acetaldehyde'],reagent:'O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',name:'ワッカー法(酸化)',
+  note:'塩化パラジウム(Ⅱ)と塩化銅(Ⅱ)を触媒にエチレンを酸化するとアセトアルデヒドが得られる(ワッカー法)。過去はアセチレンへの水付加(水銀触媒)で作っていたが水俣病の原因になったため、現在はこの方法が主流。'},
+ {id:'a6',from:['acetylene'],to:['vinylChloride'],reagent:'塩化水素HCl(HgCl₂触媒)',short:'HCl, HgCl₂',name:'ハロゲン化水素の付加',
+  note:'触媒下でアセチレンにHClが付加すると塩化ビニルが生成する。塩化ビニルは付加重合するとポリ塩化ビニル(PVC)になる。'},
+ {id:'a7',from:['acetylene'],to:['vinylAlcohol'],reagent:'水H₂O(HgSO₄触媒)',short:'H₂O, HgSO₄',name:'水の付加',
+  note:'触媒下でアセチレンに水が付加すると、まず不安定なビニルアルコール(エノール形)が生じる。'},
+ {id:'a8',from:['vinylAlcohol'],to:['acetaldehyde'],reagent:'(自然に異性化)',short:'互変異性化',name:'ケト・エノール互変異性',
+  note:'ビニルアルコールは不安定で、直ちに安定なアセトアルデヒド(ケト形)に異性化する。'},
+ {id:'a9',from:['ethanol'],to:['diethylEther'],reagent:'濃硫酸(130℃, 分子間脱水)',short:'濃H₂SO₄ 130℃',name:'分子間脱水',
+  note:'2分子のエタノールから濃硫酸を触媒に分子間で脱水縮合するとジエチルエーテルが生成する。'},
+ {id:'a10',from:['ethanol'],to:['ethylene'],reagent:'濃硫酸(160℃, 分子内脱水)',short:'濃H₂SO₄ 160℃',curve:-40,name:'分子内脱水',
+  note:'エタノール1分子から濃硫酸を触媒に分子内で脱水するとエチレンが生成する。同じ「エタノール+濃硫酸」でも温度によって分子間脱水(130℃)か分子内脱水(160℃)かが変わる頻出ポイント!'},
+ {id:'a11',from:['ethanol'],to:['acetaldehyde'],reagent:'酸化剤(例:K₂Cr₂O₇)',short:'酸化',name:'第一級アルコールの酸化',
+  note:'第一級アルコールのエタノールを酸化するとアセトアルデヒドが生じる。'},
+ {id:'a12',from:['acetaldehyde'],to:['aceticAcid'],reagent:'酸化剤(さらに酸化)',short:'酸化',name:'アルデヒドの酸化',
+  note:'アセトアルデヒドをさらに酸化すると酢酸になる。'},
+ {id:'a13',from:['methanol'],to:['formaldehyde'],reagent:'酸化剤(例:加熱した銅Cu)',short:'酸化',name:'メタノールの酸化',
+  note:'メタノールを酸化するとホルムアルデヒドが生じる。実験室的には赤熱した銅線をCuOにしてメタノール蒸気に触れさせて酸化する。'},
+ {id:'a14',from:['formaldehyde'],to:['formicAcid'],reagent:'酸化剤(さらに酸化)',short:'酸化',name:'アルデヒドの酸化',
+  note:'ホルムアルデヒドをさらに酸化するとギ酸になる。ギ酸はカルボキシ基のほかにアルデヒド基も持つため還元性を示す(銀鏡反応陽性)という特殊なカルボン酸。'},
+ {id:'a15',from:['propene'],to:['twoPropanol'],reagent:'水H₂O(リン酸触媒)',short:'H₂O, 酸触媒',name:'マルコフニコフ則(水の付加)',
+  note:'非対称なアルケンに水(H-OH)が付加するとき、Hはもとから水素の多い炭素に付加する(マルコフニコフ則)。プロペンでは2-プロパノールが主生成物になる。'},
+ {id:'a16',from:['twoPropanol'],to:['acetone'],reagent:'酸化剤(例:K₂Cr₂O₇)',short:'酸化',name:'第二級アルコールの酸化',
+  note:'第二級アルコールを酸化するとケトンが生じる。2-プロパノールを酸化するとアセトンになる。'},
+ {id:'a17',from:['aceticAcid'],to:['aceticAnhydride'],reagent:'脱水剤(例:P₄O₁₀, 加熱)',short:'脱水剤',name:'分子間脱水(酸無水物の生成)',
+  note:'酢酸を脱水剤とともに加熱すると分子間脱水が起こり、無水酢酸が生成する。'},
+ {id:'a18',from:['aceticAcid'],coFrom:['ethanol'],to:['ethylAcetate'],reagent:'濃硫酸(触媒, 加熱)',short:'濃H₂SO₄',name:'エステル化',
+  note:'カルボン酸とアルコールを濃硫酸(触媒)とともに加熱すると脱水縮合(エステル化)が起こり、酢酸エチルと水が生じる。'},
+ {id:'a19',from:['ethylAcetate'],to:['aceticAcid'],coTo:['ethanol'],reagent:'NaOH水溶液(けん化)',short:'NaOH(けん化)',curve:40,name:'けん化(塩基による加水分解)',
+  note:'酢酸エチルにNaOH水溶液を加えて加水分解(けん化)すると、酢酸ナトリウムとエタノールが生じる(エステル化の逆反応)。'},
+];
+const RXMAP=Object.fromEntries(REACTIONS.map(r=>[r.id,r]));
+const REAGENTS=[...new Set(REACTIONS.map(r=>r.reagent))];
+
+/* ================= 構造式SVG(ケクレ構造) ================= */
+const REV={'NO₂':'O₂N','Br':'Br','Cl':'Cl','CH₃':'H₃C','OH':'HO','NH₂':'H₂N','COOH':'HOOC','ONa':'NaO'};
+function hexPts(cx,cy,r,rot){
+  const v=[];
+  for(let i=0;i<6;i++){const a=(rot+i*60)*Math.PI/180;v.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}
+  return v;
+}
+function ringShape(cx,cy,dbl){
+  const r=26, v=hexPts(cx,cy,r,-90);
+  let s=`<polygon points="${v.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke-width="1.7"/>`;
+  if(dbl){
+    for(const i of [1,3,5]){
+      const a=v[i], b=v[(i+1)%6], k=0.72;
+      const ax=cx+(a[0]-cx)*k, ay=cy+(a[1]-cy)*k, bx=cx+(b[0]-cx)*k, by=cy+(b[1]-cy)*k;
+      s+=`<line x1="${(ax+(bx-ax)*0.1).toFixed(1)}" y1="${(ay+(by-ay)*0.1).toFixed(1)}" x2="${(ax+(bx-ax)*0.9).toFixed(1)}" y2="${(ay+(by-ay)*0.9).toFixed(1)}" stroke-width="1.5"/>`;
+    }
+  }
+  return s;
+}
+function subsSVG(sub){
+  const r=26;let s='';
+  for(const k in sub){
+    const p=+k, angDeg=-90+(p-1)*60;
+    const val=sub[k];
+    if(val&&typeof val==='object'){ s+=groupSVG(val.g,angDeg,r); continue; }
+    const a=angDeg*Math.PI/180;
+    const x1=r*Math.cos(a), y1=r*Math.sin(a), x2=36*Math.cos(a), y2=36*Math.sin(a);
+    s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-width="1.7"/>`;
+    let label=val, anchor='middle', tx=0, ty=0;
+    if(p===1){tx=0;ty=-42;}
+    else if(p===4){tx=0;ty=54;}
+    else if(p===2){tx=39;ty=-16;anchor='start';}
+    else if(p===3){tx=39;ty=27;anchor='start';}
+    else if(p===5){tx=-39;ty=27;anchor='end';label=REV[label]||label;}
+    else if(p===6){tx=-39;ty=-16;anchor='end';label=REV[label]||label;}
+    s+=`<text x="${tx}" y="${ty}" text-anchor="${anchor}" font-size="13" stroke="none">${label}</text>`;
+  }
+  return s;
+}
+/* ---- 明示的な官能基(C=O・枝分かれを線で描く) ---- */
+function bondLine(p1,p2){
+  return `<line x1="${p1[0].toFixed(1)}" y1="${p1[1].toFixed(1)}" x2="${p2[0].toFixed(1)}" y2="${p2[1].toFixed(1)}" stroke-width="1.7"/>`;
+}
+function dbondLines(p1,p2){
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1], len=Math.hypot(dx,dy)||1;
+  const px=-dy/len, py=dx/len, off=2.8;
+  const q1=[p1[0]+dx*0.18+px*off, p1[1]+dy*0.18+py*off];
+  const q2=[p1[0]+dx*0.82+px*off, p1[1]+dy*0.82+py*off];
+  return bondLine(p1,p2)+`<line x1="${q1[0].toFixed(1)}" y1="${q1[1].toFixed(1)}" x2="${q2[0].toFixed(1)}" y2="${q2[1].toFixed(1)}" stroke-width="1.4"/>`;
+}
+function atomLabel(p,text){
+  return `<text x="${p[0].toFixed(1)}" y="${(p[1]+4.3).toFixed(1)}" text-anchor="middle" font-size="12.5" stroke="none">${text}</text>`;
+}
+function advance(p,angDeg,dist){
+  const a=angDeg*Math.PI/180;
+  return [p[0]+dist*Math.cos(a), p[1]+dist*Math.sin(a)];
+}
+function groupSVG(kind,baseAngDeg,r0){
+  const A0=[r0*Math.cos(baseAngDeg*Math.PI/180), r0*Math.sin(baseAngDeg*Math.PI/180)];
+  const L=15; let s='';
+  if(kind==='COOH'||kind==='COONa'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const Ob=advance(A1,baseAngDeg-95,13); s+=dbondLines(A1,Ob); s+=atomLabel(Ob,'O');
+    const A2=advance(A1,baseAngDeg+35,L); s+=bondLine(A1,A2); s+=atomLabel(A2,kind==='COOH'?'OH':'ONa');
+  }else if(kind==='COOCH3'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const Ob=advance(A1,baseAngDeg-95,13); s+=dbondLines(A1,Ob); s+=atomLabel(Ob,'O');
+    const A2=advance(A1,baseAngDeg+35,L); s+=bondLine(A1,A2); s+=atomLabel(A2,'OCH₃');
+  }else if(kind==='OCOCH3'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1); s+=atomLabel(A1,'O');
+    const dir2=baseAngDeg+30;
+    const A2=advance(A1,dir2,L); s+=bondLine(A1,A2);
+    const Ob=advance(A2,dir2-95,13); s+=dbondLines(A2,Ob); s+=atomLabel(Ob,'O');
+    const A3=advance(A2,dir2+35,L); s+=bondLine(A2,A3); s+=atomLabel(A3,'CH₃');
+  }else if(kind==='NHCOCH3'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1); s+=atomLabel(A1,'NH');
+    const dir2=baseAngDeg+30;
+    const A2=advance(A1,dir2,L); s+=bondLine(A1,A2);
+    const Ob=advance(A2,dir2-95,13); s+=dbondLines(A2,Ob); s+=atomLabel(Ob,'O');
+    const A3=advance(A2,dir2+35,L); s+=bondLine(A2,A3); s+=atomLabel(A3,'CH₃');
+  }else if(kind==='CHO'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const Ob=advance(A1,baseAngDeg-90,14); s+=dbondLines(A1,Ob); s+=atomLabel(Ob,'O');
+    const Hb=advance(A1,baseAngDeg+90,14); s+=bondLine(A1,Hb); s+=atomLabel(Hb,'H');
+  }else if(kind==='iPr'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const B1=advance(A1,baseAngDeg-38,L); s+=bondLine(A1,B1); s+=atomLabel(B1,'CH₃');
+    const B2=advance(A1,baseAngDeg+38,L); s+=bondLine(A1,B2); s+=atomLabel(B2,'CH₃');
+    const Hb=advance(A1,baseAngDeg-90,13); s+=bondLine(A1,Hb); s+=atomLabel(Hb,'H');
+  }else if(kind==='cumeneOOH'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const B1=advance(A1,baseAngDeg-55,L); s+=bondLine(A1,B1); s+=atomLabel(B1,'CH₃');
+    const B2=advance(A1,baseAngDeg+55,L); s+=bondLine(A1,B2); s+=atomLabel(B2,'CH₃');
+    const A2=advance(A1,baseAngDeg,L+6); s+=bondLine(A1,A2); s+=atomLabel(A2,'OOH');
+  }else if(kind==='Et'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const A2=advance(A1,baseAngDeg+28,L); s+=bondLine(A1,A2); s+=atomLabel(A2,'CH₃');
+  }else if(kind==='CH2OH'){
+    const A1=advance(A0,baseAngDeg,L); s+=bondLine(A0,A1);
+    const A2=advance(A1,baseAngDeg+28,L); s+=bondLine(A1,A2); s+=atomLabel(A2,'OH');
+  }
+  return s;
+}
+function naphSVG(){
+  const r=25, h=r*Math.cos(Math.PI/6);
+  const A=hexPts(-h,0,r,-30), B=hexPts(h,0,r,-30);
+  let s='';
+  for(const v of [A,B]) s+=`<polygon points="${v.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke-width="1.7"/>`;
+  // 二重結合(中央の共有辺 + 各環2本)
+  const dline=(v,cx,i)=>{
+    const a=v[i], b=v[(i+1)%6], k=0.72;
+    const ax=cx+(a[0]-cx)*k, ay=(a[1])*k, bx=cx+(b[0]-cx)*k, by=(b[1])*k;
+    return `<line x1="${(ax+(bx-ax)*0.12).toFixed(1)}" y1="${(ay+(by-ay)*0.12).toFixed(1)}" x2="${(ax+(bx-ax)*0.88).toFixed(1)}" y2="${(ay+(by-ay)*0.88).toFixed(1)}" stroke-width="1.4"/>`;
+  };
+  // hexPts(rot=-30): 頂点は -30,30,90,150,210,270°。左環は 90-150(上), 210-270(下)の辺、右環は -30-30(右)…適宜
+  s+=dline(A,-h,2)+dline(A,-h,4)+dline(B,h,5)+dline(B,h,1);
+  // 中央の辺(x=0付近)は左環の辺0(-30→30)
+  s+=dline(A,-h,0);
+  return s;
+}
+function maleicSVG(){
+  // 無水マレイン酸: HC=CH-C(=O)-O-C(=O)- の五員環(環を閉じるOまで明示的に結合)
+  let s='';
+  const C1=[-16,-22],C2=[16,-22],C3=[26,4],C4=[-26,4],Obr=[0,24];
+  const ln=(a,b,w)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke-width="${w||1.7}"/>`;
+  s+=ln(C1,C2)+`<line x1="-13" y1="-17" x2="13" y2="-17" stroke-width="1.4"/>`; // C1=C2
+  s+=ln(C2,C3)+ln(C4,C1);
+  s+=ln(C3,[10,20])+ln(C4,[-10,20]); // 環を閉じるOへの結合(すきまはOの文字分のみ)
+  s+=`<text x="0" y="28" text-anchor="middle" font-size="12" stroke="none">O</text>`;
+  // 環外のカルボニルC=O(2つとも)
+  s+=ln(C3,[50,-14])+`<line x1="30" y1="-5" x2="46" y2="-16" stroke-width="1.4"/>`;
+  s+=ln(C4,[-50,-14])+`<line x1="-30" y1="-5" x2="-46" y2="-16" stroke-width="1.4"/>`;
+  s+=`<text x="57" y="-16" text-anchor="middle" font-size="12" stroke="none">O</text>`;
+  s+=`<text x="-57" y="-16" text-anchor="middle" font-size="12" stroke="none">O</text>`;
+  return s;
+}
+function phthalicAnhSVG(){
+  let s=ringShape(-22,0,true);
+  const v=hexPts(-22,0,26,-90);
+  const v2=v[1], v3=v[2]; // 右上・右下の頂点
+  const Ca=[24,-20], Cb=[24,20], O=[40,0];
+  const ln=(a,b,w)=>`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke-width="${w||1.7}"/>`;
+  s+=ln(v2,Ca)+ln(v3,Cb)+ln(Ca,[36,-6])+ln(Cb,[36,6]);
+  s+=`<text x="41" y="4.5" text-anchor="middle" font-size="12" stroke="none">O</text>`;
+  // C=O(上下へ)
+  s+=ln(Ca,[32,-36],1.7)+ln([18,-28],[26,-40],1.4);
+  s+=ln(Cb,[32,36],1.7)+ln([18,28],[26,40],1.4);
+  s+=`<text x="36" y="-40" text-anchor="middle" font-size="12" stroke="none">O</text>`;
+  s+=`<text x="36" y="50" text-anchor="middle" font-size="12" stroke="none">O</text>`;
+  return s;
+}
+function structSVG(c){
+  if(c.kind==='azo'){
+    return `<g class="struct">${ringShape(-64,0,true)}<line x1="-38" y1="0" x2="-24" y2="0" stroke-width="1.7"/>`+
+      `<text x="0" y="4.5" text-anchor="middle" font-size="13" stroke="none">N=N</text>`+
+      `<line x1="24" y1="0" x2="38" y2="0" stroke-width="1.7"/>${ringShape(64,0,true)}`+
+      `<line x1="90" y1="0" x2="100" y2="0" stroke-width="1.7"/>`+
+      `<text x="103" y="4.5" text-anchor="start" font-size="13" stroke="none">OH</text></g>`;
+  }
+  if(c.kind==='naph') return `<g class="struct">${naphSVG()}</g>`;
+  if(c.kind==='maleic') return `<g class="struct">${maleicSVG()}</g>`;
+  if(c.kind==='phthalicAnh') return `<g class="struct">${phthalicAnhSVG()}</g>`;
+  if(c.kind==='text')
+    return `<g class="struct"><text x="0" y="5" text-anchor="middle" font-size="16" font-weight="600" stroke="none">${c.text}</text></g>`;
+  if(c.kind==='plain')
+    return `<g class="struct">${ringShape(0,0,false)}${subsSVG(c.sub||{})}</g>`;
+  return `<g class="struct">${ringShape(0,0,true)}${subsSVG(c.sub||{})}</g>`;
+}
+const BBOX={};
+function measureAll(){
+  const m=document.getElementById('meas');
+  for(const id in COMPOUNDS){
+    m.innerHTML=structSVG(COMPOUNDS[id]);
+    const b=m.firstChild.getBBox();
+    BBOX[id]={x:b.x,y:b.y,width:Math.max(b.width,10),height:Math.max(b.height,10)};
+  }
+  m.innerHTML='';
+}
+const IMG_MAP={
+  propene:'propene.jpg', vinylChloride:'vinylChloride.jpg', vinylAlcohol:'vinylAlcohol.jpg',
+  acetaldehyde:'acetaldehyde.jpg', ethanol:'ethanol.jpg', formaldehyde:'formaldehyde.jpg',
+  formicAcid:'formicAcid.jpg', aceticAcid:'aceticAcid.jpg', aceticAnhydride:'aceticAnhydride.jpg',
+  ethylAcetate:'ethylAcetate.jpg', twoPropanol:'twoPropanol.jpg', acetone:'acetone.jpg'
+};
+function structFit(id,availW,availH,maxScale){
+  if(IMG_MAP[id]){
+    const w=availW*0.94, h=availH*0.94;
+    return `<image href="assets/compounds/${IMG_MAP[id]}" x="${(-w/2).toFixed(1)}" y="${(-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`;
+  }
+  const b=BBOX[id];
+  const s=Math.min(availW/(b.width+8),availH/(b.height+8),maxScale||1.1);
+  const tx=-(b.x+b.width/2)*s, ty=-(b.y+b.height/2)*s;
+  return `<g transform="translate(${tx.toFixed(1)},${ty.toFixed(1)}) scale(${s.toFixed(3)})">${structSVG(COMPOUNDS[id])}</g>`;
+}
+function compoundHTML(id,big){
+  const w=big?130:106, h=big?92:76;
+  return `<div class="cblock"><svg viewBox="${-w/2} ${-h/2} ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${structFit(id,w-8,h-6)}</svg><div class="cname">${COMPOUNDS[id].name}</div></div>`;
+}
+
+/* ================= 状態 ================= */
+let state={comp:[],reag:[],weak:{},seen:false,best:null};
+function save(){try{localStorage.setItem('aliphaQuest1',JSON.stringify(state));}catch(e){}}
+function load(){try{const s=localStorage.getItem('aliphaQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+const onBoard=id=>COMPOUNDS[id].start||state.comp.includes(id);
+const reagentPlaced=r=>state.reag.includes(r.id);
+const available=r=>r.from.concat(r.coFrom||[]).every(onBoard);
+const complete=r=>reagentPlaced(r)&&r.to.concat(r.coTo||[]).every(onBoard);
+const completedIds=()=>REACTIONS.filter(complete).map(r=>r.id);
+
+/* ================= マップ描画 ================= */
+const svgEl=document.getElementById('mapSvg');
+let WORLD={x:0,y:0,w:100,h:100};
+(function(){
+  let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  for(const id in COMPOUNDS){const c=COMPOUNDS[id];x1=Math.min(x1,c.x-NW/2);y1=Math.min(y1,c.y-NH/2);x2=Math.max(x2,c.x+NW/2);y2=Math.max(y2,c.y+NH/2);}
+  WORLD={x:x1-60,y:y1-60,w:x2-x1+120,h:y2-y1+120};
+})();
+let vb={x:0,y:0,w:900,h:900};
+function applyVB(){svgEl.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);}
+function aspect(){const r=svgEl.getBoundingClientRect();return r.height/Math.max(r.width,1);}
+function initView(){
+  const b=COMPOUNDS.ethanol;
+  vb.w=Math.min(860,WORLD.w); vb.h=vb.w*aspect();
+  vb.x=b.x-vb.w*0.25; vb.y=b.y-vb.h*0.5; applyVB();
+}
+function fitView(){
+  vb.w=WORLD.w; vb.h=vb.w*aspect();
+  if(vb.h<WORLD.h){vb.h=WORLD.h;vb.w=vb.h/aspect();}
+  vb.x=WORLD.x+(WORLD.w-vb.w)/2; vb.y=WORLD.y+(WORLD.h-vb.h)/2; applyVB();
+}
+function edgePt(n,tx,ty){
+  const dx=tx-n.x, dy=ty-n.y, hw=NW/2+8, hh=NH/2+8;
+  const k=1/Math.max(Math.abs(dx)/hw,Math.abs(dy)/hh,1e-9);
+  return [n.x+dx*Math.min(k,1), n.y+dy*Math.min(k,1)];
+}
+function textW(s){let w=0;for(const ch of s)w+=ch.charCodeAt(0)>255?10.5:6.2;return w;}
+let SLOT_N=[], SLOT_E=[];
+function renderMap(){
+  SLOT_N=[]; SLOT_E=[];
+  let defs=`<defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0.5 L8,4.5 L0,8.5 Z" fill="#475569"/></marker>
+    <marker id="ahq" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0.5 L8,4.5 L0,8.5 Z" fill="#f59e0b"/></marker>
+    <marker id="ahp" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0.5 L8,4.5 L0,8.5 Z" fill="#d97706"/></marker>
+    <marker id="ahl" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0.5 L8,4.5 L0,8.5 Z" fill="#cbd5e1"/></marker>
+  </defs>`;
+  let edges='', nodes='';
+  for(const r of REACTIONS){
+    const A=COMPOUNDS[r.from[0]], B=COMPOUNDS[r.to[0]];
+    const isC=complete(r), isAv=available(r), hasReag=reagentPlaced(r);
+    let cls='edge-locked', marker='url(#ahl)';
+    if(isC){cls='';marker='url(#ah)';}
+    else if(hasReag){cls='edge-part';marker='url(#ahp)';}
+    else if(isAv){cls='edge-slot';marker='url(#ahq)';}
+    const curve=r.curve||0;
+    const mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+    const dx=B.x-A.x, dy=B.y-A.y, len=Math.hypot(dx,dy)||1;
+    const cx=mx-dy/len*curve, cy=my+dx/len*curve;
+    const p1=edgePt(A,cx,cy), p2=edgePt(B,cx,cy);
+    const lx=(p1[0]+2*cx+p2[0])/4, ly=(p1[1]+2*cy+p2[1])/4;
+    let g=`<g class="${cls}" data-edge="${r.id}" ${(!isC&&isAv&&!hasReag)?`data-drope="${r.id}"`:''}>`;
+    g+=`<path class="edge-line" d="M${p1[0].toFixed(1)},${p1[1].toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}" marker-end="${marker}"/>`;
+    if(isC||hasReag){
+      const w=textW(r.short)+14;
+      g+=`<rect class="edge-label-bg" x="${(lx-w/2).toFixed(1)}" y="${(ly-10).toFixed(1)}" width="${w.toFixed(1)}" height="19" rx="6"/>`;
+      g+=`<text class="edge-label" x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}">${r.short}</text>`;
+    }else if(isAv){
+      g+=`<g class="pulse"><circle class="edge-q-circle" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="15"/>`;
+      g+=`<text class="edge-q-text" x="${lx.toFixed(1)}" y="${(ly+5.5).toFixed(1)}">?</text></g>`;
+      SLOT_E.push({rid:r.id,x:lx,y:ly});
+    }
+    g+='</g>';
+    const co=[];
+    (r.coFrom||[]).forEach(c=>co.push([COMPOUNDS[c],B,false]));
+    (r.coTo||[]).forEach(c=>co.push([A,COMPOUNDS[c],true]));
+    for(const [S,T,arrow] of co){
+      const q1=edgePt(S,T.x,T.y), q2=edgePt(T,S.x,S.y);
+      g+=`<g class="${cls} edge-co"><path class="edge-line" d="M${q1[0].toFixed(1)},${q1[1].toFixed(1)} L${q2[0].toFixed(1)},${q2[1].toFixed(1)}" ${arrow?`marker-end="${marker}"`:''}/></g>`;
+    }
+    edges+=g;
+  }
+  for(const id in COMPOUNDS){
+    const c=COMPOUNDS[id], known=onBoard(id);
+    let cls='node-locked', isSlot=false;
+    if(known) cls=c.start?'node-start':'';
+    else if(REACTIONS.some(r=>available(r)&&(r.to.includes(id)||(r.coTo||[]).includes(id)))){
+      cls='node-slot'; isSlot=true;
+      SLOT_N.push({id,x:c.x,y:c.y,rid:(REACTIONS.find(r=>available(r)&&(r.to.includes(id)||(r.coTo||[]).includes(id)))||{}).id});
+    }
+    let g=`<g class="node ${cls}" data-node="${id}" ${isSlot?`data-dropn="${id}"`:''} transform="translate(${c.x},${c.y})">`;
+    g+=`<rect class="node-card" x="${-NW/2}" y="${-NH/2}" width="${NW}" height="${NH}" rx="13"/>`;
+    if(known){
+      g+=`<g transform="translate(0,-9)">${structFit(id,NW-18,NH-42,0.82)}</g>`;
+      const fs=textW(c.name)>NW-14?9.5:11.5;
+      g+=`<text class="node-name" y="${NH/2-11}" font-size="${fs}">${c.name}</text>`;
+    }else{
+      g+=`<text class="qmark ${isSlot?'pulse':''}" y="11">?</text>`;
+    }
+    g+='</g>';
+    nodes+=g;
+  }
+  svgEl.innerHTML=defs+edges+nodes;
+  const n=completedIds().length;
+  document.getElementById('progLabel').textContent=`${n} / ${REACTIONS.length} 反応`;
+  document.getElementById('progFill').style.width=(100*n/REACTIONS.length)+'%';
+  renderTray();
+}
+
+/* ---- pan / zoom ---- */
+const wrap=document.getElementById('mapWrap');
+const ptrs=new Map(); let dragDist=0, pinchD=0;
+wrap.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.zoombtns'))return;
+  wrap.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1)dragDist=0;
+  if(ptrs.size===2){const a=[...ptrs.values()];pinchD=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);}
+});
+wrap.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId))return;
+  const prev=ptrs.get(e.pointerId);
+  const r=svgEl.getBoundingClientRect();
+  if(ptrs.size===1){
+    const f=vb.w/r.width;
+    vb.x-=(e.clientX-prev.x)*f; vb.y-=(e.clientY-prev.y)*f;
+    dragDist+=Math.abs(e.clientX-prev.x)+Math.abs(e.clientY-prev.y);
+    applyVB();
+  }else if(ptrs.size===2){
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const a=[...ptrs.values()];
+    const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    if(pinchD>0&&d>0){
+      zoomAt((a[0].x+a[1].x)/2,(a[0].y+a[1].y)/2,pinchD/d);
+      dragDist+=Math.abs(d-pinchD);
+    }
+    pinchD=d; return;
+  }
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+});
+const endPtr=e=>{ptrs.delete(e.pointerId);pinchD=0;};
+wrap.addEventListener('pointerup',endPtr);
+wrap.addEventListener('pointercancel',endPtr);
+wrap.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY>0?1.12:0.89);},{passive:false});
+function zoomAt(cx,cy,f){
+  const r=svgEl.getBoundingClientRect();
+  const nw=Math.min(Math.max(vb.w*f,240),WORLD.w*1.6);
+  f=nw/vb.w;
+  const wx=vb.x+(cx-r.left)/r.width*vb.w, wy=vb.y+(cy-r.top)/r.height*vb.h;
+  vb.w*=f; vb.h*=f;
+  vb.x=wx-(cx-r.left)/r.width*vb.w; vb.y=wy-(cy-r.top)/r.height*vb.h;
+  applyVB();
+}
+function clientToWorld(cx,cy){
+  const r=svgEl.getBoundingClientRect();
+  return [vb.x+(cx-r.left)/r.width*vb.w, vb.y+(cy-r.top)/r.height*vb.h];
+}
+document.getElementById('zin').onclick=()=>{const r=svgEl.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,0.78);};
+document.getElementById('zout').onclick=()=>{const r=svgEl.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1.28);};
+document.getElementById('zfit').onclick=fitView;
+window.addEventListener('resize',()=>{vb.h=vb.w*aspect();applyVB();});
+
+svgEl.addEventListener('click',e=>{
+  if(dragDist>10)return;
+  const eg=e.target.closest('[data-edge]');
+  const ng=e.target.closest('[data-node]');
+  if(eg){
+    const r=RXMAP[eg.dataset.edge];
+    if(complete(r)||reagentPlaced(r)) return showReactionInfo(r);
+    if(available(r)){switchTab('reag');return toast('🧪 試薬トレイからカードをドラッグ!');}
+    return toast('まだ挑戦できません。手前の反応を先に完成させよう!');
+  }
+  if(ng){
+    const id=ng.dataset.node;
+    if(onBoard(id)) return showCompoundInfo(id);
+    if(ng.dataset.dropn){switchTab('comp');return toast('⬡ 化合物トレイからカードをドラッグ!');}
+    return toast('まだ挑戦できません。手前の反応を先に完成させよう!');
+  }
+});
+
+/* ================= トレイとドラッグ&ドロップ ================= */
+const trayComp=document.getElementById('trayComp');
+const trayReag=document.getElementById('trayReag');
+function renderTray(){
+  const sc=trayComp.scrollLeft, sr=trayReag.scrollLeft;
+  let h='';
+  for(const id in COMPOUNDS){
+    if(COMPOUNDS[id].start)continue;
+    const done=onBoard(id);
+    h+=`<div class="tcard ${done?'done':''}" data-kind="compound" data-key="${id}">`+
+       `<svg viewBox="-46 -27 92 54" width="88" height="50" xmlns="http://www.w3.org/2000/svg">${structFit(id,86,48)}</svg>`+
+       `<div class="tname">${COMPOUNDS[id].name}</div></div>`;
+  }
+  trayComp.innerHTML=h;
+  let h2='';
+  for(const rg of REAGENTS){
+    h2+=`<div class="tcard reag" data-kind="reagent" data-key="${rg}"><div class="treag">${rg}</div></div>`;
+  }
+  trayReag.innerHTML=h2;
+  trayComp.scrollLeft=sc; trayReag.scrollLeft=sr;
+  const total=Object.keys(COMPOUNDS).filter(id=>!COMPOUNDS[id].start).length;
+  const placed=state.comp.length;
+  document.getElementById('compCnt').textContent=`${placed}/${total}`;
+}
+function switchTab(tab){
+  document.querySelectorAll('.ttabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  trayComp.style.display=tab==='comp'?'flex':'none';
+  trayReag.style.display=tab==='reag'?'flex':'none';
+}
+document.querySelectorAll('.ttabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+const ghost=document.getElementById('ghost');
+let drag=null, hotEl=null;
+const tray=document.getElementById('tray');
+tray.addEventListener('pointerdown',e=>{
+  const card=e.target.closest('.tcard');
+  if(!card||card.classList.contains('done'))return;
+  drag={card,kind:card.dataset.kind,key:card.dataset.key,sx:e.clientX,sy:e.clientY,active:false,pid:e.pointerId};
+  try{card.setPointerCapture(e.pointerId);}catch(err){}
+});
+tray.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.pid)return;
+  const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+  if(!drag.active){
+    const mouse=e.pointerType==='mouse';
+    const go=mouse?(Math.abs(dx)+Math.abs(dy)>6):(Math.abs(dy)>10&&Math.abs(dy)>=Math.abs(dx));
+    if(!go)return;
+    drag.active=true;
+    ghost.innerHTML=`<div class="tcard ${drag.kind==='reagent'?'reag':''}" style="box-shadow:0 8px 20px rgba(0,0,0,.25)">${drag.card.innerHTML}</div>`;
+    ghost.style.display='block';
+    document.body.style.cursor='grabbing';
+  }
+  ghost.style.left=(e.clientX-52)+'px';
+  ghost.style.top=(e.clientY-120)+'px';
+  updateHot(e.clientX,e.clientY-64);
+});
+function slotHit(kind,cx,cy){
+  const [wx,wy]=clientToWorld(cx,cy);
+  if(kind==='compound'){
+    for(const s of SLOT_N) if(Math.abs(wx-s.x)<NW/2+22&&Math.abs(wy-s.y)<NH/2+22)return s;
+    return null;
+  }
+  let best=null,bd=1e9;
+  for(const s of SLOT_E){const d=Math.hypot(wx-s.x,wy-s.y);if(d<80&&d<bd){bd=d;best=s;}}
+  return best;
+}
+function updateHot(cx,cy){
+  const s=drag?slotHit(drag.kind,cx,cy):null;
+  let el=null;
+  if(s) el=svgEl.querySelector(drag.kind==='compound'?`[data-dropn="${s.id}"]`:`[data-drope="${s.rid}"]`);
+  if(hotEl&&hotEl!==el)hotEl.classList.remove('drophot');
+  if(el)el.classList.add('drophot');
+  hotEl=el; drag.hot=s;
+}
+function endDrag(e,cancelled){
+  if(!drag)return;
+  if(hotEl){hotEl.classList.remove('drophot');hotEl=null;}
+  ghost.style.display='none';ghost.innerHTML='';
+  document.body.style.cursor='';
+  const d=drag; drag=null;
+  if(cancelled||!d.active)return;
+  const slot=slotHit(d.kind,e.clientX,e.clientY-64);
+  if(!slot)return;
+  handleDrop(d.kind,d.key,slot);
+}
+tray.addEventListener('pointerup',e=>endDrag(e,false));
+tray.addEventListener('pointercancel',e=>endDrag(e,true));
+
+function handleDrop(kind,key,slot){
+  const before=new Set(completedIds());
+  let ok=false, rid=slot.rid;
+  if(kind==='compound'){
+    if(key===slot.id){ok=true;state.comp.push(key);}
+  }else{
+    const r=RXMAP[slot.rid];
+    if(key===r.reagent||(r.accept||[]).includes(key)){ok=true;state.reag.push(r.id);}
+  }
+  if(!ok){
+    if(rid){state.weak[rid]=2;updateWeakBadge();}
+    save();
+    toast('❌ ちがうようだ…(弱点特訓に追加)');
+    return;
+  }
+  save();
+  const newly=completedIds().filter(id=>!before.has(id));
+  renderMap();
+  if(newly.length){
+    showCompleted(newly);
+  }else{
+    toast(kind==='compound'?`⭕ ${COMPOUNDS[key].name} を配置!`:'⭕ 試薬セット!反応の完成まであと少し');
+  }
+}
+function showCompleted(rids){
+  let h='';
+  for(const rid of rids){
+    const r=RXMAP[rid];
+    h+=`<div style="margin-bottom:12px"><div style="font-weight:800;font-size:14px">🎉 【${r.name}】完成!</div>
+        <div class="eqbox">${eqText(r)}</div>
+        <div style="font-size:13px;line-height:1.8">${r.note}</div></div>`;
+  }
+  const allDone=completedIds().length===REACTIONS.length;
+  infoSheet.innerHTML=`<h3>反応が完成した!<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>${h}
+    <button class="bigbtn" onclick="infoModal.classList.remove('open');${allDone?'showComplete()':''}">OK</button>`;
+  infoModal.classList.add('open');
+}
+
+/* ================= クイズ生成(チャレンジ・弱点特訓用) ================= */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sample(a,n){return shuffle(a.slice()).slice(0,n);}
+function buildQuiz(r,mode){
+  const q={r,mode,choices:[]};
+  if(mode==='product'){
+    const valid=new Set([...r.from,...(r.coFrom||[])]);
+    for(const r2 of REACTIONS) if(r2.from[0]===r.from[0]&&r2.reagent===r.reagent){r2.to.forEach(c=>valid.add(c));(r2.coTo||[]).forEach(c=>valid.add(c));}
+    const pool=Object.keys(COMPOUNDS).filter(c=>!valid.has(c)&&c!==r.to[0]);
+    q.choices=sample(pool,3).map(c=>({type:'compound',id:c,ok:false}));
+    q.choices.push({type:'compound',id:r.to[0],ok:true});
+  }else if(mode==='reactant'){
+    const valid=new Set([...r.to,...(r.coTo||[])]);
+    for(const r2 of REACTIONS) if(r2.to[0]===r.to[0]&&r2.reagent===r.reagent)valid.add(r2.from[0]);
+    const pool=Object.keys(COMPOUNDS).filter(c=>!valid.has(c)&&c!==r.from[0]);
+    q.choices=sample(pool,3).map(c=>({type:'compound',id:c,ok:false}));
+    q.choices.push({type:'compound',id:r.from[0],ok:true});
+  }else{
+    const valid=new Set();
+    for(const r2 of REACTIONS) if(r2.from[0]===r.from[0]&&r2.to[0]===r.to[0])valid.add(r2.reagent);
+    const pool=REAGENTS.filter(t=>!valid.has(t)&&t!==r.reagent);
+    q.choices=sample(pool,3).map(t=>({type:'text',text:t,ok:false}));
+    q.choices.push({type:'text',text:r.reagent,ok:true});
+  }
+  shuffle(q.choices);
+  return q;
+}
+function eqText(r){
+  const co1=(r.coFrom||[]).map(c=>' + '+COMPOUNDS[c].name).join('');
+  const co2=(r.coTo||[]).map(c=>' + '+COMPOUNDS[c].name).join('');
+  return `${COMPOUNDS[r.from[0]].name}${co1} ＋ 〔${r.reagent}〕 → ${COMPOUNDS[r.to[0]].name}${co2}`;
+}
+const MODELABEL={product:'生成物は?',reactant:'反応物(原料)は?',reagent:'試薬・条件は?'};
+function renderQuiz(el,q,onDone,progressText){
+  const r=q.r;
+  let top='';
+  if(q.mode==='reactant'){
+    top+=`<div class="rxn-row"><div class="qblock">?</div>`;
+  }else{
+    top+=`<div class="rxn-row">${compoundHTML(r.from[0])}`;
+  }
+  (r.coFrom||[]).forEach(c=>{top+=`<span class="plus">+</span>${compoundHTML(c)}`;});
+  top+='</div>';
+  top+=`<div class="rxn-row"><span class="plus">+</span>`;
+  top+=q.mode==='reagent'?`<div class="qblock small">?</div>`:`<span class="reagent-chip">${r.reagent}</span>`;
+  top+=`</div><div class="darrow">▼</div>`;
+  top+='<div class="rxn-row">';
+  top+=q.mode==='product'?`<div class="qblock">?</div>`:compoundHTML(r.to[0]);
+  (r.coTo||[]).forEach(c=>{top+=`<span class="plus">+</span>${compoundHTML(c)}`;});
+  top+='</div>';
+  const isText=q.choices[0].type==='text';
+  let ch=`<div class="choices ${isText?'textmode':''}">`;
+  q.choices.forEach((c,i)=>{
+    ch+=`<button class="choice" data-i="${i}">${c.type==='compound'?compoundHTML(c.id):c.text}</button>`;
+  });
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt"><span class="modebadge">${MODELABEL[q.mode]}</span></div>
+    <div class="rxn">${top}</div>
+    ${ch}
+    <div class="explain" id="explainBox"></div>
+    <button class="bigbtn" id="nextBtn" style="display:none">つぎへ</button>`;
+  let answered=false;
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=q.choices[+btn.dataset.i];
+      el.querySelectorAll('.choice').forEach((b,j)=>{
+        const cc=q.choices[j];
+        if(cc.ok)b.classList.add('correct');
+        else if(b===btn)b.classList.add('wrong');
+        else b.classList.add('dim');
+      });
+      const ex=el.querySelector('#explainBox');
+      ex.className='explain '+(c.ok?'ok':'ng');
+      ex.innerHTML=`<div class="rname">${c.ok?'⭕ 正解! ':'❌ 不正解… '}【${r.name}】</div>
+        <div class="eq">${eqText(r)}</div>${r.note}`;
+      const nb=el.querySelector('#nextBtn');
+      nb.style.display='block';
+      nb.onclick=()=>onDone(c.ok);
+      nb.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  });
+}
+
+/* ================= 情報モーダル ================= */
+const infoModal=document.getElementById('infoModal');
+const infoSheet=document.getElementById('infoSheet');
+infoModal.addEventListener('click',e=>{if(e.target===infoModal)infoModal.classList.remove('open');});
+function showCompoundInfo(id){
+  const c=COMPOUNDS[id];
+  let rel='';
+  for(const r of REACTIONS){
+    if(!complete(r))continue;
+    if(r.from[0]===id||(r.coFrom||[]).includes(id)||r.to.includes(id)||(r.coTo||[]).includes(id)){
+      rel+=`<div>▶ <b>${r.name}</b>:${eqText(r)}</div>`;
+    }
+  }
+  infoSheet.innerHTML=`<h3>${c.name}<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div style="text-align:center"><svg viewBox="-110 -70 220 140" width="220" height="140" xmlns="http://www.w3.org/2000/svg">${structFit(id,200,126,1.2)}</svg></div>
+    ${c.alt?`<div class="muted" style="text-align:center">${c.alt}</div>`:''}
+    <div class="detail-rxns">${rel||'<div class="muted">完成済みの関連反応はまだありません</div>'}</div>`;
+  infoModal.classList.add('open');
+}
+function showReactionInfo(r){
+  infoSheet.innerHTML=`<h3>【${r.name}】<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div class="eqbox">${eqText(r)}</div>
+    <div style="font-size:13.5px;line-height:1.8">${r.note}</div>
+    ${complete(r)?'':'<div class="muted" style="margin-top:8px">⚠ 生成物のカードもドラッグして反応を完成させよう!</div>'}`;
+  infoModal.classList.add('open');
+}
+
+/* ================= チャレンジモード ================= */
+const chalPanel=document.getElementById('chalPanel');
+let chal=null, chalScope='all';
+function renderChallengeHome(){
+  const nu=completedIds().length;
+  const best=state.best;
+  chalPanel.innerHTML=`
+    <h2>⚡ チャレンジモード</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">ランダムに<b>10問</b>出題。「生成物」「反応物」「試薬」の3方向から問われます。ノーヒントで何問解ける?</div>
+      <div class="scopebtns">
+        <button id="scAll" class="${chalScope==='all'?'sel':''}">全範囲(${REACTIONS.length}反応)</button>
+        <button id="scUn" class="${chalScope==='unlocked'?'sel':''}" ${nu<4?'disabled style="opacity:.4"':''}>完成済みのみ(${nu}反応)</button>
+      </div>
+      <button class="bigbtn" id="chalStart">スタート!</button>
+      ${nu<4?'<div class="muted" style="margin-top:8px">※「完成済みのみ」はマップで4反応以上完成させると選べます</div>':''}
+    </div>
+    ${best?`<div class="card-ui"><b>🏆 ベスト記録</b><div class="muted" style="margin-top:4px;font-size:13px">正解 ${best.correct}/10・タイム ${best.sec}秒・ランク ${best.rank}</div></div>`:''}`;
+  document.getElementById('scAll').onclick=()=>{chalScope='all';renderChallengeHome();};
+  const scUn=document.getElementById('scUn');
+  if(!scUn.disabled)scUn.onclick=()=>{chalScope='unlocked';renderChallengeHome();};
+  document.getElementById('chalStart').onclick=startChallenge;
+}
+function startChallenge(){
+  const done=new Set(completedIds());
+  let pool=chalScope==='unlocked'?REACTIONS.filter(r=>done.has(r.id)):REACTIONS.slice();
+  const qs=[];
+  const picked=sample(pool,Math.min(10,pool.length));
+  while(picked.length<10)picked.push(pool[Math.floor(Math.random()*pool.length)]);
+  for(const r of picked)qs.push(buildQuiz(r,sample(['product','reactant','reagent'],1)[0]));
+  chal={qs,i:0,results:[],t0:Date.now()};
+  nextChalQ();
+}
+function nextChalQ(){
+  if(chal.i>=chal.qs.length)return chalResult();
+  const q=chal.qs[chal.i];
+  chalPanel.innerHTML='<div id="cq"></div>';
+  renderQuiz(document.getElementById('cq'),q,ok=>{
+    chal.results.push({q,ok});
+    if(!ok){state.weak[q.r.id]=2;save();updateWeakBadge();}
+    chal.i++; nextChalQ();
+  },`問題 ${chal.i+1} / ${chal.qs.length}　⏱ 経過 ${Math.floor((Date.now()-chal.t0)/1000)}秒`);
+  chalPanel.scrollTop=0;
+}
+function chalResult(){
+  const correct=chal.results.filter(x=>x.ok).length;
+  const sec=Math.floor((Date.now()-chal.t0)/1000);
+  const rank=correct>=10?'S':correct>=9?'A':correct>=8?'B':correct>=6?'C':'D';
+  if(!state.best||correct>state.best.correct||(correct===state.best.correct&&sec<state.best.sec)){
+    state.best={correct,sec,rank}; save();
+  }
+  let review='';
+  chal.results.forEach(x=>{
+    const r=x.q.r;
+    review+=`<div class="review-item"><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> 【${r.name}】 ${eqText(r)}</div>`;
+  });
+  chalPanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="rankbig rank-${rank}">${rank}</div>
+      <div class="score-line">正解 ${correct} / ${chal.qs.length}　⏱ ${sec}秒</div>
+      <div class="muted">${rank==='S'?'完璧!脂肪族マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'解説を読んで弱点特訓へ!':'マップモードで基礎から固めよう!'}</div>
+      <button class="bigbtn" id="chalAgain">もう一度</button>
+      <button class="bigbtn secondary" id="chalHome">トップへ</button>
+    </div>
+    <div class="card-ui"><b>復習リスト</b>${review}</div>`;
+  document.getElementById('chalAgain').onclick=startChallenge;
+  document.getElementById('chalHome').onclick=renderChallengeHome;
+  chalPanel.scrollTop=0;
+}
+
+/* ================= 弱点特訓 ================= */
+const weakPanel=document.getElementById('weakPanel');
+function weakCount(){return Object.keys(state.weak).length;}
+function updateWeakBadge(){
+  const b=document.getElementById('weakBadge');
+  const n=weakCount();
+  b.style.display=n?'block':'none'; b.textContent=n;
+}
+let drill=null;
+function renderWeakHome(){
+  const n=weakCount();
+  let list='';
+  for(const rid in state.weak){
+    const r=RXMAP[rid];
+    if(!r){delete state.weak[rid];continue;}
+    list+=`<div class="review-item">🎯 【${r.name}】 ${eqText(r)} <span class="muted">(あと${state.weak[rid]}回連続正解でクリア)</span></div>`;
+  }
+  weakPanel.innerHTML=`
+    <h2>🎯 弱点特訓</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">間違えた反応がここに溜まります。<b>2回連続で正解</b>するとリストから消えます。</div>
+      <button class="bigbtn amber" id="drillStart" ${n?'':'disabled'}>${n?`特訓スタート(${n}件)`:'弱点はありません🎉'}</button>
+    </div>
+    ${list?`<div class="card-ui"><b>弱点リスト</b>${list}</div>`:''}`;
+  const ds=document.getElementById('drillStart');
+  if(n)ds.onclick=startDrill;
+}
+function startDrill(){
+  drill={ids:shuffle(Object.keys(state.weak)),i:0};
+  nextDrillQ();
+}
+function nextDrillQ(){
+  while(drill.i<drill.ids.length&&!(drill.ids[drill.i] in state.weak))drill.i++;
+  if(drill.i>=drill.ids.length){drill=null;renderWeakHome();updateWeakBadge();toast('特訓おつかれさま!');return;}
+  const rid=drill.ids[drill.i];
+  const q=buildQuiz(RXMAP[rid],sample(['product','reactant','reagent'],1)[0]);
+  weakPanel.innerHTML='<div id="dq"></div>';
+  renderQuiz(document.getElementById('dq'),q,ok=>{
+    if(ok){
+      state.weak[rid]--;
+      if(state.weak[rid]<=0)delete state.weak[rid];
+    }else state.weak[rid]=2;
+    save(); updateWeakBadge();
+    drill.i++; nextDrillQ();
+  },`弱点特訓　残り ${drill.ids.length-drill.i} 件`);
+  weakPanel.scrollTop=0;
+}
+
+/* ================= 完成演出 ================= */
+function showComplete(){
+  infoSheet.innerHTML=`<h3>🎉 脂肪族マップ完成!!<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div style="font-size:14px;line-height:1.9;text-align:center;padding:8px 0">
+    <div style="font-size:52px">🏆</div>
+    全 ${REACTIONS.length} 反応を制覇しました!<br>
+    完成した系統図は<b>そのまま復習教材</b>です。<br>
+    化合物や矢印をタップして反応条件を確認しよう。<br><br>
+    <b>⚡チャレンジモード</b>でランクSを目指せ!</div>`;
+  infoModal.classList.add('open');
+}
+
+/* ================= ナビ・共通 ================= */
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+b.dataset.view).classList.add('active');
+    if(b.dataset.view==='challenge'&&(!chal||chal.i>=chal.qs.length))renderChallengeHome();
+    if(b.dataset.view==='weak'&&!drill)renderWeakHome();
+    if(b.dataset.view==='map'){vb.h=vb.w*aspect();applyVB();}
+  });
+});
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+document.getElementById('btnReset').addEventListener('click',()=>{
+  if(confirm('進捗をすべてリセットしますか?')){
+    state={comp:[],reag:[],weak:{},seen:true,best:null};
+    save(); renderMap(); updateWeakBadge(); initView();
+    toast('リセットしました');
+  }
+});
+function closeOnboard(){
+  document.getElementById('onboard').classList.remove('open');
+  state.seen=true; save();
+}
+
+/* ================= 起動 ================= */
+load();
+measureAll();
+renderMap();
+initView();
+updateWeakBadge();
+if(!state.seen)document.getElementById('onboard').classList.add('open');
+</script>
+</body>
+</html>
