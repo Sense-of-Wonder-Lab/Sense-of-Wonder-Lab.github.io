@@ -889,7 +889,7 @@ function renderTray(){
   let h='';
   for(const id in COMPOUNDS){
     if(COMPOUNDS[id].start)continue;
-    if(onBoard(id))continue;
+    if(state.comp.includes(id))continue;
     h+=`<div class="tcard" data-kind="compound" data-key="${id}">`+
        `<svg viewBox="-46 -27 92 54" width="88" height="50" xmlns="http://www.w3.org/2000/svg">${structFit(id,86,48)}</svg>`+
        `<div class="tname">${COMPOUNDS[id].name}</div></div>`;
@@ -897,8 +897,6 @@ function renderTray(){
   trayComp.innerHTML=h;
   let h2='';
   for(const rg of REAGENTS){
-    const stillNeeded=REACTIONS.some(r=>(r.reagent===rg||(r.accept||[]).includes(rg))&&available(r)&&!complete(r));
-    if(!stillNeeded)continue;
     h2+=`<div class="tcard reag" data-kind="reagent" data-key="${rg}"><div class="treag">${rg}</div></div>`;
   }
   trayReag.innerHTML=h2;
