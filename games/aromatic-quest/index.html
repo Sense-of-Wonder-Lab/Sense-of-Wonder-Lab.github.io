@@ -629,10 +629,20 @@ let WORLD={x:0,y:0,w:100,h:100};
 let vb={x:0,y:0,w:900,h:900};
 function applyVB(){svgEl.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);}
 function aspect(){const r=svgEl.getBoundingClientRect();return r.height/Math.max(r.width,1);}
+const isMobileView=()=>window.matchMedia('(max-width:480px)').matches;
 function initView(){
   const b=COMPOUNDS.benzene;
   vb.w=Math.min(860,WORLD.w); vb.h=vb.w*aspect();
-  vb.x=b.x-vb.w*0.25; vb.y=b.y-vb.h*0.5; applyVB();
+  vb.x=b.x-vb.w*0.25; vb.y=b.y-vb.h*0.5;
+  if(!isMobileView()){
+    const cx=vb.x+vb.w/2, cy=vb.y+vb.h/2;
+    const f=Math.pow(1.28,5);
+    const nw=Math.min(Math.max(vb.w*f,240),WORLD.w*1.6);
+    const nf=nw/vb.w;
+    vb.w*=nf; vb.h*=nf;
+    vb.x=cx-vb.w/2; vb.y=cy-vb.h/2;
+  }
+  applyVB();
 }
 function fitView(){
   vb.w=WORLD.w; vb.h=vb.w*aspect();
