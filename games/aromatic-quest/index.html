@@ -51,12 +51,10 @@ main{flex:1;position:relative;overflow:hidden}
 #mapSvg{width:100%;height:100%;display:block}
 .zoombtns{position:absolute;right:10px;bottom:12px;display:flex;flex-direction:column;gap:8px}
 .zoombtns button{width:40px;height:40px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;font-size:17px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.08)}
-.maphint{position:absolute;left:10px;top:8px;background:rgba(255,255,255,.92);border:1px solid #e2e8f0;border-radius:10px;padding:6px 10px;font-size:11px;color:#475569;pointer-events:none;max-width:72%}
 .modebtns{position:absolute;right:10px;top:8px;display:flex;gap:4px;z-index:5}
 .modebtns button{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:5px 8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .modebtns button.active{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 @media (max-width:480px){
-  .maphint{max-width:calc(100% - 20px)}
   .modebtns{left:10px;right:10px;top:52px;gap:6px}
   .modebtns button{flex:1;padding:9px 4px;font-size:11px;min-height:38px}
 }
@@ -196,6 +194,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-label" id="progLabel">0 / 0 反応</div>
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
+  <button id="btnPopupToggle">🔔 完成通知:ON</button>
   <button id="btnReset">リセット</button>
 </header>
 
@@ -203,7 +202,6 @@ nav button.active{color:var(--blue);font-weight:700}
   <div class="view active" id="view-map">
     <div id="mapWrap">
       <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="maphint">下のトレイからカードを <b style="color:#d97706">?</b> へドラッグ!<br>試薬は矢印の ? へ、化合物は枠の ? へ</div>
       <div class="modebtns">
         <button data-mode="reagentGiven">生成物</button>
         <button data-mode="productGiven">試薬</button>
@@ -246,8 +244,8 @@ nav button.active{color:var(--blue);font-weight:700}
 <div id="onboard"><div class="ob">
   <h2>🧪 芳香族クエストへようこそ!</h2>
   <p>ホワイトボードには出発物質だけが置かれています。</p>
-  <p>① 下のトレイから<b>化合物カード</b>や<b>試薬カード</b>を選ぶ<br>
-     ② マップのオレンジの「?」へ<b>ドラッグ</b>!<br>
+  <p>① 下のトレイから<b>化合物カード</b>や<b>試薬カード</b>をタップして選ぶ<br>
+     ② マップのオレンジの「?」を<b>タップして正しいものを選択</b>!<br>
      ③ 正解ならカードが固定され、系統図が育っていく。</p>
   <p class="muted">試薬(矢印の?)と生成物(枠の?)の両方が揃うと反応完成。全部そろえて芳香族の反応系統図を完成させよう。⚡チャレンジで実力試しも!</p>
   <button class="bigbtn" onclick="closeOnboard()">はじめる</button>
@@ -331,10 +329,8 @@ const REACTIONS=[
   note:'クメンを空気中の酸素で酸化するとクメンヒドロペルオキシドになる。'},
  {id:'r6b',from:['cumeneHP'],to:['phenol'],coTo:['acetone'],reagent:'希硫酸で分解',short:'分解(クメン法)',name:'クメン法',
   note:'クメンヒドロペルオキシドを希硫酸で分解するとフェノールとアセトンが得られる。副生成物が少なくアセトンも利用でき、現在の工業的製法の主流。'},
- {id:'r13',from:['phenol'],to:['phenoxide'],reagent:'NaOH水溶液',short:'NaOH',offset:32,name:'中和',
-  note:'フェノールは弱酸性なので、強塩基NaOHと中和してナトリウムフェノキシド(塩)になる。塩は水によく溶ける。'},
- {id:'rA12',from:['phenol'],to:['phenoxide'],reagent:'金属ナトリウムNa',short:'Na (H₂↑)',offset:32,name:'金属Naとの反応',
-  note:'フェノールはアルコールとしての性質も持ち、金属ナトリウムと反応して水素H₂を発生し、ナトリウムフェノキシドになる。'},
+ {id:'r13',from:['phenol'],to:['phenoxide'],reagent:'NaOH水溶液',accept:['金属ナトリウムNa'],short:'NaOH ／ Na(H₂↑)',offset:32,name:'中和 or 金属Naとの反応',
+  note:'フェノールは弱酸性なので、強塩基NaOHと中和してナトリウムフェノキシド(塩)になる。また、アルコールとしての性質も持ち、金属ナトリウムと反応して水素H₂を発生し、ナトリウムフェノキシドになる(どちらでも正解)。'},
  {id:'r23',from:['phenoxide'],to:['phenol'],reagent:'希塩酸',accept:['希硫酸','水+二酸化炭素を通じる'],short:'希塩酸 / 希硫酸 / CO₂+水',offset:-32,name:'弱酸の遊離',
   note:'フェノールは炭酸より弱い酸なので、希塩酸・希硫酸はもちろん、CO₂を吹き込むだけでも遊離する(3つとも正解)。《酸の強さ》硫酸・塩酸・スルホン酸 > カルボン酸 > 炭酸 > フェノール類 > 水 は超頻出!'},
  {id:'r14',from:['phenoxide'],to:['salicylNa'],reagent:'二酸化炭素CO₂(高温・高圧)',short:'CO₂ 高温高圧',elbow:90,name:'コルベ・シュミット反応',
@@ -566,15 +562,15 @@ function measureAll(){
   m.innerHTML='';
 }
 const IMG_MAP={
-  toluene:'toluene.jpg', naphthalene:'naphthalene.jpg', xyleneO:'xyleneO.jpg', xyleneP:'xyleneP.jpg',
-  benzylalcohol:'benzylalcohol.jpg', bhc:'bhc.jpg', nitrobenzene:'nitrobenzene.jpg',
-  anilineHCl:'anilineHCl.jpg', aniline:'aniline.jpg', acetanilide:'acetanilide.jpg',
-  diazonium:'diazonium.jpg', azo:'azo.jpg', chlorobenzene:'chlorobenzene.jpg', bsa:'bsa.jpg',
-  cumene:'cumene.jpg', cumeneHP:'cumeneHP.jpg', phenoxide:'phenoxide.jpg', phenol:'phenol.jpg',
-  acetone:'acetone.jpg', tribromophenol:'tribromophenol.jpg', picric:'picric.jpg',
-  salicylic:'salicylic.jpg', methylsalicylate:'methylsalicylate.jpg', aspirin:'aspirin.jpg',
-  benzoic:'benzoic.jpg', tnt:'tnt.jpg', benzaldehyde:'benzaldehyde.jpg', phthalic:'phthalic.jpg',
-  terephthalic:'terephthalic.jpg', phthalicAnh:'phthalicAnh.jpg', cyclohexane:'cyclohexane.png',
+  toluene:'toluene.png', naphthalene:'naphthalene.png', xyleneO:'xyleneO.png', xyleneP:'xyleneP.png',
+  benzylalcohol:'benzylalcohol.png', bhc:'bhc.png', nitrobenzene:'nitrobenzene.png',
+  anilineHCl:'anilineHCl.png', aniline:'aniline.png', acetanilide:'acetanilide.png',
+  diazonium:'diazonium.png', azo:'azo.png', chlorobenzene:'chlorobenzene.png', bsa:'bsa.png',
+  cumene:'cumene.png', cumeneHP:'cumeneHP.png', phenoxide:'phenoxide.png', phenol:'phenol.png',
+  acetone:'acetone.jpg', tribromophenol:'tribromophenol.png', picric:'picric.png',
+  salicylic:'salicylic.png', methylsalicylate:'methylsalicylate.png', aspirin:'aspirin.png',
+  benzoic:'benzoic.png', tnt:'tnt.png', benzaldehyde:'benzaldehyde.png', phthalic:'phthalic.png',
+  terephthalic:'terephthalic.png', phthalicAnh:'phthalicAnh.png', cyclohexane:'cyclohexane.png',
   ethylbenzene:'ethylbenzene.png', phenylacetate:'phenylacetate.png', maleicAnh:'maleicAnh.png', salicylNa:'salicylNa.png'
 };
 function structFit(id,availW,availH,maxScale){
@@ -907,9 +903,18 @@ function renderTray(){
   }
   trayReag.innerHTML=h2;
   trayComp.scrollLeft=sc; trayReag.scrollLeft=sr;
-  const total=Object.keys(COMPOUNDS).filter(id=>!COMPOUNDS[id].start).length;
-  const placed=state.comp.length;
-  document.getElementById('compCnt').textContent=`${placed}/${total}`;
+  const compBtn=document.querySelector('.ttabs button[data-tab="comp"]');
+  const reagBtn=document.querySelector('.ttabs button[data-tab="reag"]');
+  if(mapMode==='reagentGiven'){
+    compBtn.style.display=''; reagBtn.style.display='none'; switchTab('comp');
+  }else if(mapMode==='productGiven'){
+    compBtn.style.display='none'; reagBtn.style.display=''; switchTab('reag');
+  }else{
+    compBtn.style.display=''; reagBtn.style.display='';
+  }
+  const compTotal=Object.keys(COMPOUNDS).filter(id=>!COMPOUNDS[id].start&&!AUTO_REVEAL.has(id)).length;
+  const compPlaced=state.comp.filter(id=>!AUTO_REVEAL.has(id)).length;
+  document.getElementById('compCnt').textContent=`${compPlaced}/${compTotal}`;
   document.getElementById('reagCnt').textContent=`${state.reag.length}/${REACTIONS.length}`;
   if(selected){
     const el=(selected.kind==='compound'?trayComp:trayReag).querySelector(`[data-key="${CSS.escape(selected.key)}"]`);
@@ -1019,7 +1024,11 @@ function handleDrop(kind,key,slot){
   const newly=completedIds().filter(id=>!before.has(id));
   renderMap();
   if(newly.length){
-    showCompleted(newly);
+    if(state.popupOnComplete===false){
+      toast(`🎉 ${RXMAP[newly[0]].name}${newly.length>1?` 他${newly.length}件`:''} 完成!`);
+    }else{
+      showCompleted(newly);
+    }
   }else{
     toast(kind==='compound'?`⭕ ${COMPOUNDS[key].name} を配置!`:'⭕ 試薬セット!反応の完成まであと少し');
   }
@@ -1310,9 +1319,17 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
+function refreshPopupToggleBtn(){
+  document.getElementById('btnPopupToggle').textContent=`🔔 完成通知:${state.popupOnComplete===false?'OFF':'ON'}`;
+}
+document.getElementById('btnPopupToggle').addEventListener('click',()=>{
+  state.popupOnComplete=state.popupOnComplete===false;
+  save(); refreshPopupToggleBtn();
+  toast(state.popupOnComplete===false?'完成時のポップアップをOFFにしました':'完成時のポップアップをONにしました');
+});
 document.getElementById('btnReset').addEventListener('click',()=>{
   if(confirm('進捗をすべてリセットしますか?')){
-    state={comp:[],reag:[],weak:{},seen:true,best:null};
+    state={comp:[],reag:[],weak:{},seen:true,best:null,popupOnComplete:state.popupOnComplete};
     save(); renderMap(); updateWeakBadge(); initView();
     toast('リセットしました');
   }
@@ -1334,6 +1351,7 @@ document.querySelectorAll('.modebtns button').forEach(b=>{
 
 /* ================= 起動 ================= */
 load();
+refreshPopupToggleBtn();
 mapMode=state.mode||'normal';
 document.querySelectorAll('.modebtns button').forEach(x=>x.classList.toggle('active',x.dataset.mode===mapMode));
 measureAll();
