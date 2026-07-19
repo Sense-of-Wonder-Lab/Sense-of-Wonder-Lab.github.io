@@ -381,7 +381,6 @@ const REACTIONS=[
 ];
 const RXMAP=Object.fromEntries(REACTIONS.map(r=>[r.id,r]));
 const REAGENTS=[...new Set(REACTIONS.flatMap(r=>[r.reagent,...(r.accept||[])]))];
-const REVERSE_UNLOCK={ethylbenzene:{trigger:'benzoic',rid:'rA9'},naphthalene:{trigger:'phthalicAnh',rid:'rA5'}};
 
 /* 穴埋め対象にはしない補足の矢印(両端の化合物が揃ったら自動で表示されるだけの参考ルート) */
 const DECOR_EDGES=[
@@ -618,11 +617,7 @@ function recomputeAutoReveal(){
 }
 const onBoard=id=>COMPOUNDS[id].start||state.comp.includes(id)||AUTO_REVEAL.has(id);
 const reagentPlaced=r=>state.reag.includes(r.id)||(mapMode==='reagentGiven'&&available(r));
-const available=r=>{
-  if(r.from.concat(r.coFrom||[]).every(onBoard))return true;
-  const rev=Object.values(REVERSE_UNLOCK).find(v=>v.rid===r.id);
-  return !!(rev&&onBoard(rev.trigger));
-};
+const available=r=>r.from.concat(r.coFrom||[]).every(onBoard)||r.to.concat(r.coTo||[]).every(onBoard);
 const complete=r=>reagentPlaced(r)&&r.to.concat(r.coTo||[]).every(onBoard);
 const completedIds=()=>REACTIONS.filter(complete).map(r=>r.id);
 
@@ -756,14 +751,13 @@ function renderMap(){
   for(const id in COMPOUNDS){
     const c=COMPOUNDS[id], known=onBoard(id);
     let cls='node-locked', isSlot=false;
-    const rev=REVERSE_UNLOCK[id];
     if(known) cls=c.start?'node-start':'';
     else if(REACTIONS.some(r=>available(r)&&(r.to.includes(id)||(r.coTo||[]).includes(id)))){
       cls='node-slot'; isSlot=true;
       SLOT_N.push({id,x:c.x,y:c.y,rid:(REACTIONS.find(r=>available(r)&&(r.to.includes(id)||(r.coTo||[]).includes(id)))||{}).id});
-    }else if(rev&&onBoard(rev.trigger)){
+    }else if(REACTIONS.some(r=>(r.from.includes(id)||(r.coFrom||[]).includes(id))&&r.to.concat(r.coTo||[]).every(onBoard))){
       cls='node-slot'; isSlot=true;
-      SLOT_N.push({id,x:c.x,y:c.y,rid:rev.rid});
+      SLOT_N.push({id,x:c.x,y:c.y,rid:(REACTIONS.find(r=>(r.from.includes(id)||(r.coFrom||[]).includes(id))&&r.to.concat(r.coTo||[]).every(onBoard))||{}).id});
     }
     let g=`<g class="node ${cls}" data-node="${id}" ${isSlot?`data-dropn="${id}"`:''} transform="translate(${c.x},${c.y})">`;
     g+=`<rect class="node-card" x="${-NW/2}" y="${-NH/2}" width="${NW}" height="${NH}" rx="13"/>`;
