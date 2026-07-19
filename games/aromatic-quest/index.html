@@ -51,6 +51,7 @@ main{flex:1;position:relative;overflow:hidden}
 #mapSvg{width:100%;height:100%;display:block}
 .zoombtns{position:absolute;right:10px;bottom:12px;display:flex;flex-direction:column;gap:8px}
 .zoombtns button{width:40px;height:40px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;font-size:17px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.zoombtns button.off{opacity:.4}
 .modebtns{position:absolute;right:10px;top:8px;display:flex;gap:4px;z-index:5}
 .modebtns button{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:5px 8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .modebtns button.active{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
@@ -194,7 +195,6 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-label" id="progLabel">0 / 0 反応</div>
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
-  <button id="btnPopupToggle">🔔 完成通知:ON</button>
   <button id="btnReset">リセット</button>
 </header>
 
@@ -208,9 +208,10 @@ nav button.active{color:var(--blue);font-weight:700}
         <button data-mode="normal" class="active">試薬＋生成物</button>
       </div>
       <div class="zoombtns">
+        <button id="btnPopupToggle">🔔</button>
         <button id="zin">＋</button>
         <button id="zout">－</button>
-        <button id="zfit">⌂</button>
+        <button id="zfit">⛶</button>
       </div>
     </div>
     <div id="tray">
@@ -1328,7 +1329,11 @@ function toast(msg){
   toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
 function refreshPopupToggleBtn(){
-  document.getElementById('btnPopupToggle').textContent=`🔔 完成通知:${state.popupOnComplete===false?'OFF':'ON'}`;
+  const on=state.popupOnComplete!==false;
+  const btn=document.getElementById('btnPopupToggle');
+  btn.textContent=on?'🔔':'🔕';
+  btn.classList.toggle('off',!on);
+  btn.title=`完成通知:${on?'ON':'OFF'}`;
 }
 document.getElementById('btnPopupToggle').addEventListener('click',()=>{
   state.popupOnComplete=state.popupOnComplete===false;
@@ -1337,7 +1342,9 @@ document.getElementById('btnPopupToggle').addEventListener('click',()=>{
 });
 document.getElementById('btnReset').addEventListener('click',()=>{
   if(confirm('進捗をすべてリセットしますか?')){
-    state={comp:[],reag:[],weak:{},seen:true,best:null,popupOnComplete:state.popupOnComplete};
+    state={comp:[],reag:[],weak:{},seen:true,best:null,popupOnComplete:state.popupOnComplete,mode:'normal'};
+    mapMode='normal';
+    document.querySelectorAll('.modebtns button').forEach(x=>x.classList.toggle('active',x.dataset.mode==='normal'));
     save(); renderMap(); updateWeakBadge(); initView();
     toast('リセットしました');
   }
