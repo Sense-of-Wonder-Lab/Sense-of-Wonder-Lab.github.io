@@ -56,7 +56,7 @@ main{flex:1;position:relative;overflow:hidden}
 .modebtns button{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:5px 8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .modebtns button.active{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 @media (max-width:480px){
-  .modebtns{left:10px;right:10px;top:52px;gap:6px}
+  .modebtns{left:10px;right:10px;top:8px;gap:6px}
   .modebtns button{flex:1;padding:9px 4px;font-size:11px;min-height:38px}
 }
 /* map svg pieces */
@@ -264,10 +264,10 @@ const NW=150, NH=112;
 const COMPOUNDS={
   benzene:{name:'ベンゼン',x:700,y:700,start:true,sub:{}},
   toluene:{name:'トルエン',x:380,y:700,start:true,sub:{1:'CH₃'}},
-  naphthalene:{name:'ナフタレン',x:380,y:1340,start:true,kind:'naph'},
+  naphthalene:{name:'ナフタレン',x:380,y:1340,kind:'naph'},
   xyleneO:{name:'o-キシレン',x:-260,y:1020,start:true,sub:{1:'CH₃',2:'CH₃'}},
   xyleneP:{name:'p-キシレン',x:-580,y:1020,start:true,sub:{1:'CH₃',4:'CH₃'}},
-  ethylbenzene:{name:'エチルベンゼン',x:60,y:1020,start:true,sub:{1:{g:'Et'}}},
+  ethylbenzene:{name:'エチルベンゼン',x:60,y:1020,sub:{1:{g:'Et'}}},
   benzylalcohol:{name:'ベンジルアルコール',x:-580,y:700,start:true,sub:{1:{g:'CH2OH'}}},
 
   cyclohexane:{name:'シクロヘキサン',x:700,y:380,kind:'plain',sub:{}},
@@ -330,14 +330,18 @@ const REACTIONS=[
   note:'クメンを空気中の酸素で酸化するとクメンヒドロペルオキシドになる。'},
  {id:'r6b',from:['cumeneHP'],to:['phenol'],coTo:['acetone'],reagent:'希硫酸で分解',short:'分解(クメン法)',name:'クメン法',
   note:'クメンヒドロペルオキシドを希硫酸で分解するとフェノールとアセトンが得られる。副生成物が少なくアセトンも利用でき、現在の工業的製法の主流。'},
- {id:'r13',from:['phenol'],to:['phenoxide'],reagent:'NaOH水溶液',accept:['金属ナトリウムNa'],short:'NaOH ／ Na(H₂↑)',offset:32,name:'中和 or 金属Naとの反応',
-  note:'フェノールは弱酸性なので、強塩基NaOHと中和してナトリウムフェノキシド(塩)になる。また、アルコールとしての性質も持ち、金属ナトリウムと反応して水素H₂を発生し、ナトリウムフェノキシドになる(どちらでも正解)。'},
- {id:'r23',from:['phenoxide'],to:['phenol'],reagent:'希塩酸',accept:['希硫酸','水+二酸化炭素を通じる'],short:'希塩酸 / 希硫酸 / CO₂+水',offset:-32,name:'弱酸の遊離',
-  note:'フェノールは炭酸より弱い酸なので、希塩酸・希硫酸はもちろん、CO₂を吹き込むだけでも遊離する(3つとも正解)。《酸の強さ》硫酸・塩酸・スルホン酸 > カルボン酸 > 炭酸 > フェノール類 > 水 は超頻出!'},
+ {id:'r13a',from:['phenol'],to:['phenoxide'],reagent:'NaOH水溶液',short:'NaOH',offset:22,name:'中和',
+  note:'フェノールは弱酸性なので、強塩基NaOHと中和してナトリウムフェノキシド(塩)になる。'},
+ {id:'r13b',from:['phenol'],to:['phenoxide'],reagent:'金属ナトリウムNa',short:'Na(H₂↑)',offset:66,name:'金属Naとの反応',
+  note:'フェノールはアルコールとしての性質も持ち、金属ナトリウムと反応して水素H₂を発生し、ナトリウムフェノキシドになる。'},
+ {id:'r23a',from:['phenoxide'],to:['phenol'],reagent:'希塩酸/希硫酸',short:'希塩酸/希硫酸',offset:-22,name:'強酸による弱酸の遊離',
+  note:'フェノールは炭酸より弱い酸なので、強酸である希塩酸・希硫酸を加えると弱酸のフェノールが遊離する。《酸の強さ》硫酸・塩酸・スルホン酸 > カルボン酸 > 炭酸 > フェノール類 > 水 は超頻出!'},
+ {id:'r23b',from:['phenoxide'],to:['phenol'],reagent:'水+二酸化炭素を通じる',short:'CO₂+水',offset:-66,name:'炭酸による弱酸の遊離',
+  note:'フェノールは炭酸より弱い酸なので、CO₂を吹き込むだけ(炭酸)でもフェノールが遊離する。《酸の強さ》硫酸・塩酸・スルホン酸 > カルボン酸 > 炭酸 > フェノール類 > 水 は超頻出!'},
  {id:'r14',from:['phenoxide'],to:['salicylNa'],reagent:'二酸化炭素CO₂(高温・高圧)',short:'CO₂ 高温高圧',elbow:90,name:'コルベ・シュミット反応',
   note:'ナトリウムフェノキシドに高温・高圧でCO₂を反応させるとサリチル酸ナトリウムが得られる(コルベ・シュミット反応)。'},
- {id:'r15',from:['salicylNa'],to:['salicylic'],reagent:'希硫酸',accept:['希塩酸'],short:'希H₂SO₄ / 希塩酸',name:'弱酸の遊離',
-  note:'強酸の希硫酸(または希塩酸)を加えると、弱酸のサリチル酸が遊離する。サリチル酸は炭酸より強い酸なのでCO₂では遊離しない(フェノールとの違いに注意!)。《酸の強さ》硫酸・塩酸・スルホン酸 > カルボン酸 > 炭酸 > フェノール類 > 水 は超頻出!'},
+ {id:'r15',from:['salicylNa'],to:['salicylic'],reagent:'希塩酸/希硫酸',short:'希塩酸/希硫酸',name:'弱酸の遊離',
+  note:'強酸の希塩酸・希硫酸を加えると、弱酸のサリチル酸が遊離する。サリチル酸は炭酸より強い酸なのでCO₂では遊離しない(フェノールとの違いに注意!)。《酸の強さ》硫酸・塩酸・スルホン酸 > カルボン酸 > 炭酸 > フェノール類 > 水 は超頻出!'},
  {id:'r16',from:['salicylic'],to:['methylsalicylate'],reagent:'メタノール+濃硫酸(加熱)',short:'CH₃OH+濃H₂SO₄',name:'エステル化',
   note:'メタノールと少量の濃硫酸(酸触媒)を加えて加熱すると、カルボキシ基側がエステル化される。-OHは残る。サリチル酸メチルは消炎鎮痛作用(湿布のにおい)。r17のアセチル化との区別が超頻出!'},
  {id:'r17',from:['salicylic'],to:['aspirin'],reagent:'無水酢酸',short:'無水酢酸',name:'アセチル化',
@@ -360,13 +364,15 @@ const REACTIONS=[
   note:'光を照射しながら塩素を反応させると3Cl₂が付加して1,2,3,4,5,6-ヘキサクロロシクロヘキサン(ベンゼンヘキサクロリド)になる。Fe触媒での置換(クロロベンゼン)との違いに注意!'},
  {id:'rA4',from:['benzene'],to:['maleicAnh'],reagent:'酸素O₂(V₂O₅触媒・高温)',short:'O₂, V₂O₅',name:'酸化開裂',
   note:'高温で酸化バナジウム(Ⅴ)V₂O₅を触媒として空気酸化すると、ベンゼン環が開裂して無水マレイン酸が生成する。'},
- {id:'rA5',from:['naphthalene'],to:['phthalicAnh'],reagent:'酸素O₂(V₂O₅触媒・高温)',short:'O₂, V₂O₅',name:'酸化開裂',
+ {id:'rA5',from:['naphthalene'],to:['phthalicAnh'],reagent:'酸素O₂(V₂O₅触媒・高温)',short:'O₂, V₂O₅',offset:28,name:'酸化開裂',
+  note:'ナフタレンをV₂O₅触媒で空気酸化すると、環の一つが開裂して無水フタル酸が生成する。'},
+ {id:'rA5b',from:['phthalicAnh'],to:['naphthalene'],reagent:'酸素O₂(V₂O₅触媒・高温)',short:'O₂, V₂O₅',offset:-28,name:'酸化開裂(逆合成)',
   note:'ナフタレンをV₂O₅触媒で空気酸化すると、環の一つが開裂して無水フタル酸が生成する。'},
  {id:'rA6',from:['xyleneO'],to:['phthalic'],reagent:'KMnO₄水溶液(加熱)',short:'KMnO₄',name:'側鎖の酸化',
   note:'o-キシレンの2つの側鎖-CH₃がどちらも酸化されて-COOHになり、フタル酸が生成する。そのまま脱水されることも多い。'},
  {id:'rA7',from:['xyleneP'],to:['terephthalic'],reagent:'KMnO₄水溶液(加熱)',short:'KMnO₄',name:'側鎖の酸化',
   note:'p-キシレンを酸化するとテレフタル酸(p-フタル酸)。テレフタル酸はエチレングリコールとの縮合重合でPET(ポリエチレンテレフタラート)になる超重要物質。'},
- {id:'rA8',from:['phthalic'],to:['phthalicAnh'],reagent:'加熱(分子内で脱水)',short:'加熱(脱水)',name:'脱水(酸無水物の生成)',
+ {id:'rA8',from:['phthalic'],to:['phthalicAnh'],reagent:'加熱',short:'加熱(脱水)',name:'脱水(酸無水物の生成)',
   note:'フタル酸を加熱すると、隣り合う2つの-COOHから分子内で容易に脱水が起こり、無水フタル酸になる。テレフタル酸は-COOHが遠いため無水物を作らない。'},
  {id:'rA9',from:['ethylbenzene'],to:['benzoic'],reagent:'KMnO₄水溶液(加熱)',short:'KMnO₄',name:'側鎖の酸化',
   note:'側鎖の炭素数に関わらず、ベンゼン環に直接結合した炭素原子が酸化されて-COOHになる。エチルベンゼンからも安息香酸が生成!'},
@@ -374,6 +380,8 @@ const REACTIONS=[
   note:'ベンジルアルコールは第一級アルコールなので、酸化するとアルデヒド(ベンズアルデヒド)になる。(例:二クロム酸カリウムなど)-OHがベンゼン環に直結していないのでフェノール類ではない点に注意。'},
  {id:'rA11',from:['benzaldehyde'],to:['benzoic'],reagent:'酸化剤',short:'酸化',name:'アルデヒドの酸化',
   note:'アルデヒドはさらに酸化されてカルボン酸(安息香酸)になる。(空気中でも徐々に酸化される)'},
+ {id:'rA12',from:['benzene'],to:['ethylbenzene'],reagent:'塩化エチルC₂H₅Cl(塩化アルミニウム触媒)',short:'C₂H₅Cl, AlCl₃',name:'アルキル化(エチル化)',
+  note:'塩化アルミニウムAlCl₃を触媒として、ハロゲン化アルキル(塩化エチル)を反応させるとベンゼン環のHがエチル基に置換される(アルキル化)。トルエンのメチル化(rA1)と同じ仕組み。'},
 ];
 const RXMAP=Object.fromEntries(REACTIONS.map(r=>[r.id,r]));
 const REAGENTS=[...new Set(REACTIONS.flatMap(r=>[r.reagent,...(r.accept||[])]))];
@@ -609,12 +617,10 @@ function recomputeAutoReveal(){
         }
       }
     }
-  }else if(mapMode==='reagentGiven'){
-    for(const r of REACTIONS) for(const id of r.from.concat(r.coFrom||[])) AUTO_REVEAL.add(id);
   }
 }
 const onBoard=id=>COMPOUNDS[id].start||state.comp.includes(id)||AUTO_REVEAL.has(id);
-const reagentPlaced=r=>state.reag.includes(r.id)||(mapMode==='reagentGiven'&&available(r));
+const reagentPlaced=r=>state.reag.includes(r.id)||(mapMode==='reagentGiven'&&available(r)&&!r.to.concat(r.coTo||[]).every(id=>COMPOUNDS[id].start));
 const available=r=>r.from.concat(r.coFrom||[]).every(onBoard);
 const complete=r=>reagentPlaced(r)&&r.to.concat(r.coTo||[]).every(onBoard);
 const completedIds=()=>REACTIONS.filter(complete).map(r=>r.id);
@@ -718,6 +724,7 @@ function renderMap(){
       g+=`<rect class="edge-label-bg" x="${(lx-w/2).toFixed(1)}" y="${(ly-10).toFixed(1)}" width="${w.toFixed(1)}" height="19" rx="6"/>`;
       g+=`<text class="edge-label" x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}">${r.short}</text>`;
     }else if(isAv){
+      g+=`<circle class="edge-q-hit" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="22" fill="#000" opacity="0"/>`;
       g+=`<g class="pulse"><circle class="edge-q-circle" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="15"/>`;
       g+=`<text class="edge-q-text" x="${lx.toFixed(1)}" y="${(ly+5.5).toFixed(1)}">?</text></g>`;
       SLOT_E.push({rid:r.id,x:lx,y:ly});
@@ -908,6 +915,8 @@ function renderTray(){
   trayComp.innerHTML=h;
   let h2='';
   for(const rg of REAGENTS){
+    const uses=REACTIONS.filter(r=>r.reagent===rg||(r.accept||[]).includes(rg));
+    if(uses.length&&uses.every(complete))continue;
     h2+=`<div class="tcard reag" data-kind="reagent" data-key="${rg}"><div class="treag">${rg}</div></div>`;
   }
   trayReag.innerHTML=h2;
