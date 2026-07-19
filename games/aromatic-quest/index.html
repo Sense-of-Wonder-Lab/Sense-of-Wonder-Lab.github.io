@@ -629,10 +629,20 @@ let WORLD={x:0,y:0,w:100,h:100};
 let vb={x:0,y:0,w:900,h:900};
 function applyVB(){svgEl.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);}
 function aspect(){const r=svgEl.getBoundingClientRect();return r.height/Math.max(r.width,1);}
+const isMobileView=()=>window.matchMedia('(max-width:480px)').matches;
 function initView(){
   const b=COMPOUNDS.benzene;
   vb.w=Math.min(860,WORLD.w); vb.h=vb.w*aspect();
-  vb.x=b.x-vb.w*0.25; vb.y=b.y-vb.h*0.5; applyVB();
+  vb.x=b.x-vb.w*0.25; vb.y=b.y-vb.h*0.5;
+  if(!isMobileView()){
+    const cx=vb.x+vb.w/2, cy=vb.y+vb.h/2;
+    const f=Math.pow(1.28,5);
+    const nw=Math.min(Math.max(vb.w*f,240),WORLD.w*1.6);
+    const nf=nw/vb.w;
+    vb.w*=nf; vb.h*=nf;
+    vb.x=cx-vb.w/2; vb.y=cy-vb.h/2;
+  }
+  applyVB();
 }
 function fitView(){
   vb.w=WORLD.w; vb.h=vb.w*aspect();
@@ -889,7 +899,7 @@ function renderTray(){
   let h='';
   for(const id in COMPOUNDS){
     if(COMPOUNDS[id].start)continue;
-    if(onBoard(id))continue;
+    if(state.comp.includes(id))continue;
     h+=`<div class="tcard" data-kind="compound" data-key="${id}">`+
        `<svg viewBox="-46 -27 92 54" width="88" height="50" xmlns="http://www.w3.org/2000/svg">${structFit(id,86,48)}</svg>`+
        `<div class="tname">${COMPOUNDS[id].name}</div></div>`;
@@ -897,8 +907,6 @@ function renderTray(){
   trayComp.innerHTML=h;
   let h2='';
   for(const rg of REAGENTS){
-    const stillNeeded=REACTIONS.some(r=>(r.reagent===rg||(r.accept||[]).includes(rg))&&available(r)&&!complete(r));
-    if(!stillNeeded)continue;
     h2+=`<div class="tcard reag" data-kind="reagent" data-key="${rg}"><div class="treag">${rg}</div></div>`;
   }
   trayReag.innerHTML=h2;
