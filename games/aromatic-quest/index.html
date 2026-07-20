@@ -94,7 +94,7 @@ main{flex:1;position:relative;overflow:hidden}
 #tray{flex:none;background:#fff;border-top:2px solid #e2e8f0}
 .ttabs{display:flex;gap:6px;padding:6px 8px 0}
 .ttabs button{flex:1;border:none;border-radius:10px 10px 0 0;padding:7px 4px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b}
-.ttabs button.active{background:#fffbeb;color:var(--accent-deep);border:1.5px solid var(--accent);border-bottom:none}
+.ttabs button.active{background:#fffbeb;color:var(--accent-deep)}
 .tscroll{display:flex;gap:8px;overflow-x:auto;padding:8px;background:#fffdf5;-webkit-overflow-scrolling:touch}
 .tscroll::-webkit-scrollbar{height:6px}
 .tscroll::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
@@ -172,6 +172,10 @@ nav button.active{color:var(--blue);font-weight:700}
 .scopebtns{display:flex;gap:8px;margin-top:10px}
 .scopebtns button{flex:1;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
 .scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.decklist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.deckbtn{text-align:left;padding:12px 14px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:700;color:var(--ink)}
+.deckbtn:active{border-color:var(--accent)}
+.memo-img{display:block;max-width:70%;max-height:150px;margin:0 auto 12px}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
@@ -232,12 +236,17 @@ nav button.active{color:var(--blue);font-weight:700}
   <div class="view" id="view-weak">
     <div class="panel" id="weakPanel"></div>
   </div>
+
+  <div class="view" id="view-memo">
+    <div class="panel" id="memoPanel"></div>
+  </div>
 </main>
 
 <nav>
   <button data-view="map" class="active"><span class="ico">🗺️</span>マップ</button>
   <button data-view="challenge"><span class="ico">⚡</span>チャレンジ</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
+  <button data-view="memo"><span class="ico">🧠</span>暗記</button>
 </nav>
 
 <div class="modal" id="infoModal"><div class="sheet" id="infoSheet"></div></div>
@@ -381,6 +390,9 @@ const REACTIONS=[
 ];
 const RXMAP=Object.fromEntries(REACTIONS.map(r=>[r.id,r]));
 const REAGENTS=[...new Set(REACTIONS.flatMap(r=>[r.reagent,...(r.accept||[])]))];
+
+/* ================= 単純暗記モード用データ(MONOXER教材より) ================= */
+const MEMO_DECKS=[{"id":"d0","name":"窒素を含む芳香族(基礎)","items":[{"q":"ベンゼン環にアミノ基―NH2が直接結合した構造の化合物を何というか。","a":"アニリン","wrongs":["ニトロベンゼン","トルエン","アセトアニリド","p-ヒドロキシアゾベンゼン"],"img":null},{"q":"アニリンは何性を示すか","a":"弱塩基性","wrongs":["中性","弱酸性"],"img":null},{"q":"ベンゼンに何を加えるとニトロベンゼンが得られるか。","a":"硝酸と硫酸","wrongs":["塩酸と硝酸","塩酸と硫酸","亜硝酸ナトリウムと塩酸"],"img":null},{"q":"ニトロベンゼンをスズと塩酸で還元し、水酸化ナトリウム水溶液を加えると何が生成するか。","a":"アニリン","wrongs":["アセトアニリド","p-ヒドロキシアゾベンゼン","ナトリウムフェノキシド","アニリン塩酸塩"],"img":null},{"q":"アニリンは常温で","a":"液体","wrongs":["固体","気体"],"img":null},{"q":"アニリンはベンゼン環に何基が直接結合しているか。","a":"アミノ基","wrongs":["ヒドロキシ基","アルデヒド基","カルボキシ基","アセチル基"],"img":null},{"q":"アニリンに亜硝酸ナトリウムと塩酸を加えると、何が生成するか。","a":"塩化ベンゼンジアゾニウム","wrongs":["p-ヒドロキシアゾベンゼン","アニリン塩酸塩","フェノール","ニトロベンゼン"],"img":null},{"q":"塩化ベンゼンジアゾニウムにナトリウムフェノキシドを加えると、何が生成するか。","a":"p-ヒドロキシアゾベンゼン","wrongs":["アニリン塩酸塩","フェノール","ニトロベンゼン","アセトアニリド"],"img":null},{"q":"塩化ベンゼンジアゾニウムを水溶液中で昇温すると、何が生成するか。","a":"フェノール","wrongs":["p-ヒドロキシアゾベンゼン","アニリン","水素","酸素"],"img":null},{"q":"塩化ベンゼンジアゾニウムが分解すると、何が生成するか。","a":"窒素","wrongs":["水素","酸素","p-ヒドロキシアゾベンゼン","アニリン"],"img":null},{"q":"アニリンに無水酢酸を反応させると何が得られるか。","a":"アセトアニリド","wrongs":["p-ヒドロキシアゾベンゼン","アニリン塩酸塩","塩化ベンゼンジアゾニウム","ニトロベンゼン"],"img":null},{"q":"アニリンに何を加えると、塩化ベンゼンジアゾニウムが生成するか。","a":"亜硝酸ナトリウムと塩酸","wrongs":["硝酸と硫酸","硝酸と塩酸","塩酸と硫酸","さらし粉"],"img":null},{"q":"ニトロベンゼンを何で還元するとアニリンが出来るか。","a":"スズと塩酸","wrongs":["亜硝酸ナトリウムと塩酸","硝酸と硫酸","さらし粉"],"img":null},{"q":"アニリンに、硫酸酸性のニクロム酸カリウムを反応させると何が生成するか。","a":"アニリンブラック","wrongs":["アニリンブルー","アニリンイエロー","アニリングリーン","アニリンレッド"],"img":null}]},{"id":"d1","name":"窒素を含む芳香族(構造式)","items":[{"q":"名称を答えよ。","a":"アニリン","wrongs":["アミリン","アミノベンゼン","アウストラロピテクス"],"img":"アニリン.jpg"},{"q":"名称を答えよ。","a":"ニトロベンゼン","wrongs":["トリニトロトルエン","フェノール","アミノベンゼン"],"img":"ニトロベンゼン.jpg"},{"q":"名称を答えよ。","a":"塩化ベンゼンジアゾニウム","wrongs":["アニリン塩酸塩","アニリン","クロロアニリン","p-フェニルアゾフェノール"],"img":"塩化ベンゼンジアゾニウム.jpg"},{"q":"名称を答えよ。","a":"アセトアニリド","wrongs":["アセチルサリチル酸","酢酸フェニル","アセトアミノフェン","アニリン"],"img":"アセトアニリド.jpg"},{"q":"名称を答えよ。","a":"p-ヒドロキシアゾベンゼン","wrongs":["p-ヒドロキシアゾフェノール","p-フェニルアゾベンゼン","p-ベンジルアゾベンゼン","p-フェニルアゾヒドロキシ"],"img":"p-ヒドロキシアゾベンゼン.jpg"},{"q":"名称を答えよ。","a":"p-フェニルアゾフェノール","wrongs":["p-ヒドロキシアゾフェノール","p-フェニルアゾベンゼン","p-ベンジルアゾベンゼン","p-フェニルアゾヒドロキシ"],"img":"p-フェニルアゾフェノール.jpg"},{"q":"名称を答えよ。","a":"アニリン塩酸塩","wrongs":["塩化ベンゼンジアゾニウム","アニリン","アセトアニリド","塩化ジアゾベンゼン"],"img":"アニリン塩酸塩.jpg"}]},{"id":"d2","name":"反応の逆算","items":[{"q":"次のうち、フェノールと反応し、ナトリウムフェノキシドが生成しないものはどれか。","a":"炭酸水素ナトリウム","wrongs":["水酸化ナトリウム","金属ナトリウム"],"img":null},{"q":"次のうち、酸素で酸化し、その後硫酸で分解するとフェノールが得られる物質はどれか。","a":"クメン","wrongs":["クロロベンゼン","クメンヒドロペルオキシド","ベンゼンスルホン酸ナトリウム","トルエン"],"img":null},{"q":"次のうち、アルカリ融解の過程で出てくる物質はどれか","a":"ベンゼンスルホン酸ナトリウム","wrongs":["クロロベンゼン","クメンヒドロペルオキシド","クメン","トルエン"],"img":null},{"q":"次のうち、ピクリン酸の合成に用いる物質はどれか","a":"フェノール","wrongs":["トルエン","キシレン","クレゾール","サリチル酸"],"img":null},{"q":"次のうち、酸化して安息香酸が得られない物質はどれか。","a":"フェノール","wrongs":["ベンジルアルコール","ベンズアルデヒド","トルエン","エチルベンゼン"],"img":null},{"q":"次のうち、酸化して安息香酸が得られない物質はどれか。","a":"サリチル酸","wrongs":["ベンジルアルコール","ベンズアルデヒド","トルエン","エチルベンゼン"],"img":null},{"q":"次のうち、酸性条件の過マンガン酸カリウムで酸化したときに、安息香酸が得られるものはどれか","a":"トルエン","wrongs":["フェノール","キシレン","クレゾール","サリチル酸"],"img":null},{"q":"次のうち、酸性条件の過マンガン酸カリウムで酸化したときに、フタル酸が得られるものはどれか","a":"o-キシレン","wrongs":["p-キシレン","トルエン","p-クレゾール","フマル酸"],"img":null},{"q":"次のうち、酸性条件の過マンガン酸カリウムで酸化したときに、テレフタル酸が得られるものはどれか","a":"p-キシレン","wrongs":["o-キシレン","トルエン","m-クレゾール","フマル酸"],"img":null},{"q":"次のうち、高温高圧で二酸化炭素を反応させ、その後酸で処理するとサリチル酸が得られるのはどれか。","a":"フェノール","wrongs":["安息香酸","ベンゼンスルホン酸","サリチル酸メチル","フタル酸"],"img":null},{"q":"次のうち、還元し、塩基で処理するとアニリンが得られるのはどれか。","a":"ニトロベンゼン","wrongs":["2,4,6-トリニトロトルエン","フェノール","サリチル酸","サリチル酸メチル"],"img":null},{"q":"次のうち、ナトリウムフェノキシドと反応させると、p-ヒドロキシアゾベンゼンが得られるのはどれか。","a":"塩化ベンゼンジアゾニウム","wrongs":["アニリン","アニリン塩酸塩","アセトアニリド","クロロベンゼン"],"img":null},{"q":"次のうち、温度を上げて分解されるとフェノールが得られる物質はどれか。","a":"塩化ベンゼンジアゾニウム","wrongs":["アニリン","p-ヒドロキシアゾベンゼン","アセトアニリド","クロロベンゼン"],"img":null}]},{"id":"d3","name":"検出反応まとめ","items":[{"q":"次のうち、金属ナトリウムと反応して水素を発生するものはどれか","a":"フェノール","wrongs":["キシレン","ナフタレン","アニリン","アセトアニリド"],"img":null},{"q":"次のうち、炭酸水素ナトリウムと反応して二酸化炭素を発生するものはどれか","a":"サリチル酸","wrongs":["サリチル酸メチル","フェノール","トルエン","ベンジルアルコール"],"img":null},{"q":"次のうち、金属ナトリウムと反応して水素を発生しないものはどれか","a":"トルエン","wrongs":["安息香酸","サリチル酸","サリチル酸メチル","アセチルサリチル酸"],"img":null},{"q":"次のうち、炭酸水素ナトリウムと反応して二酸化炭素を発生しないものはどれか","a":"サリチル酸メチル","wrongs":["安息香酸","ベンゼンスルホン酸","サリチル酸","フタル酸"],"img":null},{"q":"次のうち、金属ナトリウムと反応して水素を発生しないものはどれか","a":"ニトロベンゼン","wrongs":["ベンジルアルコール","フェノール","ベンゼンスルホン酸","クレゾール"],"img":null},{"q":"次のうち、塩化鉄(Ⅲ)を加えると、呈色するものはどれか","a":"クレゾール","wrongs":["アセチルサリチル酸","ベンジルアルコール","アニリン","安息香酸"],"img":null},{"q":"次のうち、塩化鉄(Ⅲ)を加えると、呈色するものはどれか","a":"サリチル酸","wrongs":["アセチルサリチル酸","ベンジルアルコール","アニリン","安息香酸"],"img":null},{"q":"次のうち、塩化鉄(Ⅲ)を加えても、呈色しないものはどれか","a":"アセチルサリチル酸","wrongs":["サリチル酸メチル","サリチル酸","フェノール","クレゾール"],"img":null},{"q":"次のうち、塩化鉄(Ⅲ)を加えても、呈色しないものはどれか","a":"アニリン","wrongs":["サリチル酸メチル","サリチル酸","フェノール","クレゾール"],"img":null},{"q":"次のうち、銀鏡反応陽性のものはどれか","a":"ベンズアルデヒド","wrongs":["ベンジルアルコール","安息香酸","サリチル酸","アセチルサリチル酸"],"img":null},{"q":"次のうち、加熱して酸無水物を与えるものはどれか","a":"フタル酸","wrongs":["テレフタル酸","安息香酸","サリチル酸","アセチルサリチル酸"],"img":null},{"q":"次のうち、五酸化バナジウムとともに加熱すると、無水マレイン酸が生成する物質はどれか。","a":"ベンゼン","wrongs":["ナフタレン","キシレン","トルエン","フタル酸"],"img":null},{"q":"次のうち、さらし粉で赤紫色に呈色するのものはどれか","a":"アニリン","wrongs":["塩化ベンゼンジアゾニウム","サリチル酸","フェノール","トルエン"],"img":null},{"q":"次のうち、酸性条件の二クロム酸カリウムで黒く呈色するのものはどれか","a":"アニリン","wrongs":["塩化ベンゼンジアゾニウム","サリチル酸","フェノール","トルエン"],"img":null},{"q":"次のうち、五酸化バナジウムとともに加熱すると、無水フタル酸が生成する物質はどれか。","a":"ナフタレン","wrongs":["ベンゼン","アニリン","トルエン","フマル酸"],"img":null},{"q":"次のうち、過マンガン酸カリウムを加えて加熱すると、フタル酸が生成するものはどれか。","a":"o-キシレン","wrongs":["ｍ－キシレン","p-キシレン","トルエン","ナフタレン"],"img":null}]},{"id":"d4","name":"芳香族炭化水素(基礎その1)","items":[{"q":"ベンゼンの原子は","a":"全て同一平面上に配列","wrongs":["炭素のみ同一平面上に配列","立体的に配列"],"img":null},{"q":"ベンゼンの炭素原子の結合の長さは、通常の炭素間の単結合より(ア)、二重結合より(イ)。","a":"ア：短く　イ：長い","wrongs":["ア：長く　イ：短い"],"img":null},{"q":"ベンゼンは水と","a":"混ざらない","wrongs":["任意の割合で混和"],"img":null},{"q":"ベンゼン環を持つ化合物を一般に何というか。","a":"芳香族炭化水素","wrongs":["脂肪族炭化水素"],"img":null},{"q":"鉄粉を触媒にして、ベンゼンと塩素を反応させると一置換の化合物が生じた。この物質の名称を答えよ。","a":"クロロベンゼン","wrongs":["ベンゼンヘキサクロリド","p-ジクロロベンゼン","塩化ビニル","塩化ベンゼンジアゾニウム"],"img":null},{"q":"ベンゼンに濃硫酸を加えて加熱すると生じる強酸性の物質の名称を答えよ。","a":"ベンゼンスルホン酸","wrongs":["安息香酸","ニトロベンゼン","フタル酸","サリチル酸"],"img":null},{"q":"ベンゼンに濃硝酸と濃硫酸の混合物を反応させると生じる、特有の臭気のある黄色い液体の名称を答えよ。","a":"ニトロベンゼン","wrongs":["ヨードホルム","トリニトロトルエン","フェノール","ピクリン酸"],"img":null},{"q":"ベンゼンの水素原子1個をメチル基で置換すると生じる物質の名称を答えよ。","a":"トルエン","wrongs":["キシレン","エチルベンゼン","クレゾール","フェノール"],"img":null},{"q":"ベンゼンの水素原子2個をメチル基で置換すると生じる物質の名称を答えよ。","a":"キシレン","wrongs":["トルエン","フェノール","クレゾール","エチルベンゼン"],"img":null},{"q":"ベンゼン環に置換基が2つあると、何種類の異性体が存在するか。","a":"3","wrongs":["1","2","4","6"],"img":null},{"q":"ナフタレンの分子式を示せ。","a":"C10H8","wrongs":["C12H12","C8H10","C6H6","C14H10"],"img":null},{"q":"ベンゼンに関する次の(ア)～(オ)の記述のうち、誤りを\n含むものを1つ選べ。","a":"分子の各原子のうち、炭素原子のみが同一平面上にある。","wrongs":["(ア)　組成式はCHである。","(オ)　空気中で多くのすすを出して燃える。","(ウ)　結合している炭素原子間の距離はすべて等しい。","(エ)　水と混ざりにくいが、種々の有機物を溶かす。"],"img":null},{"q":"ベンゼン分子の不飽和結合は、(ア)やアルケンの\n不飽和結合と違って、(イ)反応を起こしにくい。","a":"ア：アルキン　イ：付加","wrongs":["ア：アルキン　イ：置換","ア：アルカン　イ：付加","ア：アルカン　イ：置換"],"img":null},{"q":"鉄を触媒として、ベンゼンに臭素を作用させると、ベンゼンの(ア)原子が、(イ)原子に置き換わる。","a":"ア：水素　イ：臭素","wrongs":["ア：炭素　イ：臭素","ア：水素　イ：炭素","ア：水素　イ：鉄","ア：炭素　イ：鉄"],"img":null},{"q":"ベンゼンに触媒存在下水素を反応させると何が得られるか。","a":"シクロヘキサン","wrongs":["トルエン","ナフタレン","フェノール"],"img":null},{"q":"ベンゼンに鉄触媒存在下塩素を反応させると何が得られるか。","a":"クロロベンゼン","wrongs":["塩化ベンゼンジアゾニウム","p-ジクロロベンゼン","ベンゼンヘキサクロリド"],"img":null},{"q":"ベンゼンに光照射のもと塩素を反応させると何が得られるか。","a":"ベンゼンヘキサクロリド","wrongs":["クロロベンゼン","塩化ベンゼンジアゾニウム","p-ジクロロベンゼン"],"img":null}]},{"id":"d5","name":"芳香族炭化水素(基礎その2)","items":[{"q":"ベンゼンに関する次の(ア)～(オ)の記述のうち、誤りを\n含むものを1つ選べ。","a":"分子の各原子のうち、炭素原子のみが同一平面上にある。","wrongs":["(ア)　組成式はCHである。","(オ)　空気中で多くのすすを出して燃える。","(ウ)　結合している炭素原子間の距離はすべて等しい。","(エ)　水と混ざりにくいが、種々の有機物を溶かす。"],"img":null},{"q":"ベンゼン分子の不飽和結合は、(ア)やアルケンの\n不飽和結合と違って、(イ)反応を起こしにくい。","a":"ア：アルキン　イ：付加","wrongs":["ア：アルキン　イ：置換","ア：アルカン　イ：付加","ア：アルカン　イ：置換"],"img":null},{"q":"鉄を触媒として、ベンゼンに臭素を作用させると、ベンゼンの(ア)原子が、(イ)原子に置き換わる。","a":"ア：水素　イ：臭素","wrongs":["ア：炭素　イ：臭素","ア：水素　イ：炭素","ア：水素　イ：鉄","ア：炭素　イ：鉄"],"img":null}]},{"id":"d6","name":"芳香族炭化水素(構造式)","items":[{"q":"名称を答えよ。","a":"トルエン","wrongs":["キシレン","フェノール","ナフタレン","ニトロベンゼン"],"img":"トルエン.jpg"},{"q":"名称を答えよ。","a":"キシレン","wrongs":["トルエン","フェノール","ナフタレン","ニトロベンゼン"],"img":"oーキシレン.jpg"},{"q":"名称を答えよ。","a":"クロロベンゼン","wrongs":["フェノール","トルエン","ニトロベンゼン","キシレン"],"img":"クロロベンゼン.jpg"},{"q":"名称を答えよ。","a":"ナフタレン","wrongs":["フェノール","トルエン","ニトロベンゼン","キシレン"],"img":"ナフタレン.jpg"},{"q":"名称を答えよ。","a":"ニトロベンゼン","wrongs":["アニリン","ベンゼンスルホン酸","フェノール","ピクリン酸"],"img":"ニトロベンゼン.jpg"},{"q":"名称を答えよ。","a":"2,4,6-トリニトロトルエン","wrongs":["トルエン","ピクリン酸","ベンゼンスルホン酸"],"img":"2,4,6－トリニトロトルエン.jpg"},{"q":"名称を答えよ。","a":"フェノール","wrongs":["トルエン","キシレン","クレゾール","安息香酸"],"img":"フェノール.jpg"},{"q":"名称を答えよ。","a":"ベンゼンスルホン酸","wrongs":["ニトロベンゼン","アニリン","フェノール","安息香酸"],"img":"ベンゼンスルホン酸.jpg"},{"q":"名称を答えよ。","a":"ベンゼンヘキサクロリド","wrongs":["シクロヘキサン","クロロベンゼン","塩化ベンゼンジアゾニウム","ヘキサクロロベンゼン"],"img":"ベンゼンヘキサクロリド.jpg"}]},{"id":"d7","name":"芳香族炭化水素(構造式・選択のみ)","items":[{"q":"名称を答えよ。","a":"トルエン","wrongs":["キシレン","フェノール","ナフタレン","ニトロベンゼン"],"img":"トルエン.jpg"},{"q":"名称を答えよ。","a":"キシレン","wrongs":["トルエン","フェノール","ナフタレン","ニトロベンゼン"],"img":"oーキシレン.jpg"},{"q":"名称を答えよ。","a":"クロロベンゼン","wrongs":["フェノール","トルエン","ニトロベンゼン","キシレン"],"img":"クロロベンゼン.jpg"},{"q":"名称を答えよ。","a":"ナフタレン","wrongs":["フェノール","トルエン","ニトロベンゼン","キシレン"],"img":"ナフタレン.jpg"},{"q":"名称を答えよ。","a":"ニトロベンゼン","wrongs":["アニリン","ベンゼンスルホン酸","フェノール","ピクリン酸"],"img":"ニトロベンゼン.jpg"},{"q":"名称を答えよ。","a":"2,4,6-トリニトロトルエン","wrongs":["トルエン","ピクリン酸","ベンゼンスルホン酸"],"img":"2,4,6－トリニトロトルエン.jpg"},{"q":"名称を答えよ。","a":"フェノール","wrongs":["トルエン","キシレン","クレゾール","安息香酸"],"img":"フェノール.jpg"},{"q":"名称を答えよ。","a":"ベンゼンスルホン酸","wrongs":["ニトロベンゼン","アニリン","フェノール","安息香酸"],"img":"ベンゼンスルホン酸.jpg"},{"q":"名称を答えよ。","a":"ベンゼンヘキサクロリド","wrongs":["シクロヘキサン","クロロベンゼン","塩化ベンゼンジアゾニウム","ヘキサクロロベンゼン"],"img":"ベンゼンヘキサクロリド.jpg"}]},{"id":"d8","name":"酸素を含む芳香族(基礎その1)","items":[{"q":"ベンゼン環にヒドロキシ基―OHが直接結合した構造の化合物を何というか。","a":"フェノール","wrongs":["安息香酸","トルエン","ニトロベンゼン","p-ヒドロキシアゾベンゼン"],"img":null},{"q":"フェノールは何性を示すか","a":"弱酸性","wrongs":["中性","弱塩基性"],"img":null},{"q":"フェノールは水酸化ナトリウムなどの強塩基と反応して何という物質を生成するか","a":"ナトリウムフェノキシド","wrongs":["安息香酸ナトリウム","サリチル酸ナトリウム","ナトリウムエトキシド"],"img":null},{"q":"ナトリウムフェノキシドの水溶液に、二酸化炭素を通じると、何が生じるか","a":"フェノール","wrongs":["安息香酸","サリチル酸ナトリウム","サリチル酸","トルエン"],"img":null},{"q":"フェノール類は、塩化鉄(Ⅲ)水溶液FeCl3aqを加えると","a":"呈色する","wrongs":["気体が発生する","沈殿が生じる","何も起こらない"],"img":null},{"q":"ベンゼン環にカルボキシ基―COOHが直接結合した構造の化合物を何というか。","a":"芳香族カルボン酸","wrongs":["フェノール類","芳香族アミン","ベンゼンスルホン酸"],"img":null},{"q":"サリチル酸はベンゼン環に、何基と何基が結合しているか。","a":"ヒドロキシ基とカルボキシ基","wrongs":["ヒドロキシ基とアルデヒド基","カルボキシ基とアルデヒド基","ヒドロキシ基とアセチル基"],"img":null},{"q":"トルエンやエチルベンゼンを過マンガン酸カリウムで酸化して得られる物質の名称を答えよ。","a":"安息香酸","wrongs":["フェノール類","キシレン","ベンズアルデヒド","ベンジルアルコール"],"img":null},{"q":"次のうち、安息香酸と反応しないものはどれか。","a":"塩化鉄(Ⅲ)","wrongs":["ナトリウム","炭酸水素ナトリウム","水素ナトリウム"],"img":null},{"q":"p－キシレンを過マンガン酸カリウムで酸化して得られる物質の名称を答えよ。","a":"テレフタル酸","wrongs":["フマル酸","マレイン酸","フタル酸"],"img":null},{"q":"o－キシレンを過マンガン酸カリウムで酸化して得られる物質を、さらに加熱したときに得られる物質の名称を答えよ。","a":"無水フタル酸","wrongs":["無水マレイン酸","無水フマル酸","無水酢酸"],"img":null},{"q":"シップのにおいがするのは","a":"サリチル酸メチル","wrongs":["アセチルサリチル酸","フェノール","酢酸エチル","サリチル酸"],"img":null},{"q":"ベンゼンの酸化開裂では何が得られるか。","a":"無水マレイン酸","wrongs":["無水フタル酸","無水酢酸","安息香酸"],"img":null},{"q":"ナフタレンの酸化開裂では何が得られるか。","a":"無水フタル酸","wrongs":["無水マレイン酸","無水酢酸","安息香酸"],"img":null},{"q":"クメンヒドロペルオキシドは何の合成の際に生成するか。","a":"フェノール","wrongs":["安息香酸","サリチル酸","ベンズアルデヒド"],"img":null},{"q":"塩化鉄(Ⅲ)と反応しないのはどれか。","a":"アセチルサリチル酸","wrongs":["サリチル酸","フェノール","クレゾール","サリチル酸メチル"],"img":null}]},{"id":"d9","name":"酸素を含む芳香族(基礎その2)","items":[{"q":"エタノールに当てはまり，フェノールには当てはまらない記述を1つ選べ。","a":"酸化するとアルデヒドが生じる","wrongs":["水酸化ナトリウム水溶液に溶ける","酸性を示す","エステルをつくる","塩化鉄(III)によって呈色反応を示す。"],"img":null},{"q":"ベンゼンとプロペン(プロピレン)の付加反応により生じる( ア )を酸化したのちに硫酸で分解すると，(イ )とともにフェノールが生じる。","a":"ア：クメン　イ：アセトン","wrongs":["ア：トルエン　イ：アセトン","ア：プロピルベンゼン　イ：アセトアルデヒド","ア：クメン　イ：アセトアルデヒド","ア：クロロベンゼン　イ：食塩"],"img":null},{"q":"ベンゼンを濃硫酸と反応させて生じる( ア )を中和したのち，水酸化ナトリウムと融解すると(イ)が生じる。これを酸性にすることによっても，フェノールは得られる。","a":"ア：ベンゼンスルホン酸　イ：ナトリウムフェノキシド","wrongs":["ア：ベンゼンスルホン酸　イ：ベンゼンスルホン酸ナトリウム","ア：ベンゼンスルホン酸ナトリウム　イ：ナトリウムフェノキシド","ア：ベンゼンスルホン酸　イ：クメン"],"img":null},{"q":"フェノールはベンゼン環に( ア )基がついた構造で、弱い( イ )を示す。","a":"ア：ヒドロキシ基　　イ：酸性","wrongs":["ア：ヒドロキシ基　　イ：塩基性","ア：カルボキシ基　　イ：酸性","ア：カルボキシ基　　イ：塩基性"],"img":null},{"q":"ナトリウムフェノキシドの水溶液に二酸化炭素を吹き込むと，炭酸はフェノールよりも( ア)い酸のため，( イ )が遊離する。","a":"ア：強　　イ：フェノール","wrongs":["ア：弱　　イ：フェノール","ア：強　　イ：サリチル酸","ア：弱　　イ：サリチル酸"],"img":null},{"q":"ナトリウムフェノキシドを融解して高圧で二酸化炭素を反応させると(ア)が生じ、これを酸性にすると、(イ)が生じる","a":"ア：サリチル酸ナトリウム　　イ：サリチル酸","wrongs":["ア：フェノール　　イ：サリチル酸","ア：サリチル酸　　イ：アセチルサリチル酸","ア：サリチル酸　　イ：サリチル酸メチル","ア：ベンゼンスルホン酸ナトリウム　イ：ベンゼンスルホン酸"],"img":null},{"q":"フェノールはベンゼンより( ア)反応を受けやすい。臭素を加えると(イ)反応により白色沈殿が生じる。","a":"ア：置換　　イ：置換","wrongs":["ア：付加　　イ：置換","ア：置換　　イ：付加","ア：付加　　イ：付加"],"img":null},{"q":"サリチル酸は、メタノールと少量の濃硫酸と熱すると( ア )を生じ，無水酢酸と少量の濃硫酸との反応で( イ )を生じる。","a":"ア：サリチル酸メチル　イ：アセチルサリチル酸","wrongs":["ア：サリチル酸メチル　イ：アセチルサリチル酸メチル","ア：アセチルサリチル酸メチル　イ：アセチルサリチル酸","ア：アセチルサリチル酸　イ：サリチル酸メチル"],"img":null},{"q":"サリチル酸メチルは","a":"消炎鎮痛剤","wrongs":["解熱鎮痛剤","消炎鎮痛済","解熱鎮痛済"],"img":null},{"q":"アセチルサリチル酸は","a":"解熱鎮痛剤","wrongs":["消炎鎮痛剤","消炎鎮痛済","解熱鎮痛済"],"img":null}]},{"id":"d10","name":"酸素を含む芳香族(構造式)","items":[{"q":"名称を答えよ。","a":"フェノール","wrongs":["トルエン","キシレン","クレゾール","ベンジルアルコール"],"img":"フェノール.jpg"},{"q":"名称を答えよ。","a":"クレゾール","wrongs":["トルエン","キシレン","フェノール","ベンジルアルコール"],"img":"oークレゾール.jpg"},{"q":"名称を答えよ。","a":"ベンジルアルコール","wrongs":["ベンズアルデヒド","フェノール","クレゾール","安息香酸"],"img":"ベンジルアルコール.jpg"},{"q":"名称を答えよ。","a":"ベンゼンスルホン酸","wrongs":["ニトロベンゼン","アニリン","フェノール","安息香酸"],"img":"ベンゼンスルホン酸.jpg"},{"q":"名称を答えよ。","a":"クメンヒドロペルオキシド","wrongs":["ベンジルアルコール","フェノール","ベンゼンスルホン酸"],"img":"クメンヒドロペルオキシド.jpg"},{"q":"名称を答えよ。","a":"サリチル酸","wrongs":["安息香酸","ベンゼンスルホン酸","ピクリン酸","フタル酸"],"img":"サリチル酸.jpg"},{"q":"名称を答えよ。","a":"ピクリン酸","wrongs":["安息香酸","ベンゼンスルホン酸","2,4,6－トリニトロトルエン","フタル酸"],"img":"ピクリン酸.jpg"},{"q":"名称を答えよ。","a":"ナトリウムフェノキシド","wrongs":["安息香酸ナトリウム","ナトリウムエトキシド","ベンゼンスルホン酸ナトリウム"],"img":"ナトリウムフェノキシド.jpg"},{"q":"名称を答えよ。","a":"2,4,6－トリブロモフェノール","wrongs":["2,4,6－トリニトロトルエン","ピクリン酸","2,4,6－トリニトロフェノール","2,4,6－トリブロモトルエン"],"img":"2,4,6－トリブロモフェノール.jpg"},{"q":"名称を答えよ。","a":"安息香酸","wrongs":["サリチル酸","フタル酸","ピクリン酸","マレイン酸"],"img":"安息香酸.jpg"},{"q":"名称を答えよ。","a":"フタル酸","wrongs":["サリチル酸","安息香酸","ピクリン酸","フマル酸"],"img":"フタル酸.jpg"},{"q":"名称を答えよ。","a":"テレフタル酸","wrongs":["フタル酸","安息香酸","サリチル酸","フマル酸"],"img":"テレフタル酸.jpg"},{"q":"名称を答えよ。","a":"無水フタル酸","wrongs":["無水マレイン酸","無水酢酸","無水フマル酸","無水テレフタル酸"],"img":"無水フタル酸.jpg"},{"q":"名称を答えよ。","a":"アセチルサリチル酸","wrongs":["サリチル酸","サリチル酸メチル","アセチルサリチル酸メチル","アセトアニリド"],"img":"アセチルサリチル酸.jpg"},{"q":"名称を答えよ。","a":"サリチル酸メチル","wrongs":["サリチル酸","アセチルサリチル酸","アセチルサリチル酸メチル","アセトアニリド"],"img":"サリチル酸メチル.jpg"}]},{"id":"d11","name":"構造式マイナー","items":[{"q":"名称を答えよ","a":"アントラセン","wrongs":["キシレン","ナフタレン","トルエン","トリベンゼン"],"img":"アントラセン.jpg"},{"q":"名称を答えよ","a":"1-ナフトール","wrongs":["2-ナフトール","フェノール","キシレン","β-ナフトール"],"img":"1-ナフトール.jpg"},{"q":"名称を答えよ","a":"2-ナフトール","wrongs":["1-ナフトール","キシレン","フェノール","α-ナフトール"],"img":"2-ナフトール.jpg"},{"q":"名称を答えよ","a":"m-キシレン","wrongs":["m-クレゾール","トルエン","o-キシレン","p-キシレン"],"img":"m-キシレン.jpg"},{"q":"名称を答えよ。","a":"p-キシレン","wrongs":["m-クレゾール","トルエン","o-キシレン","m-キシレン"],"img":"p-キシレン.jpg"},{"q":"名称を答えよ。","a":"m-クレゾール","wrongs":["o-クレゾール","p-クレゾール","o-キシレン","m-キシレン"],"img":"m-クレゾール.jpg"},{"q":"名称を答えよ。","a":"o-クレゾール","wrongs":["m-クレゾール","p-クレゾール","o-キシレン","m-キシレン"],"img":"o-クレゾール.jpg"},{"q":"名称を答えよ。","a":"p-クレゾール","wrongs":["o-クレゾール","m-クレゾール","o-キシレン","m-キシレン"],"img":"p-クレゾール.jpg"},{"q":"名称を答えよ。","a":"o-ニトロトルエン","wrongs":["p-ニトロトルエン","o-ニトロフェノール","p-ニトロフェノール","ピクリン酸"],"img":"o-ニトロトルエン.jpg"},{"q":"名称を答えよ。","a":"p-ニトロトルエン","wrongs":["o-ニトロトルエン","o-ニトロフェノール","p-ニトロフェノール","ピクリン酸"],"img":"p-ニトロトルエン.jpg"},{"q":"名称を答えよ。","a":"o-ニトロフェノール","wrongs":["o-ニトロトルエン","p-ニトロトルエン","p-ニトロフェノール","ピクリン酸"],"img":"o-ニトロフェノール.jpg"},{"q":"名称を答えよ。","a":"p-ニトロフェノール","wrongs":["o-ニトロトルエン","p-ニトロトルエン","o-ニトロフェノール","ピクリン酸"],"img":"p-ニトロフェノール.jpg"}]}];
 
 /* 穴埋め対象にはしない補足の矢印(両端の化合物が揃ったら自動で表示されるだけの参考ルート) */
 const DECOR_EDGES=[
@@ -1275,18 +1287,30 @@ function updateWeakBadge(){
   b.style.display=n?'block':'none'; b.textContent=n;
 }
 let drill=null;
+function isMemoKey(key){return key.startsWith('memo:');}
+function memoItemFromKey(key){
+  const [,deckId,idxStr]=key.split(':');
+  const deck=MEMO_DECKS.find(d=>d.id===deckId);
+  return deck?{deck,item:deck.items[+idxStr]}:null;
+}
 function renderWeakHome(){
   const n=weakCount();
   let list='';
-  for(const rid in state.weak){
-    const r=RXMAP[rid];
-    if(!r){delete state.weak[rid];continue;}
-    list+=`<div class="review-item">🎯 【${r.name}】 ${eqText(r)} <span class="muted">(あと${state.weak[rid]}回連続正解でクリア)</span></div>`;
+  for(const key in state.weak){
+    if(isMemoKey(key)){
+      const found=memoItemFromKey(key);
+      if(!found||!found.item){delete state.weak[key];continue;}
+      list+=`<div class="review-item">🧠 ${found.item.q} → ${found.item.a} <span class="muted">(あと${state.weak[key]}回連続正解でクリア)</span></div>`;
+    }else{
+      const r=RXMAP[key];
+      if(!r){delete state.weak[key];continue;}
+      list+=`<div class="review-item">🎯 【${r.name}】 ${eqText(r)} <span class="muted">(あと${state.weak[key]}回連続正解でクリア)</span></div>`;
+    }
   }
   weakPanel.innerHTML=`
     <h2>🎯 弱点特訓</h2>
     <div class="card-ui">
-      <div style="font-size:13.5px;line-height:1.8">間違えた反応がここに溜まります。<b>2回連続で正解</b>するとリストから消えます。</div>
+      <div style="font-size:13.5px;line-height:1.8">間違えた反応・暗記問題がここに溜まります。<b>2回連続で正解</b>するとリストから消えます。</div>
       <button class="bigbtn amber" id="drillStart" ${n?'':'disabled'}>${n?`特訓スタート(${n}件)`:'弱点はありません🎉'}</button>
     </div>
     ${list?`<div class="card-ui"><b>弱点リスト</b>${list}</div>`:''}`;
@@ -1300,18 +1324,116 @@ function startDrill(){
 function nextDrillQ(){
   while(drill.i<drill.ids.length&&!(drill.ids[drill.i] in state.weak))drill.i++;
   if(drill.i>=drill.ids.length){drill=null;renderWeakHome();updateWeakBadge();toast('特訓おつかれさま!');return;}
-  const rid=drill.ids[drill.i];
-  const q=buildQuiz(RXMAP[rid],sample(['product','reactant','reagent'],1)[0]);
+  const key=drill.ids[drill.i];
   weakPanel.innerHTML='<div id="dq"></div>';
-  renderQuiz(document.getElementById('dq'),q,ok=>{
+  const finish=ok=>{
     if(ok){
-      state.weak[rid]--;
-      if(state.weak[rid]<=0)delete state.weak[rid];
-    }else state.weak[rid]=2;
+      state.weak[key]--;
+      if(state.weak[key]<=0)delete state.weak[key];
+    }else state.weak[key]=2;
     save(); updateWeakBadge();
     drill.i++; nextDrillQ();
-  },`弱点特訓　残り ${drill.ids.length-drill.i} 件`);
+  };
+  const progressText=`弱点特訓　残り ${drill.ids.length-drill.i} 件`;
+  if(isMemoKey(key)){
+    const found=memoItemFromKey(key);
+    renderMemoQ(document.getElementById('dq'),found.item,finish,progressText);
+  }else{
+    const q=buildQuiz(RXMAP[key],sample(['product','reactant','reagent'],1)[0]);
+    renderQuiz(document.getElementById('dq'),q,finish,progressText);
+  }
   weakPanel.scrollTop=0;
+}
+
+/* ================= 単純暗記モード ================= */
+const memoPanel=document.getElementById('memoPanel');
+let memoQuiz=null;
+function memoImgSrc(fname){return 'assets/memo/'+encodeURIComponent(fname);}
+function renderMemoQ(el,item,onDone,progressText){
+  const opts=shuffle([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
+  let ch=`<div class="choices textmode">`;
+  opts.forEach((o,i)=>{ch+=`<button class="choice" data-i="${i}">${o.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt">${item.q.replace(/\n/g,'<br>')}</div>
+    ${item.img?`<img class="memo-img" src="${memoImgSrc(item.img)}" alt="">`:''}
+    ${ch}
+    <div class="explain" id="memoExplainBox"></div>
+    <button class="bigbtn" id="memoNextBtn" style="display:none">つぎへ</button>`;
+  let answered=false;
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const o=opts[+btn.dataset.i];
+      el.querySelectorAll('.choice').forEach((b,j)=>{
+        const oo=opts[j];
+        if(oo.ok)b.classList.add('correct');
+        else if(b===btn)b.classList.add('wrong');
+        else b.classList.add('dim');
+      });
+      const ex=el.querySelector('#memoExplainBox');
+      ex.className='explain '+(o.ok?'ok':'ng');
+      ex.innerHTML=`<div class="rname">${o.ok?'⭕ 正解!':'❌ 不正解…'}</div><div class="eq">正解: ${item.a}</div>`;
+      const nb=el.querySelector('#memoNextBtn');
+      nb.style.display='block';
+      nb.onclick=()=>onDone(o.ok);
+      nb.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  });
+}
+function renderMemoHome(){
+  let list='';
+  MEMO_DECKS.forEach(d=>{
+    list+=`<button class="deckbtn" data-id="${d.id}">${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${d.items.length}問</span></button>`;
+  });
+  memoPanel.innerHTML=`
+    <h2>🧠 単純暗記モード</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">セットを選ぶと4択でランダムに一問一答。<b>間違えたものは弱点特訓に自動追加</b>されます。</div>
+    </div>
+    <div class="card-ui"><b>セットを選ぶ</b><div class="decklist">${list}</div></div>`;
+  memoPanel.querySelectorAll('.deckbtn').forEach(b=>{
+    b.onclick=()=>startMemoQuiz(b.dataset.id);
+  });
+}
+function startMemoQuiz(deckId){
+  const deck=MEMO_DECKS.find(d=>d.id===deckId);
+  const order=shuffle(deck.items.map((_,i)=>i));
+  memoQuiz={deck,order,i:0,results:[]};
+  nextMemoQ();
+}
+function nextMemoQ(){
+  if(memoQuiz.i>=memoQuiz.order.length)return memoQuizResult();
+  const deck=memoQuiz.deck;
+  const idx=memoQuiz.order[memoQuiz.i];
+  const item=deck.items[idx];
+  const key=`memo:${deck.id}:${idx}`;
+  memoPanel.innerHTML='<div id="mq"></div>';
+  renderMemoQ(document.getElementById('mq'),item,ok=>{
+    memoQuiz.results.push({item,ok});
+    if(!ok){state.weak[key]=2;save();updateWeakBadge();}
+    memoQuiz.i++; nextMemoQ();
+  },`${deck.name}　${memoQuiz.i+1} / ${memoQuiz.order.length}`);
+  memoPanel.scrollTop=0;
+}
+function memoQuizResult(){
+  const correct=memoQuiz.results.filter(x=>x.ok).length;
+  let review='';
+  memoQuiz.results.forEach(x=>{
+    review+=`<div class="review-item"><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.item.q} → ${x.item.a}</div>`;
+  });
+  memoPanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line">正解 ${correct} / ${memoQuiz.results.length}</div>
+      <button class="bigbtn" id="memoAgain">もう一度</button>
+      <button class="bigbtn secondary" id="memoHome">セット選択に戻る</button>
+    </div>
+    <div class="card-ui"><b>復習リスト</b>${review}</div>`;
+  document.getElementById('memoAgain').onclick=()=>startMemoQuiz(memoQuiz.deck.id);
+  document.getElementById('memoHome').onclick=()=>{memoQuiz=null;renderMemoHome();};
+  memoPanel.scrollTop=0;
 }
 
 /* ================= 完成演出 ================= */
@@ -1335,6 +1457,7 @@ document.querySelectorAll('nav button').forEach(b=>{
     document.getElementById('view-'+b.dataset.view).classList.add('active');
     if(b.dataset.view==='challenge'&&(!chal||chal.i>=chal.qs.length))renderChallengeHome();
     if(b.dataset.view==='weak'&&!drill)renderWeakHome();
+    if(b.dataset.view==='memo'&&!memoQuiz)renderMemoHome();
     if(b.dataset.view==='map'){vb.h=vb.w*aspect();applyVB();}
   });
 });
