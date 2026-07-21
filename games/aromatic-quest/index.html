@@ -610,7 +610,7 @@ function compoundHTML(id,big){
 }
 
 /* ================= 状態 ================= */
-let state={comp:[],reag:[],weak:{},seen:false,best:null,mode:'normal'};
+let state={comp:[],reag:[],weak:{},seen:false,best:null,mode:'normal',memoScores:{}};
 function save(){try{localStorage.setItem('aromaQuest2',JSON.stringify(state));}catch(e){}}
 function load(){try{const s=localStorage.getItem('aromaQuest2');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
 let mapMode='normal';
@@ -1377,7 +1377,7 @@ function renderMemoQ(el,item,onDone,progressText){
     btn.addEventListener('click',()=>{
       if(answered)return; answered=true;
       const o=opts[+btn.dataset.i];
-      if(o.ok)showCirclePopup();
+      if(o.ok){btn.classList.add('correct');showCirclePopup();}
       else btn.classList.add('wrong');
       const nb=el.querySelector('#memoNextBtn');
       nb.style.display='block';
@@ -1388,7 +1388,9 @@ function renderMemoQ(el,item,onDone,progressText){
 function renderMemoHome(){
   let list='';
   MEMO_DECKS.forEach(d=>{
-    list+=`<button class="deckbtn" data-id="${d.id}">${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${d.items.length}問</span></button>`;
+    const sc=state.memoScores[d.id];
+    const scoreText=sc?`　前回 ${sc.correct}/${sc.total}(${Math.round(100*sc.correct/sc.total)}%)`:'';
+    list+=`<button class="deckbtn" data-id="${d.id}">${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${d.items.length}問${scoreText}</span></button>`;
   });
   memoPanel.innerHTML=`
     <h2>🧠 単純暗記モード</h2>
@@ -1423,6 +1425,8 @@ function nextMemoQ(){
 }
 function memoQuizResult(){
   const correct=memoQuiz.results.filter(x=>x.ok).length;
+  state.memoScores[memoQuiz.deck.id]={correct,total:memoQuiz.results.length};
+  save();
   let review='';
   memoQuiz.results.forEach(x=>{
     review+=`<div class="review-item"><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.item.q} → ${x.item.a}</div>`;
@@ -1486,7 +1490,7 @@ document.getElementById('btnPopupToggle').addEventListener('click',()=>{
 });
 document.getElementById('btnReset').addEventListener('click',()=>{
   if(confirm('進捗をすべてリセットしますか?')){
-    state={comp:[],reag:[],weak:{},seen:true,best:null,popupOnComplete:state.popupOnComplete,mode:mapMode};
+    state={comp:[],reag:[],weak:{},seen:true,best:null,popupOnComplete:state.popupOnComplete,mode:mapMode,memoScores:state.memoScores};
     save(); renderMap(); updateWeakBadge(); initView();
     toast('リセットしました');
   }
