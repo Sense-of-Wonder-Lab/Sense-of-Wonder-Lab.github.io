@@ -1351,6 +1351,8 @@ function nextDrillQ(){
 const memoPanel=document.getElementById('memoPanel');
 let memoQuiz=null;
 function memoImgSrc(fname){return 'assets/memo/'+encodeURIComponent(fname);}
+const MEMO_OK_PATTERNS=[{l:'💐',r:'🎉'},{l:'🎊',r:'✨'},{l:'👏',r:'👏'},{l:'⭐',r:'⭐'},{l:'🙌',r:'🎉'}];
+const MEMO_NG_PATTERNS=[{l:'',r:'😢'},{l:'💦',r:'💦'},{l:'',r:'🥲'},{l:'',r:'😞'},{l:'🙅',r:''}];
 function renderMemoQ(el,item,onDone,progressText){
   const opts=shuffle([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
   let ch=`<div class="choices textmode">`;
@@ -1368,15 +1370,20 @@ function renderMemoQ(el,item,onDone,progressText){
     btn.addEventListener('click',()=>{
       if(answered)return; answered=true;
       const o=opts[+btn.dataset.i];
+      const nameHTML=btn.innerHTML;
+      btn.style.display='flex';
+      btn.style.flexDirection='row';
+      btn.style.alignItems='center';
+      btn.style.justifyContent='space-between';
       if(o.ok){
         btn.classList.add('correct');
-        const nameHTML=btn.innerHTML;
-        btn.style.display='flex';
-        btn.style.flexDirection='row';
-        btn.style.alignItems='center';
-        btn.style.justifyContent='space-between';
-        btn.innerHTML=`<span>💐</span><span style="flex:1;text-align:center">${nameHTML}</span><span>🎉</span>`;
-      }else btn.classList.add('wrong');
+        const p=sample(MEMO_OK_PATTERNS,1)[0];
+        btn.innerHTML=`<span>${p.l}</span><span style="flex:1;text-align:center">${nameHTML}</span><span>${p.r}</span>`;
+      }else{
+        btn.classList.add('wrong');
+        const p=sample(MEMO_NG_PATTERNS,1)[0];
+        btn.innerHTML=`<span>${p.l}</span><span style="flex:1;text-align:center">${nameHTML}</span><span>${p.r}</span>`;
+      }
       const nb=el.querySelector('#memoNextBtn');
       nb.style.display='block';
       nb.onclick=()=>onDone(o.ok);
