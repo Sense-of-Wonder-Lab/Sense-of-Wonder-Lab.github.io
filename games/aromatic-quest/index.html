@@ -178,8 +178,6 @@ nav button.active{color:var(--blue);font-weight:700}
 .memo-img{display:block;max-width:70%;max-height:150px;margin:0 auto 12px}
 .fixed-next{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:592px;margin:0 auto;z-index:60;box-shadow:0 4px 16px rgba(0,0,0,.18)}
 .fixed-back{position:fixed;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:60;padding:8px 14px;border-radius:99px;border:2px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.circle-pop{position:fixed;top:50%;left:50%;font-size:120px;font-weight:900;color:var(--green);z-index:200;pointer-events:none;animation:circlepop .7s ease-out forwards}
-@keyframes circlepop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
@@ -1353,13 +1351,6 @@ function nextDrillQ(){
 const memoPanel=document.getElementById('memoPanel');
 let memoQuiz=null;
 function memoImgSrc(fname){return 'assets/memo/'+encodeURIComponent(fname);}
-function showCirclePopup(){
-  const p=document.createElement('div');
-  p.className='circle-pop';
-  p.textContent='○';
-  document.body.appendChild(p);
-  setTimeout(()=>p.remove(),700);
-}
 function renderMemoQ(el,item,onDone,progressText){
   const opts=shuffle([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
   let ch=`<div class="choices textmode">`;
@@ -1377,7 +1368,7 @@ function renderMemoQ(el,item,onDone,progressText){
     btn.addEventListener('click',()=>{
       if(answered)return; answered=true;
       const o=opts[+btn.dataset.i];
-      if(o.ok){btn.classList.add('correct');showCirclePopup();}
+      if(o.ok)btn.classList.add('correct');
       else btn.classList.add('wrong');
       const nb=el.querySelector('#memoNextBtn');
       nb.style.display='block';
