@@ -1368,8 +1368,15 @@ function renderMemoQ(el,item,onDone,progressText){
     btn.addEventListener('click',()=>{
       if(answered)return; answered=true;
       const o=opts[+btn.dataset.i];
-      if(o.ok)btn.classList.add('correct');
-      else btn.classList.add('wrong');
+      if(o.ok){
+        btn.classList.add('correct');
+        const nameHTML=btn.innerHTML;
+        btn.style.display='flex';
+        btn.style.flexDirection='row';
+        btn.style.alignItems='center';
+        btn.style.justifyContent='space-between';
+        btn.innerHTML=`<span>💐</span><span style="flex:1;text-align:center">${nameHTML}</span><span>🎉</span>`;
+      }else btn.classList.add('wrong');
       const nb=el.querySelector('#memoNextBtn');
       nb.style.display='block';
       nb.onclick=()=>onDone(o.ok);
