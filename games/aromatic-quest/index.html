@@ -1406,6 +1406,7 @@ function startMemoQuiz(deckId){
   const deck=MEMO_DECKS.find(d=>d.id===deckId);
   const order=shuffle(deck.items.map((_,i)=>i));
   memoQuiz={deck,order,i:0,results:[]};
+  deck.items.forEach(it=>{if(it.img){const im=new Image();im.src=memoImgSrc(it.img);}});
   nextMemoQ();
 }
 function nextMemoQ(){
