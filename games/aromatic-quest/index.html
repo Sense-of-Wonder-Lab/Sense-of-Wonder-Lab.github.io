@@ -148,15 +148,14 @@ nav button.active{color:var(--blue);font-weight:700}
 .closex{margin-left:auto;border:none;background:#f1f5f9;border-radius:99px;width:30px;height:30px;font-size:14px;color:#64748b;flex:none}
 .eqbox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:12.5px;font-weight:600;margin:8px 0;line-height:1.6}
 /* quiz layout */
-.rxn{display:flex;flex-direction:column;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px 8px;margin-bottom:12px}
-.rxn-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.rxn{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px 10px;margin-bottom:12px}
 .cblock{display:flex;flex-direction:column;align-items:center;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:6px 8px 4px;min-width:104px}
 .cblock .cname{font-size:11px;font-weight:600;margin-top:1px;text-align:center}
 .qblock{display:flex;align-items:center;justify-content:center;background:#fffbeb;border:2px dashed var(--accent);border-radius:12px;min-width:104px;min-height:86px;font-size:34px;font-weight:800;color:var(--accent)}
 .qblock.small{min-height:44px;font-size:22px;min-width:150px}
 .reagent-chip{background:#eef2ff;border:1.5px solid #c7d2fe;color:#3730a3;border-radius:99px;padding:5px 12px;font-size:12.5px;font-weight:600;text-align:center;max-width:100%}
 .plus{font-size:16px;font-weight:700;color:#64748b}
-.darrow{font-size:20px;color:#64748b;line-height:1}
+.arrow-h{font-size:22px;font-weight:800;color:#64748b;line-height:1}
 .qprompt{font-size:14px;font-weight:700;margin-bottom:8px;text-align:center}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .choices.textmode{grid-template-columns:1fr}
@@ -1141,19 +1140,16 @@ function quizBodyParts(q){
   const r=q.r;
   let top='';
   if(q.mode==='reactant'){
-    top+=`<div class="rxn-row"><div class="qblock">?</div>`;
+    top+=`<div class="qblock">?</div>`;
   }else{
-    top+=`<div class="rxn-row">${compoundHTML(r.from[0])}`;
+    top+=compoundHTML(r.from[0]);
   }
   (r.coFrom||[]).forEach(c=>{top+=`<span class="plus">+</span>${compoundHTML(c)}`;});
-  top+='</div>';
-  top+=`<div class="rxn-row"><span class="plus">+</span>`;
+  top+=`<span class="plus">+</span>`;
   top+=q.mode==='reagent'?`<div class="qblock small">?</div>`:`<span class="reagent-chip">${r.reagent}</span>`;
-  top+=`</div><div class="darrow">▼</div>`;
-  top+='<div class="rxn-row">';
+  top+=`<span class="arrow-h">→</span>`;
   top+=q.mode==='product'?`<div class="qblock">?</div>`:compoundHTML(r.to[0]);
   (r.coTo||[]).forEach(c=>{top+=`<span class="plus">+</span>${compoundHTML(c)}`;});
-  top+='</div>';
   const isText=q.choices[0].type==='text';
   let ch=`<div class="choices ${isText?'textmode':''}">`;
   q.choices.forEach((c,i)=>{
