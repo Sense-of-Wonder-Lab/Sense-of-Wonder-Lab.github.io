@@ -60,6 +60,9 @@ main{flex:1;position:relative;overflow:hidden}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 #memoPanel{padding-top:84px}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
+#fireworksOverlay{position:fixed;inset:0;pointer-events:none;z-index:65;overflow:hidden}
+.fw-particle{position:absolute;width:7px;height:7px;border-radius:50%;margin:-3.5px;box-shadow:0 0 6px 1px currentColor}
+@keyframes fw-burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
 #answerFxPopup.show{display:flex}
 .afx-box{text-align:center;animation:afxpop .32s cubic-bezier(.34,1.56,.64,1)}
 @keyframes afxpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
@@ -285,6 +288,7 @@ nav button.active{color:var(--blue);font-weight:700}
 <div id="toast"></div>
 <div id="ghost"></div>
 <div id="answerFxPopup"></div>
+<div id="fireworksOverlay"></div>
 <svg id="meas" style="position:fixed;left:-9999px;top:0;width:500px;height:400px;visibility:hidden" xmlns="http://www.w3.org/2000/svg"></svg>
 
 <script>
@@ -1581,10 +1585,41 @@ function memoQuizResult(){
 }
 
 /* ================= 完成演出 ================= */
+function spawnFirework(x,y){
+  const colors=['#f59e0b','#ef4444','#3b82f6','#22c55e','#ec4899','#a855f7','#fde047','#fb923c'];
+  const el=document.getElementById('fireworksOverlay');
+  const n=28;
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div');
+    p.className='fw-particle';
+    const angle=(i/n)*Math.PI*2+Math.random()*0.25;
+    const dist=70+Math.random()*90;
+    p.style.left=x+'px'; p.style.top=y+'px';
+    const col=colors[Math.floor(Math.random()*colors.length)];
+    p.style.background=col; p.style.color=col;
+    p.style.setProperty('--dx',(Math.cos(angle)*dist)+'px');
+    p.style.setProperty('--dy',(Math.sin(angle)*dist)+'px');
+    p.style.animation=`fw-burst ${1+Math.random()*0.5}s ease-out forwards`;
+    el.appendChild(p);
+    setTimeout(()=>p.remove(),1600);
+  }
+}
+function playFireworks(){
+  const el=document.getElementById('fireworksOverlay');
+  el.innerHTML='';
+  const w=window.innerWidth, h=window.innerHeight;
+  const bursts=7;
+  for(let i=0;i<bursts;i++){
+    setTimeout(()=>{
+      spawnFirework(w*(0.15+Math.random()*0.7), h*(0.12+Math.random()*0.4));
+    },i*380);
+  }
+}
 function showComplete(){
+  playFireworks();
   infoSheet.innerHTML=`<h3>🎉 芳香族マップ完成!!<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
     <div style="font-size:14px;line-height:1.9;text-align:center;padding:8px 0">
-    <div style="font-size:52px">🏆</div>
+    <div style="font-size:52px">🎆🏆🎇</div>
     全 ${REACTIONS.length} 反応を制覇しました!<br>
     完成した系統図は<b>そのまま復習教材</b>です。<br>
     化合物や矢印をタップして反応条件を確認しよう。<br><br>
