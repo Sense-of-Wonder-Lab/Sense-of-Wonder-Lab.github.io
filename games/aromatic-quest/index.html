@@ -86,7 +86,7 @@ main{flex:1;position:relative;overflow:hidden}
 .edge-part .edge-line{stroke:var(--accent-deep);stroke-width:2.2}
 .edge-co .edge-line{stroke-dasharray:2 4;stroke-width:1.6;opacity:.8}
 .edge-label-bg{fill:#fff;stroke:#e2e8f0}
-.edge-label{font-size:10.5px;fill:#334155;text-anchor:middle}
+.edge-label{font-size:13px;fill:#334155;text-anchor:middle}
 .edge-decor .edge-line{stroke:#a1a1aa;stroke-width:1.6;stroke-dasharray:3 3}
 .edge-decor .edge-label-bg{fill:#fafafa;stroke:#e4e4e7}
 .edge-decor .edge-label-decor{fill:#71717a;font-style:italic}
@@ -750,9 +750,9 @@ function renderMap(){
     let g=`<g class="${cls}" data-edge="${r.id}" ${(!isC&&isAv&&!hasReag)?`data-drope="${r.id}"`:''}>`;
     g+=`<path class="edge-line" d="${pathD}" marker-end="${marker}"/>`;
     if(isC||hasReag){
-      const w=textW(r.short)+14;
-      g+=`<rect class="edge-label-bg" x="${(lx-w/2).toFixed(1)}" y="${(ly-10).toFixed(1)}" width="${w.toFixed(1)}" height="19" rx="6"/>`;
-      g+=`<text class="edge-label" x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}">${r.short}</text>`;
+      const w=textW(r.short)*1.24+14;
+      g+=`<rect class="edge-label-bg" x="${(lx-w/2).toFixed(1)}" y="${(ly-11).toFixed(1)}" width="${w.toFixed(1)}" height="22" rx="7"/>`;
+      g+=`<text class="edge-label" x="${lx.toFixed(1)}" y="${(ly+4.5).toFixed(1)}">${r.short}</text>`;
     }else if(isAv){
       g+=`<circle class="edge-q-hit" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="22" fill="#000" opacity="0"/>`;
       g+=`<g class="pulse"><circle class="edge-q-circle" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="15"/>`;
@@ -776,9 +776,9 @@ function renderMap(){
     const lx=(p1[0]+p2[0])/2, ly=(p1[1]+p2[1])/2;
     let g=`<g class="edge-decor" data-decor="${d.id}">`;
     g+=`<path class="edge-line" d="M${p1[0].toFixed(1)},${p1[1].toFixed(1)} L${p2[0].toFixed(1)},${p2[1].toFixed(1)}" marker-end="url(#ahd)"/>`;
-    const w=textW(d.short)+14;
-    g+=`<rect class="edge-label-bg" x="${(lx-w/2).toFixed(1)}" y="${(ly-10).toFixed(1)}" width="${w.toFixed(1)}" height="19" rx="6"/>`;
-    g+=`<text class="edge-label edge-label-decor" x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}">${d.short}</text>`;
+    const w=textW(d.short)*1.24+14;
+    g+=`<rect class="edge-label-bg" x="${(lx-w/2).toFixed(1)}" y="${(ly-11).toFixed(1)}" width="${w.toFixed(1)}" height="22" rx="7"/>`;
+    g+=`<text class="edge-label edge-label-decor" x="${lx.toFixed(1)}" y="${(ly+4.5).toFixed(1)}">${d.short}</text>`;
     g+='</g>';
     edges+=g;
   }
