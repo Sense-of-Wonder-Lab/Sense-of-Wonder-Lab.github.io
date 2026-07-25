@@ -61,8 +61,19 @@ main{flex:1;position:relative;overflow:hidden}
 #memoPanel{padding-top:84px}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
 #fireworksOverlay{position:fixed;inset:0;pointer-events:none;z-index:65;overflow:hidden}
-.fw-particle{position:absolute;width:7px;height:7px;border-radius:50%;margin:-3.5px;box-shadow:0 0 6px 1px currentColor}
-@keyframes fw-burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.fw-launch{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff8dc;box-shadow:0 0 5px 1px #fff8dc}
+@keyframes fw-rise{0%{transform:translateY(0);opacity:1}85%{opacity:1}100%{transform:translateY(var(--riseY));opacity:0}}
+.fw-flash{position:absolute;width:10px;height:10px;border-radius:50%;margin:-5px;background:#fff;filter:blur(1px)}
+@keyframes fw-flash{0%{transform:scale(.2);opacity:1}100%{transform:scale(5);opacity:0}}
+.fw-spark{position:absolute;width:5px;height:2px;border-radius:2px;transform-origin:left center}
+@keyframes fw-spark{
+  0%{transform:rotate(var(--ang)) translateX(0) scaleX(1);opacity:1}
+  55%{transform:rotate(var(--ang)) translateX(var(--dist)) scaleX(1.4);opacity:1}
+  100%{transform:rotate(var(--ang)) translateX(calc(var(--dist)*1.2)) translateY(46px) scaleX(.6);opacity:0}
+}
+@media (prefers-reduced-motion: reduce){
+  .fw-launch,.fw-flash,.fw-spark{animation:none !important;opacity:0}
+}
 #answerFxPopup.show{display:flex}
 .afx-box{text-align:center;animation:afxpop .32s cubic-bezier(.34,1.56,.64,1)}
 @keyframes afxpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
@@ -1585,34 +1596,59 @@ function memoQuizResult(){
 }
 
 /* ================= 完成演出 ================= */
-function spawnFirework(x,y){
-  const colors=['#f59e0b','#ef4444','#3b82f6','#22c55e','#ec4899','#a855f7','#fde047','#fb923c'];
+const FW_SHELLS=[
+  {core:'#ffd75e',edge:'#ff8a3d'},
+  {core:'#ff5e6c',edge:'#c81e3a'},
+  {core:'#5ec8ff',edge:'#1e6fc8'},
+  {core:'#fff',edge:'#ffd75e'},
+  {core:'#c893ff',edge:'#6a2fc8'}
+];
+function fwBurst(x,y){
   const el=document.getElementById('fireworksOverlay');
-  const n=28;
+  const shell=FW_SHELLS[Math.floor(Math.random()*FW_SHELLS.length)];
+  const flash=document.createElement('div');
+  flash.className='fw-flash';
+  flash.style.left=x+'px'; flash.style.top=y+'px';
+  flash.style.animation='fw-flash .35s ease-out forwards';
+  el.appendChild(flash);
+  setTimeout(()=>flash.remove(),400);
+  const n=40;
   for(let i=0;i<n;i++){
-    const p=document.createElement('div');
-    p.className='fw-particle';
-    const angle=(i/n)*Math.PI*2+Math.random()*0.25;
-    const dist=70+Math.random()*90;
-    p.style.left=x+'px'; p.style.top=y+'px';
-    const col=colors[Math.floor(Math.random()*colors.length)];
-    p.style.background=col; p.style.color=col;
-    p.style.setProperty('--dx',(Math.cos(angle)*dist)+'px');
-    p.style.setProperty('--dy',(Math.sin(angle)*dist)+'px');
-    p.style.animation=`fw-burst ${1+Math.random()*0.5}s ease-out forwards`;
-    el.appendChild(p);
-    setTimeout(()=>p.remove(),1600);
+    const s=document.createElement('div');
+    s.className='fw-spark';
+    const ang=(i/n)*360+(Math.random()*6-3);
+    const dist=60+Math.random()*70;
+    const dur=1.3+Math.random()*0.6;
+    s.style.left=x+'px'; s.style.top=y+'px';
+    s.style.background=Math.random()<.75?shell.core:shell.edge;
+    s.style.boxShadow=`0 0 4px 1px ${shell.core}`;
+    s.style.setProperty('--ang',ang+'deg');
+    s.style.setProperty('--dist',dist+'px');
+    s.style.animation=`fw-spark ${dur}s cubic-bezier(.12,.65,.25,1) forwards`;
+    el.appendChild(s);
+    setTimeout(()=>s.remove(),dur*1000+150);
   }
+}
+function fwLaunchTo(x,y,fromY){
+  const el=document.getElementById('fireworksOverlay');
+  const l=document.createElement('div');
+  l.className='fw-launch';
+  l.style.left=x+'px'; l.style.top=fromY+'px';
+  l.style.setProperty('--riseY',(y-fromY)+'px');
+  const dur=.55+Math.random()*.15;
+  l.style.animation=`fw-rise ${dur}s ease-out forwards`;
+  el.appendChild(l);
+  setTimeout(()=>{ l.remove(); fwBurst(x,y); }, dur*1000);
 }
 function playFireworks(){
   const el=document.getElementById('fireworksOverlay');
   el.innerHTML='';
   const w=window.innerWidth, h=window.innerHeight;
-  const bursts=7;
-  for(let i=0;i<bursts;i++){
+  const shots=6;
+  for(let i=0;i<shots;i++){
     setTimeout(()=>{
-      spawnFirework(w*(0.15+Math.random()*0.7), h*(0.12+Math.random()*0.4));
-    },i*380);
+      fwLaunchTo(w*(0.15+Math.random()*0.7), h*(0.12+Math.random()*0.4), h);
+    },i*450);
   }
 }
 function showComplete(){
