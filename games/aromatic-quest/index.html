@@ -1099,7 +1099,8 @@ function handleDrop(kind,key,slot){
   const newly=completedIds().filter(id=>!before.has(id));
   renderMap();
   if(newly.length){
-    if(state.popupOnComplete===false){
+    const allDone=completedIds().length===REACTIONS.length;
+    if(state.popupOnComplete===false&&!allDone){
       toast(`🎉 ${RXMAP[newly[0]].name}${newly.length>1?` 他${newly.length}件`:''} 完成!`);
     }else{
       showCompleted(newly);
