@@ -850,7 +850,6 @@ const wrap=document.getElementById('mapWrap');
 const ptrs=new Map(); let dragDist=0, pinchD=0;
 wrap.addEventListener('pointerdown',e=>{
   if(e.target.closest('.zoombtns')||e.target.closest('.modebtns'))return;
-  wrap.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(ptrs.size===1)dragDist=0;
   if(ptrs.size===2){const a=[...ptrs.values()];pinchD=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);}
@@ -860,6 +859,11 @@ wrap.addEventListener('pointermove',e=>{
   const prev=ptrs.get(e.pointerId);
   const r=svgEl.getBoundingClientRect();
   if(ptrs.size===1){
+    /* パン操作と分かってから初めてポインターをキャプチャする(即キャプチャすると
+       クリックの標的がラップ要素にすり替わり、マップ上のクリック選択が効かなくなる) */
+    if(Math.abs(e.clientX-prev.x)+Math.abs(e.clientY-prev.y)>2){
+      try{wrap.setPointerCapture(e.pointerId);}catch(err){}
+    }
     const f=vb.w/r.width;
     vb.x-=(e.clientX-prev.x)*f; vb.y-=(e.clientY-prev.y)*f;
     dragDist+=Math.abs(e.clientX-prev.x)+Math.abs(e.clientY-prev.y);

@@ -312,18 +312,15 @@ nav button.active{color:var(--blue);font-weight:700}
 const NW=150, NH=112;
 
 const COMPOUNDS={
-  methane:{name:'メタン',x:700,y:-260,start:true,kind:'text',text:'CH₄'},
-  chloromethane:{name:'クロロメタン',x:1020,y:-260,kind:'text',text:'CH₃Cl'},
-
-  ethane:{name:'エタン',x:700,y:380,chain:{c:2,bonds:['-']}},
+  ethane:{name:'エタン',x:380,y:380,chain:{c:2,bonds:['-']}},
   diethylEther:{name:'ジエチルエーテル',x:1020,y:380,kind:'text',text:'C₂H₅-O-C₂H₅'},
   aceticAnhydride:{name:'無水酢酸',x:1660,y:380,kind:'text',text:'(CH₃CO)₂O'},
   propene:{name:'プロペン',alt:'(プロピレン)',x:1980,y:380,start:true,chain:{c:3,bonds:['=','-']}},
   twoPropanol:{name:'2-プロパノール',x:2300,y:380,chain:{c:3,bonds:['-','-'],branch:{1:'OH'}}},
   acetone:{name:'アセトン',alt:'分液(抽出)操作には使えない',x:2620,y:380,chain:{c:3,bonds:['-','-'],branch:{1:'O'},branchDbl:{1:true}}},
   propane:{name:'プロパン',x:1980,y:60,chain:{c:3,bonds:['-','-']}},
+  polyethylene:{name:'ポリエチレン',x:700,y:380,kind:'text',text:'(CH₂CH₂)ₙ'},
 
-  chloroethane:{name:'クロロエタン',x:380,y:700,chain:{c:2,bonds:['-'],right:'Cl'}},
   ethylene:{name:'エチレン',alt:'(エテン)常温で気体',x:700,y:700,start:true,chain:{c:2,bonds:['=']}},
   ethanol:{name:'エタノール',x:1020,y:700,start:true,chain:{c:2,bonds:['-'],right:'OH'}},
   acetaldehyde:{name:'アセトアルデヒド',alt:'沸点20℃・還元性あり(銀鏡・フェーリング反応陽性)',x:1340,y:700,chain:{c:2,bonds:['-'],right:'CHO'}},
@@ -332,18 +329,20 @@ const COMPOUNDS={
   propionaldehyde:{name:'プロピオンアルデヒド',x:2300,y:700,chain:{c:3,bonds:['-','-'],right:'CHO'}},
   propionicAcid:{name:'プロピオン酸',x:2620,y:700,chain:{c:3,bonds:['-','-'],right:'COOH'}},
 
+  chloroethane:{name:'クロロエタン',x:380,y:1020,chain:{c:2,bonds:['-'],right:'Cl'}},
   dibromoethane:{name:'1,2-ジブロモエタン',alt:'臭素水の赤褐色が脱色する(アルケンの検出)',x:700,y:1020,chain:{c:2,bonds:['-'],left:'Br',right:'Br'}},
   sodiumEthoxide:{name:'ナトリウムエトキシド',x:1020,y:1020,chain:{c:2,bonds:['-'],right:'ONa'}},
   sodiumAcetate:{name:'酢酸ナトリウム',x:1660,y:1020,chain:{c:2,bonds:['-'],right:'COONa'}},
   ethylAcetate:{name:'酢酸エチル',alt:'無色・芳香をもつ揮発性の液体。水に溶けにくい',x:1980,y:1020,kind:'text',text:'CH₃COOC₂H₅'},
 
-  polyethylene:{name:'ポリエチレン',x:700,y:1340,kind:'text',text:'(CH₂CH₂)ₙ'},
-  methanol:{name:'メタノール',x:1020,y:1340,start:true,kind:'text',text:'CH₃OH'},
-  formaldehyde:{name:'ホルムアルデヒド',alt:'常温で気体。37%水溶液はホルマリン',x:1340,y:1340,kind:'text',text:'HCHO'},
-  formicAcid:{name:'ギ酸',alt:'アルデヒド基をもち還元性あり(銀鏡反応陽性)',x:1660,y:1340,kind:'text',text:'HCOOH'},
+  chloromethane:{name:'クロロメタン',x:1340,y:1340,kind:'text',text:'CH₃Cl'},
+  methane:{name:'メタン',x:1660,y:1340,kind:'text',text:'CH₄'},
+  methanol:{name:'メタノール',x:1980,y:1340,start:true,kind:'text',text:'CH₃OH'},
+  formaldehyde:{name:'ホルムアルデヒド',alt:'常温で気体。37%水溶液はホルマリン',x:2300,y:1340,kind:'text',text:'HCHO'},
+  formicAcid:{name:'ギ酸',alt:'アルデヒド基をもち還元性あり(銀鏡反応陽性)',x:2620,y:1340,kind:'text',text:'HCOOH'},
 
   calciumCarbide:{name:'炭化カルシウム',alt:'(カーバイド)',x:-580,y:700,start:true,kind:'text',text:'CaC₂'},
-  acetylene:{name:'アセチレン',alt:'(エチン)臭素水を脱色する',x:-260,y:700,start:true,chain:{c:2,bonds:['#']}},
+  acetylene:{name:'アセチレン',alt:'(エチン)臭素水を脱色する',x:-260,y:700,chain:{c:2,bonds:['#']}},
   vinylChloride:{name:'塩化ビニル',alt:'ポリ塩化ビニル(PVC)の原料',x:-260,y:380,chain:{c:2,bonds:['='],right:'Cl'}},
   vinylAlcohol:{name:'ビニルアルコール',alt:'不安定・すぐ転位する',x:-260,y:1020,chain:{c:2,bonds:['='],right:'OH'}},
   benzene:{name:'ベンゼン',alt:'アルキンの三分子重合で生成(→芳香族クエストへ)',x:-580,y:380,kind:'ring'},
@@ -362,7 +361,7 @@ const REACTIONS=[
   note:'エチレンに臭素が付加して1,2-ジブロモエタンが生成。臭素水の赤褐色が脱色することはアルケンの検出に用いられる。'},
  {id:'r6',from:['ethylene'],to:['polyethylene'],reagent:'付加重合(触媒)',short:'付加重合',name:'付加重合',
   note:'エチレンが次々に付加重合するとポリエチレンになる。詳細は高分子の範囲で学習。'},
- {id:'r7',from:['ethylene'],to:['acetaldehyde'],reagent:'酸素O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',name:'ワッカー酸化',
+ {id:'r7',from:['ethylene'],to:['acetaldehyde'],reagent:'酸素O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',elbow:90,name:'ワッカー酸化',
   note:'工業的にはエチレンを触媒(PdCl₂・CuCl₂)で酸化してアセトアルデヒドを合成する(ワッカー法/ヘキスト・ワッカー法)。共通テストで出題例あり。過去にはアセチレンへの水付加(水銀触媒)で作っていたが水俣病の原因になった。'},
  {id:'r8',from:['ethanol'],to:['diethylEther'],reagent:'濃硫酸(130℃・分子間脱水)',short:'濃H₂SO₄ 130℃',name:'エーテルの生成(分子間脱水)',
   note:'エタノール2分子が濃硫酸により130℃で分子間脱水するとジエチルエーテルが生成する。'},
@@ -378,6 +377,8 @@ const REACTIONS=[
   note:'カルボン酸とアルコールを酸触媒(濃硫酸)とともに加熱すると脱水縮合が起こりエステルが生成する。平衡反応で、逆反応は加水分解。'},
  {id:'r14',from:['aceticAcid'],to:['sodiumAcetate'],reagent:'NaOH(またはNaHCO₃)',short:'NaOH/NaHCO₃',name:'中和',
   note:'カルボン酸は塩基と中和して塩(ここでは酢酸ナトリウム)になる。炭酸水素ナトリウムとは二酸化炭素を発生しながら反応する。'},
+ {id:'r29',from:['sodiumAcetate'],to:['methane'],reagent:'NaOH固体との混合物を乾留',short:'NaOH固体 乾留',name:'メタンの実験室的製法',
+  note:'酢酸ナトリウムと水酸化ナトリウムの混合物を乾留(空気を断って加熱)するとメタンが得られる。メタンは工業的には天然ガス・原油の分留が主だが、実験室的にはこの方法で作る。'},
  {id:'r15',from:['calciumCarbide'],to:['acetylene'],reagent:'水H₂O',short:'H₂O',name:'アセチレンの製法(カーバイド法)',
   note:'炭化カルシウム(カーバイド)CaC₂に水を加えるとアセチレンが発生する。CaC₂＋2H₂O→Ca(OH)₂＋C₂H₂'},
  {id:'r16',from:['acetylene'],to:['vinylChloride'],reagent:'塩化水素HCl',short:'HCl',name:'塩化水素の付加',
@@ -714,7 +715,7 @@ function applyVB(){svgEl.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}
 function aspect(){const r=svgEl.getBoundingClientRect();return r.height/Math.max(r.width,1);}
 const isMobileView=()=>window.matchMedia('(max-width:480px)').matches;
 function initView(){
-  const b=COMPOUNDS.benzene;
+  const b=COMPOUNDS.ethylene;
   vb.w=Math.min(860,WORLD.w); vb.h=vb.w*aspect();
   vb.x=b.x-vb.w*0.25; vb.y=b.y-vb.h*0.5;
   if(!isMobileView()){
@@ -735,7 +736,7 @@ function fitView(){
 function closeFitView(){
   fitView();
   const f=Math.pow(0.78,8);
-  const b=COMPOUNDS.benzene;
+  const b=COMPOUNDS.ethylene;
   const nw=Math.min(Math.max(vb.w*f,240),WORLD.w*1.6);
   const nf=nw/vb.w;
   vb.w*=nf; vb.h*=nf;
@@ -877,7 +878,6 @@ const wrap=document.getElementById('mapWrap');
 const ptrs=new Map(); let dragDist=0, pinchD=0;
 wrap.addEventListener('pointerdown',e=>{
   if(e.target.closest('.zoombtns')||e.target.closest('.modebtns'))return;
-  wrap.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(ptrs.size===1)dragDist=0;
   if(ptrs.size===2){const a=[...ptrs.values()];pinchD=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);}
@@ -887,6 +887,11 @@ wrap.addEventListener('pointermove',e=>{
   const prev=ptrs.get(e.pointerId);
   const r=svgEl.getBoundingClientRect();
   if(ptrs.size===1){
+    /* パン操作と分かってから初めてポインターをキャプチャする(即キャプチャすると
+       クリックの標的がラップ要素にすり替わり、マップ上のクリック選択が効かなくなる) */
+    if(Math.abs(e.clientX-prev.x)+Math.abs(e.clientY-prev.y)>2){
+      try{wrap.setPointerCapture(e.pointerId);}catch(err){}
+    }
     const f=vb.w/r.width;
     vb.x-=(e.clientX-prev.x)*f; vb.y-=(e.clientY-prev.y)*f;
     dragDist+=Math.abs(e.clientX-prev.x)+Math.abs(e.clientY-prev.y);
