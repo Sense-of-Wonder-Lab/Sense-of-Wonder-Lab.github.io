@@ -333,7 +333,7 @@ const COMPOUNDS={
   dibromoethane:{name:'1,2-ジブロモエタン',alt:'臭素水の赤褐色が脱色する(アルケンの検出)',x:700,y:1020,chain:{c:2,bonds:['-'],left:'Br',right:'Br'}},
   sodiumEthoxide:{name:'ナトリウムエトキシド',x:1020,y:1020,chain:{c:2,bonds:['-'],right:'ONa'}},
   sodiumAcetate:{name:'酢酸ナトリウム',x:1660,y:1020,chain:{c:2,bonds:['-'],right:'COONa'}},
-  ethylAcetate:{name:'酢酸エチル',alt:'無色・芳香をもつ揮発性の液体。水に溶けにくい',x:1980,y:1020,kind:'text',text:'CH₃COOC₂H₅'},
+  ethylAcetate:{name:'酢酸エチル',alt:'無色・芳香をもつ揮発性の液体。水に溶けにくい',x:1340,y:1020,kind:'text',text:'CH₃COOC₂H₅'},
 
   chloromethane:{name:'クロロメタン',x:1340,y:1340,kind:'text',text:'CH₃Cl'},
   methane:{name:'メタン',x:1660,y:1340,kind:'text',text:'CH₄'},
@@ -341,11 +341,11 @@ const COMPOUNDS={
   formaldehyde:{name:'ホルムアルデヒド',alt:'常温で気体。37%水溶液はホルマリン',x:2300,y:1340,kind:'text',text:'HCHO'},
   formicAcid:{name:'ギ酸',alt:'アルデヒド基をもち還元性あり(銀鏡反応陽性)',x:2620,y:1340,kind:'text',text:'HCOOH'},
 
-  calciumCarbide:{name:'炭化カルシウム',alt:'(カーバイド)',x:-580,y:700,start:true,kind:'text',text:'CaC₂'},
-  acetylene:{name:'アセチレン',alt:'(エチン)臭素水を脱色する',x:-260,y:700,chain:{c:2,bonds:['#']}},
-  vinylChloride:{name:'塩化ビニル',alt:'ポリ塩化ビニル(PVC)の原料',x:-260,y:380,chain:{c:2,bonds:['='],right:'Cl'}},
-  vinylAlcohol:{name:'ビニルアルコール',alt:'不安定・すぐ転位する',x:-260,y:1020,chain:{c:2,bonds:['='],right:'OH'}},
-  benzene:{name:'ベンゼン',alt:'アルキンの三分子重合で生成(→芳香族クエストへ)',x:-580,y:380,kind:'ring'},
+  calciumCarbide:{name:'炭化カルシウム',alt:'(カーバイド)',x:-260,y:700,start:true,kind:'text',text:'CaC₂'},
+  acetylene:{name:'アセチレン',alt:'(エチン)臭素水を脱色する',x:60,y:700,chain:{c:2,bonds:['#']}},
+  vinylChloride:{name:'塩化ビニル',alt:'ポリ塩化ビニル(PVC)の原料',x:60,y:380,chain:{c:2,bonds:['='],right:'Cl'}},
+  vinylAlcohol:{name:'ビニルアルコール',alt:'不安定・すぐ転位する',x:60,y:1020,chain:{c:2,bonds:['='],right:'OH'}},
+  benzene:{name:'ベンゼン',alt:'アルキンの三分子重合で生成(→芳香族クエストへ)',x:-260,y:380,kind:'ring'},
 };
 
 const REACTIONS=[
@@ -361,7 +361,7 @@ const REACTIONS=[
   note:'エチレンに臭素が付加して1,2-ジブロモエタンが生成。臭素水の赤褐色が脱色することはアルケンの検出に用いられる。'},
  {id:'r6',from:['ethylene'],to:['polyethylene'],reagent:'付加重合(触媒)',short:'付加重合',name:'付加重合',
   note:'エチレンが次々に付加重合するとポリエチレンになる。詳細は高分子の範囲で学習。'},
- {id:'r7',from:['ethylene'],to:['acetaldehyde'],reagent:'酸素O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',elbow:90,name:'ワッカー酸化',
+ {id:'r7',from:['ethylene'],to:['acetaldehyde'],reagent:'酸素O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',elbow:140,name:'ワッカー酸化',
   note:'工業的にはエチレンを触媒(PdCl₂・CuCl₂)で酸化してアセトアルデヒドを合成する(ワッカー法/ヘキスト・ワッカー法)。共通テストで出題例あり。過去にはアセチレンへの水付加(水銀触媒)で作っていたが水俣病の原因になった。'},
  {id:'r8',from:['ethanol'],to:['diethylEther'],reagent:'濃硫酸(130℃・分子間脱水)',short:'濃H₂SO₄ 130℃',name:'エーテルの生成(分子間脱水)',
   note:'エタノール2分子が濃硫酸により130℃で分子間脱水するとジエチルエーテルが生成する。'},
@@ -373,8 +373,10 @@ const REACTIONS=[
   note:'アルデヒドをさらに酸化するとカルボン酸になる。アセトアルデヒド→酢酸。'},
  {id:'r12',from:['aceticAcid'],to:['aceticAnhydride'],reagent:'脱水剤P₄O₁₀など(加熱)',short:'脱水剤 加熱',name:'脱水(酸無水物の生成)',
   note:'酢酸などを脱水剤とともに加熱すると分子間脱水が起こり酸無水物(無水酢酸)が生成する。'},
- {id:'r13',from:['aceticAcid'],coFrom:['ethanol'],to:['ethylAcetate'],reagent:'濃硫酸(触媒・エステル化)',short:'エタノール+濃H₂SO₄',name:'エステル化',
-  note:'カルボン酸とアルコールを酸触媒(濃硫酸)とともに加熱すると脱水縮合が起こりエステルが生成する。平衡反応で、逆反応は加水分解。'},
+ {id:'r13',from:['aceticAcid'],coFrom:['ethanol'],to:['ethylAcetate'],reagent:'濃硫酸(触媒・エステル化)',short:'エタノール+濃H₂SO₄',offset:16,name:'エステル化',
+  note:'カルボン酸とアルコールを酸触媒(濃硫酸)とともに加熱すると脱水縮合が起こりエステルが生成する。平衡反応で、逆反応は加水分解(r30)。'},
+ {id:'r30',from:['ethylAcetate'],coTo:['ethanol'],to:['aceticAcid'],reagent:'水+希硫酸(酸による加水分解)',short:'水, 希硫酸(加水分解)',offset:-16,name:'酸による加水分解',
+  note:'エステルに水を加え、触媒として酸(希硫酸)を加えて加熱すると加水分解が起こり、カルボン酸とアルコールが生成する。エステル化(r13)の逆反応。'},
  {id:'r14',from:['aceticAcid'],to:['sodiumAcetate'],reagent:'NaOH(またはNaHCO₃)',short:'NaOH/NaHCO₃',name:'中和',
   note:'カルボン酸は塩基と中和して塩(ここでは酢酸ナトリウム)になる。炭酸水素ナトリウムとは二酸化炭素を発生しながら反応する。'},
  {id:'r29',from:['sodiumAcetate'],to:['methane'],reagent:'NaOH固体との混合物を乾留',short:'NaOH固体 乾留',name:'メタンの実験室的製法',
