@@ -343,8 +343,8 @@ const COMPOUNDS={
 
   calciumCarbide:{name:'炭化カルシウム',alt:'(カーバイド)',x:-260,y:700,start:true,kind:'text',text:'CaC₂'},
   acetylene:{name:'アセチレン',alt:'(エチン)臭素水を脱色する',x:60,y:700,chain:{c:2,bonds:['#']}},
-  vinylChloride:{name:'塩化ビニル',alt:'ポリ塩化ビニル(PVC)の原料',x:60,y:380,chain:{c:2,bonds:['='],right:'Cl'}},
-  vinylAlcohol:{name:'ビニルアルコール',alt:'不安定・すぐ転位する',x:60,y:1020,chain:{c:2,bonds:['='],right:'OH'}},
+  vinylChloride:{name:'塩化ビニル',alt:'ポリ塩化ビニル(PVC)の原料',x:60,y:1020,chain:{c:2,bonds:['='],right:'Cl'}},
+  vinylAlcohol:{name:'ビニルアルコール',alt:'不安定・すぐ転位する',x:60,y:380,chain:{c:2,bonds:['='],right:'OH'}},
   benzene:{name:'ベンゼン',alt:'アルキンの三分子重合で生成(→芳香族クエストへ)',x:-260,y:380,kind:'ring'},
 };
 
@@ -361,7 +361,7 @@ const REACTIONS=[
   note:'エチレンに臭素が付加して1,2-ジブロモエタンが生成。臭素水の赤褐色が脱色することはアルケンの検出に用いられる。'},
  {id:'r6',from:['ethylene'],to:['polyethylene'],reagent:'付加重合(触媒)',short:'付加重合',name:'付加重合',
   note:'エチレンが次々に付加重合するとポリエチレンになる。詳細は高分子の範囲で学習。'},
- {id:'r7',from:['ethylene'],to:['acetaldehyde'],reagent:'酸素O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',elbow:140,name:'ワッカー酸化',
+ {id:'r7',from:['ethylene'],to:['acetaldehyde'],reagent:'酸素O₂(PdCl₂・CuCl₂触媒)',short:'O₂, PdCl₂/CuCl₂',elbow:140,elbowX1:780,elbowX2:940,name:'ワッカー酸化',
   note:'工業的にはエチレンを触媒(PdCl₂・CuCl₂)で酸化してアセトアルデヒドを合成する(ワッカー法/ヘキスト・ワッカー法)。共通テストで出題例あり。過去にはアセチレンへの水付加(水銀触媒)で作っていたが水俣病の原因になった。'},
  {id:'r8',from:['ethanol'],to:['diethylEther'],reagent:'濃硫酸(130℃・分子間脱水)',short:'濃H₂SO₄ 130℃',name:'エーテルの生成(分子間脱水)',
   note:'エタノール2分子が濃硫酸により130℃で分子間脱水するとジエチルエーテルが生成する。'},
@@ -373,10 +373,14 @@ const REACTIONS=[
   note:'アルデヒドをさらに酸化するとカルボン酸になる。アセトアルデヒド→酢酸。'},
  {id:'r12',from:['aceticAcid'],to:['aceticAnhydride'],reagent:'脱水剤P₄O₁₀など(加熱)',short:'脱水剤 加熱',name:'脱水(酸無水物の生成)',
   note:'酢酸などを脱水剤とともに加熱すると分子間脱水が起こり酸無水物(無水酢酸)が生成する。'},
- {id:'r13',from:['aceticAcid'],coFrom:['ethanol'],to:['ethylAcetate'],reagent:'濃硫酸(触媒・エステル化)',short:'エタノール+濃H₂SO₄',offset:16,name:'エステル化',
+ {id:'r13',from:['aceticAcid'],to:['ethylAcetate'],reagent:'エタノール+濃硫酸(触媒・エステル化)',short:'エタノール+濃H₂SO₄',offset:16,name:'エステル化',
   note:'カルボン酸とアルコールを酸触媒(濃硫酸)とともに加熱すると脱水縮合が起こりエステルが生成する。平衡反応で、逆反応は加水分解(r30)。'},
- {id:'r30',from:['ethylAcetate'],coTo:['ethanol'],to:['aceticAcid'],reagent:'水+希硫酸(酸による加水分解)',short:'水, 希硫酸(加水分解)',offset:-16,name:'酸による加水分解',
+ {id:'r30',from:['ethylAcetate'],to:['aceticAcid'],reagent:'水+希硫酸(酸による加水分解)',short:'水, 希硫酸(加水分解)',offset:-16,name:'酸による加水分解',
   note:'エステルに水を加え、触媒として酸(希硫酸)を加えて加熱すると加水分解が起こり、カルボン酸とアルコールが生成する。エステル化(r13)の逆反応。'},
+ {id:'r31',from:['ethylAcetate'],to:['ethanol'],reagent:'水+希硫酸(酸による加水分解)',short:'水, 希硫酸(加水分解)',name:'酸による加水分解(アルコール側)',
+  note:'酢酸エチルを酸で加水分解すると、酢酸とエタノールの両方が同時に生成する(r30と対の反応)。'},
+ {id:'r32',from:['ethylAcetate'],to:['sodiumAcetate'],reagent:'NaOH水溶液(けん化)',short:'NaOH aq(けん化)',name:'けん化',
+  note:'エステルに水酸化ナトリウム水溶液を加えて加熱すると、けん化(塩基による加水分解)が起こり、カルボン酸のナトリウム塩とアルコールが得られる。酸による加水分解(r30・r31)と異なり不可逆反応。'},
  {id:'r14',from:['aceticAcid'],to:['sodiumAcetate'],reagent:'NaOH(またはNaHCO₃)',short:'NaOH/NaHCO₃',name:'中和',
   note:'カルボン酸は塩基と中和して塩(ここでは酢酸ナトリウム)になる。炭酸水素ナトリウムとは二酸化炭素を発生しながら反応する。'},
  {id:'r29',from:['sodiumAcetate'],to:['methane'],reagent:'NaOH固体との混合物を乾留',short:'NaOH固体 乾留',name:'メタンの実験室的製法',
@@ -387,7 +391,7 @@ const REACTIONS=[
   note:'アセチレンにHClが付加すると塩化ビニルが生成する。ポリ塩化ビニル(PVC)の原料。'},
  {id:'r17',from:['acetylene'],to:['vinylAlcohol'],reagent:'水H₂O(HgSO₄触媒)',short:'H₂O, HgSO₄',name:'水の付加',
   note:'水銀触媒(HgSO₄)を用いてアセチレンに水を付加させると、不安定なビニルアルコールが生じる。'},
- {id:'r18',from:['vinylAlcohol'],to:['acetaldehyde'],reagent:'分子内転位(ケト-エノール互変異性)',short:'転位',name:'転位',
+ {id:'r18',from:['vinylAlcohol'],to:['acetaldehyde'],reagent:'分子内転位(ケト-エノール互変異性)',short:'転位',elbow:150,name:'転位',
   note:'ビニルアルコール(エノール形)は不安定で、ただちに安定なアセトアルデヒド(ケト形)に転位する。r7・r10と同じ物質に合流する!'},
  {id:'r19',from:['acetylene'],to:['ethylene'],reagent:'水素H₂(Ni/Pt触媒・1分子)',short:'H₂(1分子)',name:'水素の付加',
   note:'アセチレンに水素を1分子付加させるとエチレンになる。さらにもう1分子付加させるとエタンまで還元できる(参考ルート参照)。'},
@@ -569,6 +573,8 @@ const MEMO_DECKS=[
 const DECOR_EDGES=[
  {id:'d1',from:'acetylene',to:'ethane',short:'2H₂(Ni/Pt触媒)',name:'水素の付加(2分子)',
   note:'※アセチレンにH₂を2分子付加させると、エチレンを経て直接エタンまで還元することも出来る(参考ルート)。'},
+ {id:'d2',from:'propene',to:'onePropanol',short:'副生成物(微量)',name:'水の付加(副生成物)',
+  note:'※プロペンへの水の付加はマルコフニコフ則に従い主生成物は2-プロパノールだが、少量の副生成物として1-プロパノールも生じる(参考)。'},
 ];
 
 /* ================= 構造式SVG(鎖状骨格構造) ================= */
@@ -773,11 +779,12 @@ function renderMap(){
     let p1,p2,cx,cy,pathD;
     if(r.elbow){
       const clear=r.elbow;
-      const topA=edgePt(A,A.x,A.y-1000), topB=edgePt(B,B.x,B.y-1000);
       const midY=Math.min(A.y,B.y)-clear;
+      const ax=r.elbowX1!=null?r.elbowX1:A.x, bx=r.elbowX2!=null?r.elbowX2:B.x;
+      const topA=edgePt(A,ax,midY), topB=edgePt(B,bx,midY);
       p1=topA; p2=topB;
-      cx=(p1[0]+p2[0])/2; cy=midY;
-      pathD=`M${p1[0].toFixed(1)},${p1[1].toFixed(1)} L${p1[0].toFixed(1)},${midY.toFixed(1)} L${p2[0].toFixed(1)},${midY.toFixed(1)} L${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+      cx=(ax+bx)/2; cy=midY;
+      pathD=`M${p1[0].toFixed(1)},${p1[1].toFixed(1)} L${ax.toFixed(1)},${midY.toFixed(1)} L${bx.toFixed(1)},${midY.toFixed(1)} L${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
     }else if(r.offset){
       const cids=[r.from[0],r.to[0]].sort();
       const N1=COMPOUNDS[cids[0]], N2=COMPOUNDS[cids[1]];
