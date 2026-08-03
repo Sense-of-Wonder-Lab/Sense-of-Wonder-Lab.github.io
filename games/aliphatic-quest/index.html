@@ -434,6 +434,33 @@ const REACTIONS=[
 const RXMAP=Object.fromEntries(REACTIONS.map(r=>[r.id,r]));
 const REAGENTS=[...new Set(REACTIONS.flatMap(r=>[r.reagent,...(r.accept||[])]))];
 
+/* ================= あいうえお順ソート用の読み ================= */
+const COMPOUND_YOMI={
+  ethane:'えたん', diethylEther:'じえちるえーてる', aceticAnhydride:'むすいさくさん', propene:'ぷろぺん',
+  twoPropanol:'ぷろぱのーる2', acetone:'あせとん', propane:'ぷろぱん', polyethylene:'ぽりえちれん',
+  ethylene:'えちれん', ethanol:'えたのーる', acetaldehyde:'あせとあるでひど', aceticAcid:'さくさん',
+  calciumAcetate:'さくさんかるしうむ', onePropanol:'ぷろぱのーる1', propionaldehyde:'ぷろぴおんあるでひど',
+  propionicAcid:'ぷろぴおんさん', chloroethane:'くろろえたん', dibromoethane:'じぶろもえたん',
+  sodiumEthoxide:'なとりうむえときしど', sodiumAcetate:'さくさんなとりうむ', ethylAcetate:'さくさんえちる',
+  chloromethane:'くろろめたん', methane:'めたん', dichloromethane:'じくろろめたん',
+  trichloromethane:'とりくろろめたん', tetrachloromethane:'てとらくろろめたん', methanol:'めたのーる',
+  formaldehyde:'ほるむあるでひど', formicAcid:'ぎさん', calciumCarbide:'たんかかるしうむ',
+  acetylene:'あせちれん', vinylChloride:'えんかびにる', vinylAlcohol:'びにるあるこーる',
+  benzene:'べんぜん', vinylAcetate:'さくさんびにる',
+};
+const REAGENT_YOMI={
+  '水素H₂(Ni or Pt触媒)':'すいそ', '塩化水素HCl':'えんかすいそ', '水H₂O/H₂SO₄(触媒)':'みずりゅうさん',
+  '160℃ 濃硫酸(触媒)':'のうりゅうさん160', '臭素水Br₂':'しゅうそすい', '付加重合':'ふかじゅうごう',
+  '酸素O₂(PdCl₂・CuCl₂触媒)':'さんそ', '130℃ 濃硫酸(触媒)':'のうりゅうさん130', '金属ナトリウムNa':'きんぞくなとりうむ',
+  '酸化剤':'さんかざい', '脱水剤P₄O₁₀など(加熱)':'だっすいざい', 'エタノール/濃硫酸(触媒)':'えたのーるのうりゅうさん',
+  '希硫酸(加水分解)':'きりゅうさん', 'NaOH水溶液(けん化)':'すいさんかなとりうむ1', 'NaOH水溶液orNaHCO₃':'すいさんかなとりうむ2',
+  'Ca(OH)₂水溶液':'すいさんかかるしうむ', '乾留':'かんりゅう', 'NaOH(乾留)':'すいさんかなとりうむ3',
+  '水H₂O':'みず', '水H₂O/HgSO₄(触媒)':'みずすいぎん', '酢酸':'さくさん', '不安定(ケトエノール互変異性)':'ふあんてい',
+  '赤熱した鉄Fe(触媒)・3分子重合':'せきねつしたてつ', '塩素Cl₂(光)':'えんそ',
+};
+function sortedCompoundIds(){return Object.keys(COMPOUNDS).sort((a,b)=>{const ya=COMPOUND_YOMI[a]||COMPOUNDS[a].name, yb=COMPOUND_YOMI[b]||COMPOUNDS[b].name; return ya<yb?-1:ya>yb?1:0;});}
+function sortedReagents(){return [...REAGENTS].sort((a,b)=>{const ya=REAGENT_YOMI[a]||a, yb=REAGENT_YOMI[b]||b; return ya<yb?-1:ya>yb?1:0;});}
+
 /* ================= 暗記モード用データ(MONOXER教材より) ================= */
 const MEMO_DECKS=[
 {"id":"d0","name":"No.1 構造式(名称当て)","items":[
@@ -1031,7 +1058,7 @@ const trayReag=document.getElementById('trayReag');
 function renderTray(){
   const sc=trayComp.scrollLeft, sr=trayReag.scrollLeft;
   let h='';
-  for(const id in COMPOUNDS){
+  for(const id of sortedCompoundIds()){
     if(COMPOUNDS[id].start)continue;
     if(state.comp.includes(id))continue;
     h+=`<div class="tcard" data-kind="compound" data-key="${id}">`+
@@ -1040,7 +1067,7 @@ function renderTray(){
   }
   trayComp.innerHTML=h;
   let h2='';
-  for(const rg of REAGENTS){
+  for(const rg of sortedReagents()){
     const uses=REACTIONS.filter(r=>r.reagent===rg||(r.accept||[]).includes(rg));
     if(uses.length&&uses.every(complete))continue;
     h2+=`<div class="tcard reag" data-kind="reagent" data-key="${rg}"><div class="treag">${rg}</div></div>`;
