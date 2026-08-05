@@ -129,6 +129,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
     <option value="index.html" selected>無機化学クエスト</option>
   </select>
+  <div class="title" id="hdrTitle" style="display:none"></div>
 </header>
 
 <main>
@@ -3973,10 +3974,14 @@ function confirmDialog(message,onConfirm){
 }
 
 /* ================= ナビ・共通 ================= */
+const VIEW_TITLES={challenge:'⚡ チャレンジモード',weak:'🎯 弱点特訓'};
 function switchView(view){
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
+  const t=document.getElementById('hdrTitle');
+  if(VIEW_TITLES[view]){t.style.display='';t.textContent=VIEW_TITLES[view];}
+  else t.style.display='none';
   if(view==='home'&&!catDrill)renderHome();
   if(view==='challenge'&&(!chal||chal.over))renderChallengeHome();
   if(view==='weak'&&!drill)renderWeakHome();

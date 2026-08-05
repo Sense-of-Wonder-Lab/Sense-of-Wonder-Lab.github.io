@@ -33,7 +33,7 @@ header{
   flex:none;display:flex;align-items:center;gap:10px;
 }
 header .title{font-weight:700;font-size:15px;letter-spacing:.02em}
-.questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:12px;padding:5px 6px;font-family:inherit;margin-right:6px}
+.questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit;margin-bottom:2px}
 .questSelect option{color:var(--ink)}
 header .sub{font-size:10px;opacity:.75}
 .progress-wrap{flex:1;min-width:60px}
@@ -230,18 +230,20 @@ nav button.active{color:var(--blue);font-weight:700}
 
 <header>
   <div>
-    <div class="title" id="hdrTitle">🧪 芳香族クエスト</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <select class="questSelect" id="questSelect">
+        <option value="index.html" selected>芳香族クエスト</option>
+        <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
+        <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+      </select>
+      <div class="title" id="hdrTitle" style="display:none">🧪 芳香族クエスト</div>
+    </div>
     <div class="sub" id="hdrSub">反応系統図を完成させよう</div>
   </div>
   <div class="progress-wrap" id="hdrProgressWrap">
     <div class="progress-label" id="progLabel">0 / 0 反応</div>
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
-  <select class="questSelect" id="questSelect">
-    <option value="index.html" selected>芳香族クエスト</option>
-    <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
-    <option value="../inorganic-quest/index.html">無機化学クエスト</option>
-  </select>
   <button id="btnReset">リセット</button>
 </header>
 
@@ -1303,7 +1305,8 @@ const chalPanel=document.getElementById('chalPanel');
 let chal=null, chalKind='score', chalTimerIv=null;
 function stopChalTimer(){if(chalTimerIv){clearInterval(chalTimerIv);chalTimerIv=null;}}
 function chalHeaderUpdate(sub){
-  document.getElementById('hdrTitle').textContent='⚡ チャレンジモード';
+  const t=document.getElementById('hdrTitle');
+  t.style.display=''; t.textContent='⚡ チャレンジモード';
   document.getElementById('hdrSub').textContent=sub||'';
   document.getElementById('hdrProgressWrap').style.display='none';
   document.getElementById('btnReset').style.display='none';
@@ -1472,13 +1475,14 @@ const memoPanel=document.getElementById('memoPanel');
 let memoQuiz=null;
 function memoImgSrc(fname){return 'assets/memo/'+encodeURIComponent(fname);}
 function memoHeaderUpdate(sub){
-  document.getElementById('hdrTitle').textContent='🧠 暗記モード';
+  const t=document.getElementById('hdrTitle');
+  t.style.display=''; t.textContent='🧠 暗記モード';
   document.getElementById('hdrSub').textContent=sub||'';
   document.getElementById('hdrProgressWrap').style.display='none';
   document.getElementById('btnReset').style.display='none';
 }
 function restoreMainHeader(){
-  document.getElementById('hdrTitle').textContent='🧪 芳香族クエスト';
+  document.getElementById('hdrTitle').style.display='none';
   document.getElementById('hdrSub').textContent='反応系統図を完成させよう';
   document.getElementById('hdrProgressWrap').style.display='';
   document.getElementById('btnReset').style.display='';
