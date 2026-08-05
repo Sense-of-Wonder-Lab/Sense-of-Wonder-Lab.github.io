@@ -291,9 +291,9 @@ nav button.active{color:var(--blue);font-weight:700}
 
 <nav>
   <button data-view="map" class="active"><span class="ico">🗺️</span>マップ</button>
+  <button data-view="memo"><span class="ico">🧠</span>暗記</button>
   <button data-view="challenge"><span class="ico">⚡</span>チャレンジ</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
-  <button data-view="memo"><span class="ico">🧠</span>暗記</button>
 </nav>
 
 <div class="modal" id="infoModal"><div class="sheet" id="infoSheet"></div></div>
@@ -655,7 +655,7 @@ function compoundHTML(id,big){
 }
 
 /* ================= 状態 ================= */
-let state={comp:[],reag:[],weak:{},seen:false,bestList:{score:[],time:[]},mode:'normal',memoScores:{}};
+let state={comp:[],reag:[],weak:{},seen:false,bestList:{score:[],time:[]},mode:'normal',memoScores:{},memoInProgress:{}};
 function save(){try{localStorage.setItem('aromaQuest2',JSON.stringify(state));}catch(e){}}
 function load(){try{const s=localStorage.getItem('aromaQuest2');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
 let mapMode='normal';
@@ -1418,7 +1418,15 @@ function memoItemFromKey(key){
   const deck=MEMO_DECKS.find(d=>d.id===deckId);
   return deck?{deck,item:deck.items[+idxStr]}:null;
 }
+function weakHeaderUpdate(sub){
+  const t=document.getElementById('hdrTitle');
+  t.style.display=''; t.textContent='🎯 弱点特訓';
+  document.getElementById('hdrSub').textContent=sub||'';
+  document.getElementById('hdrProgressWrap').style.display='none';
+  document.getElementById('btnReset').style.display='none';
+}
 function renderWeakHome(){
+  weakHeaderUpdate();
   const n=weakCount();
   let list='';
   for(const key in state.weak){
@@ -1450,6 +1458,8 @@ function nextDrillQ(){
   while(drill.i<drill.ids.length&&!(drill.ids[drill.i] in state.weak))drill.i++;
   if(drill.i>=drill.ids.length){drill=null;renderWeakHome();updateWeakBadge();toast('特訓おつかれさま!');return;}
   const key=drill.ids[drill.i];
+  const progressText=`残り ${drill.ids.length-drill.i} 件`;
+  weakHeaderUpdate(progressText);
   weakPanel.innerHTML='<div id="dq"></div>';
   const finish=ok=>{
     if(ok){
@@ -1459,7 +1469,6 @@ function nextDrillQ(){
     save(); updateWeakBadge();
     drill.i++; nextDrillQ();
   };
-  const progressText=`弱点特訓　残り ${drill.ids.length-drill.i} 件`;
   if(isMemoKey(key)){
     const found=memoItemFromKey(key);
     renderMemoQ(document.getElementById('dq'),found.item,finish,progressText);
@@ -1548,31 +1557,60 @@ function renderMemoQ(el,item,onDone,progressText){
     });
   });
 }
+function setMemoFxVisible(visible){
+  document.getElementById('btnAnswerFx').style.display=visible?'':'none';
+  document.getElementById('btnAnswerAuto').style.display=visible?'':'none';
+}
 function renderMemoHome(){
   memoHeaderUpdate('セットを選んでください');
+  setMemoFxVisible(false);
   let list='';
   MEMO_DECKS.forEach(d=>{
     const sc=state.memoScores[d.id];
-    const pct=sc?Math.round(100*sc.correct/sc.total):null;
-    list+=`<button class="deckbtn${pct===100?' perfect':''}" data-id="${d.id}">
-      <span>${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${d.items.length}問</span></span>
-      ${sc?`<span class="deckbtn-score">${sc.correct}/${sc.total}<span class="deckbtn-pct">${pct}%</span></span>`:''}
+    const lastPct=sc?Math.round(100*sc.correct/sc.total):0;
+    const bestPct=sc?(sc.best||lastPct):0;
+    const ip=state.memoInProgress&&state.memoInProgress[d.id];
+    list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-id="${d.id}">
+      <span>${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.order.length})・`:''}${d.items.length}問</span></span>
+      ${sc?`<span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%</span></span>`:''}
       </button>`;
   });
   memoPanel.innerHTML=`
     <h2>🧠 暗記モード</h2>
     <div class="card-ui">
-      <div style="font-size:13.5px;line-height:1.8">セットを選ぶと4択でランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
+      <div style="font-size:13.5px;line-height:1.8">セットを選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
     <div class="card-ui"><b>セットを選ぶ</b><div class="decklist">${list}</div></div>`;
   memoPanel.querySelectorAll('.deckbtn').forEach(b=>{
     b.onclick=()=>startMemoQuiz(b.dataset.id);
   });
 }
-function startMemoQuiz(deckId){
+function startMemoQuiz(deckId,mode){
+  if(!state.memoInProgress)state.memoInProgress={};
+  const ip=state.memoInProgress[deckId];
+  if(ip&&!mode){
+    memoHeaderUpdate('再開しますか？');
+    setMemoFxVisible(false);
+    const deck=MEMO_DECKS.find(d=>d.id===deckId);
+    memoPanel.innerHTML=`<div class="card-ui" style="text-align:center">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${deck.name}」は ${ip.i} / ${ip.order.length} 問まで進んでいます</div>
+      <button class="bigbtn" id="resumeBtn">続きから</button>
+      <button class="bigbtn secondary" id="restartBtn">最初から</button>
+      <button class="backbtn" id="chooseBack" style="margin-top:8px">← セット選択に戻る</button>
+    </div>`;
+    document.getElementById('resumeBtn').onclick=()=>startMemoQuiz(deckId,'resume');
+    document.getElementById('restartBtn').onclick=()=>startMemoQuiz(deckId,'restart');
+    document.getElementById('chooseBack').onclick=()=>renderMemoHome();
+    return;
+  }
   const deck=MEMO_DECKS.find(d=>d.id===deckId);
-  const order=shuffle(deck.items.map((_,i)=>i));
-  memoQuiz={deck,order,i:0,results:[]};
+  if(mode==='resume'){
+    memoQuiz={deck,order:ip.order,i:ip.i,results:ip.results};
+  }else{
+    delete state.memoInProgress[deckId]; save();
+    const order=shuffle(deck.items.map((_,i)=>i));
+    memoQuiz={deck,order,i:0,results:[]};
+  }
   deck.items.forEach(it=>{if(it.img){const im=new Image();im.src=memoImgSrc(it.img);}});
   nextMemoQ();
 }
@@ -1583,8 +1621,13 @@ function nextMemoQ(){
   const item=deck.items[idx];
   const key=`memo:${deck.id}:${idx}`;
   memoHeaderUpdate(`${deck.name}　${memoQuiz.i+1} / ${memoQuiz.order.length}`);
+  setMemoFxVisible(true);
   memoPanel.innerHTML='<div id="mq"></div><button class="fixed-back" id="memoBackBtn">↩ セット選択</button>';
-  document.getElementById('memoBackBtn').onclick=()=>{memoQuiz=null;renderMemoHome();};
+  document.getElementById('memoBackBtn').onclick=()=>{
+    state.memoInProgress[memoQuiz.deck.id]={order:memoQuiz.order,i:memoQuiz.i,results:memoQuiz.results};
+    save();
+    memoQuiz=null; renderMemoHome();
+  };
   renderMemoQ(document.getElementById('mq'),item,ok=>{
     memoQuiz.results.push({item,ok});
     if(!ok){state.weak[key]=2;save();updateWeakBadge();}
@@ -1618,8 +1661,14 @@ function reviewRetry(item){
 }
 function memoQuizResult(){
   const correct=memoQuiz.results.filter(x=>x.ok).length;
-  state.memoScores[memoQuiz.deck.id]={correct,total:memoQuiz.results.length};
+  const total=memoQuiz.results.length;
+  const pct=Math.round(100*correct/total);
+  const prev=state.memoScores[memoQuiz.deck.id];
+  const best=Math.max(prev?prev.best||0:0,pct);
+  state.memoScores[memoQuiz.deck.id]={correct,total,best};
+  if(state.memoInProgress)delete state.memoInProgress[memoQuiz.deck.id];
   memoHeaderUpdate(`${memoQuiz.deck.name}　結果発表`);
+  setMemoFxVisible(false);
   save();
   let review='';
   memoQuiz.results.forEach((x,i)=>{
@@ -1628,7 +1677,8 @@ function memoQuizResult(){
   memoPanel.innerHTML=`
     <h2>結果発表</h2>
     <div class="card-ui" style="text-align:center">
-      <div class="score-line" style="font-size:22px">正解 ${correct} / ${memoQuiz.results.length}</div>
+      <div class="score-line" style="font-size:22px">正解 ${correct} / ${total}(${pct}%)</div>
+      <div class="muted">${pct>=best?'自己ベスト更新!':`最高記録 ${best}%`}</div>
       <button class="bigbtn" id="memoAgain">もう一度</button>
       <button class="bigbtn secondary" id="memoHome">セット選択に戻る</button>
     </div>
@@ -1717,13 +1767,15 @@ document.querySelectorAll('nav button').forEach(b=>{
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('view-'+b.dataset.view).classList.add('active');
     if(b.dataset.view!=='challenge'&&chal&&!chal.over){stopChalTimer();chal=null;}
-    if(b.dataset.view==='weak'&&!drill)renderWeakHome();
     if(b.dataset.view==='challenge'){
       if(!chal||chal.over)renderChallengeHome();
       else chalHeaderUpdate(chal.kind==='score'?`連続正解 ${chal.correct}問`:`正解 ${chal.correct}問`);
     }else if(b.dataset.view==='memo'){
       if(!memoQuiz)renderMemoHome();
       else memoHeaderUpdate(`${memoQuiz.deck.name}　${memoQuiz.i+1} / ${memoQuiz.order.length}`);
+    }else if(b.dataset.view==='weak'){
+      if(!drill)renderWeakHome();
+      else weakHeaderUpdate(`残り ${drill.ids.length-drill.i} 件`);
     }else{
       restoreMainHeader();
     }
@@ -1751,7 +1803,7 @@ document.getElementById('btnPopupToggle').addEventListener('click',()=>{
 });
 document.getElementById('btnReset').addEventListener('click',()=>{
   if(confirm('進捗をすべてリセットしますか?')){
-    state={comp:[],reag:[],weak:{},seen:true,bestList:state.bestList,popupOnComplete:state.popupOnComplete,answerFx:state.answerFx,answerAuto:state.answerAuto,mode:mapMode,memoScores:state.memoScores};
+    state={comp:[],reag:[],weak:{},seen:true,bestList:state.bestList,popupOnComplete:state.popupOnComplete,answerFx:state.answerFx,answerAuto:state.answerAuto,mode:mapMode,memoScores:state.memoScores,memoInProgress:state.memoInProgress};
     save(); renderMap(); updateWeakBadge(); initView();
     toast('リセットしました');
   }
