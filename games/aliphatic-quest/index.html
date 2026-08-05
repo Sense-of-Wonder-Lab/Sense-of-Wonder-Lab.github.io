@@ -1649,11 +1649,24 @@ function setMemoFxVisible(visible){
   document.getElementById('btnAnswerFx').style.display=visible?'':'none';
   document.getElementById('btnAnswerAuto').style.display=visible?'':'none';
 }
+let memoSort={field:'no',dir:'asc'};
+function sortedMemoDecks(){
+  const arr=MEMO_DECKS.map((d,i)=>({d,i}));
+  arr.sort((a,b)=>{
+    let av,bv;
+    if(memoSort.field==='pct'){
+      const sa=state.memoScores[a.d.id], sb=state.memoScores[b.d.id];
+      av=sa?(sa.best||0):0; bv=sb?(sb.best||0):0;
+    }else{ av=a.i; bv=b.i; }
+    return memoSort.dir==='asc'?av-bv:bv-av;
+  });
+  return arr.map(x=>x.d);
+}
 function renderMemoHome(){
   memoHeaderUpdate('セットを選んでください');
   setMemoFxVisible(false);
   let list='';
-  MEMO_DECKS.forEach(d=>{
+  sortedMemoDecks().forEach(d=>{
     const sc=state.memoScores[d.id];
     const lastPct=sc?Math.round(100*sc.correct/sc.total):0;
     const bestPct=sc?(sc.best||lastPct):0;
@@ -1668,7 +1681,17 @@ function renderMemoHome(){
     <div class="card-ui">
       <div style="font-size:13.5px;line-height:1.8">セットを選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
+    <div class="card-ui">
+      <div class="scopebtns">
+        <button id="sortNo" class="${memoSort.field==='no'?'sel':''}">No順</button>
+        <button id="sortPct" class="${memoSort.field==='pct'?'sel':''}">正答率順</button>
+        <button id="sortDirBtn">${memoSort.dir==='asc'?'▲昇順':'▼降順'}</button>
+      </div>
+    </div>
     <div class="card-ui"><b>セットを選ぶ</b><div class="decklist">${list}</div></div>`;
+  document.getElementById('sortNo').onclick=()=>{memoSort.field='no';renderMemoHome();};
+  document.getElementById('sortPct').onclick=()=>{memoSort.field='pct';renderMemoHome();};
+  document.getElementById('sortDirBtn').onclick=()=>{memoSort.dir=memoSort.dir==='asc'?'desc':'asc';renderMemoHome();};
   memoPanel.querySelectorAll('.deckbtn').forEach(b=>{
     b.onclick=()=>startMemoQuiz(b.dataset.id);
   });

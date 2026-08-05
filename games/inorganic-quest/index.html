@@ -3701,9 +3701,22 @@ let catDrill=null;
 function catStats(cat){
   return state.catStats[cat]||null;
 }
+let catSort={field:'no',dir:'asc'};
+function sortedCategories(){
+  const arr=CATEGORIES.map((c,i)=>({c,i}));
+  arr.sort((a,b)=>{
+    let av,bv;
+    if(catSort.field==='pct'){
+      const sa=catStats(a.c.name), sb=catStats(b.c.name);
+      av=sa?(sa.best||0):0; bv=sb?(sb.best||0):0;
+    }else{ av=a.i; bv=b.i; }
+    return catSort.dir==='asc'?av-bv:bv-av;
+  });
+  return arr.map(x=>x.c);
+}
 function renderHome(){
   let list='';
-  for(const c of CATEGORIES){
+  for(const c of sortedCategories()){
     const s=catStats(c.name);
     const lastPct=s?Math.round(100*s.correct/s.total):0;
     const bestPct=s?(s.best||lastPct):0;
@@ -3716,9 +3729,19 @@ function renderHome(){
   homePanel.innerHTML=`
     <h2>📚 暗記モード</h2>
     <div class="card-ui">
-      <div style="font-size:13.5px;line-height:1.8">単元を選ぶと4択でランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
+      <div style="font-size:13.5px;line-height:1.8">単元を選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
+    </div>
+    <div class="card-ui">
+      <div class="scopebtns">
+        <button id="sortNo" class="${catSort.field==='no'?'sel':''}">No順</button>
+        <button id="sortPct" class="${catSort.field==='pct'?'sel':''}">正答率順</button>
+        <button id="sortDirBtn">${catSort.dir==='asc'?'▲昇順':'▼降順'}</button>
+      </div>
     </div>
     <div class="card-ui"><b>単元を選ぶ</b><div class="decklist">${list}</div></div>`;
+  document.getElementById('sortNo').onclick=()=>{catSort.field='no';renderHome();};
+  document.getElementById('sortPct').onclick=()=>{catSort.field='pct';renderHome();};
+  document.getElementById('sortDirBtn').onclick=()=>{catSort.dir=catSort.dir==='asc'?'desc':'asc';renderHome();};
   homePanel.querySelectorAll('.deckbtn').forEach(el=>{
     el.addEventListener('click',()=>startCatDrill(el.dataset.cat));
   });
