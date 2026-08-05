@@ -116,6 +116,9 @@ nav button.active{color:var(--blue);font-weight:700}
 .scopebtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .scopebtns button{flex:1;min-width:100px;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
 .scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.decklist-head{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.sortmini{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b}
+.sortmini.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
@@ -3726,22 +3729,32 @@ function renderHome(){
       <span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%</span></span>
       </button>`;
   }
+  const arrow=catSort.dir==='asc'?'▲':'▼';
   homePanel.innerHTML=`
     <h2>📚 暗記モード</h2>
     <div class="card-ui">
       <div style="font-size:13.5px;line-height:1.8">単元を選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
     <div class="card-ui">
-      <div class="scopebtns">
-        <button id="sortNo" class="${catSort.field==='no'?'sel':''}">No順</button>
-        <button id="sortPct" class="${catSort.field==='pct'?'sel':''}">正答率順</button>
-        <button id="sortDirBtn">${catSort.dir==='asc'?'▲昇順':'▼降順'}</button>
+      <div class="decklist-head">
+        <b>単元を選ぶ</b>
+        <div style="display:flex;gap:4px">
+          <button id="sortNo" class="sortmini ${catSort.field==='no'?'sel':''}">No順${catSort.field==='no'?' '+arrow:''}</button>
+          <button id="sortPct" class="sortmini ${catSort.field==='pct'?'sel':''}">正答率順${catSort.field==='pct'?' '+arrow:''}</button>
+        </div>
       </div>
-    </div>
-    <div class="card-ui"><b>単元を選ぶ</b><div class="decklist">${list}</div></div>`;
-  document.getElementById('sortNo').onclick=()=>{catSort.field='no';renderHome();};
-  document.getElementById('sortPct').onclick=()=>{catSort.field='pct';renderHome();};
-  document.getElementById('sortDirBtn').onclick=()=>{catSort.dir=catSort.dir==='asc'?'desc':'asc';renderHome();};
+      <div class="decklist">${list}</div>
+    </div>`;
+  document.getElementById('sortNo').onclick=()=>{
+    if(catSort.field==='no')catSort.dir=catSort.dir==='asc'?'desc':'asc';
+    else{catSort.field='no';catSort.dir='asc';}
+    renderHome();
+  };
+  document.getElementById('sortPct').onclick=()=>{
+    if(catSort.field==='pct')catSort.dir=catSort.dir==='asc'?'desc':'asc';
+    else{catSort.field='pct';catSort.dir='asc';}
+    renderHome();
+  };
   homePanel.querySelectorAll('.deckbtn').forEach(el=>{
     el.addEventListener('click',()=>startCatDrill(el.dataset.cat));
   });

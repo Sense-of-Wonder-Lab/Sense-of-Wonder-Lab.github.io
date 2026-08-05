@@ -204,6 +204,9 @@ nav button.active{color:var(--blue);font-weight:700}
 .scopebtns{display:flex;gap:8px;margin-top:10px}
 .scopebtns button{flex:1;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
 .scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.decklist-head{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.sortmini{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b}
+.sortmini.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
 .decklist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .deckbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:12px 14px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:700;color:var(--ink)}
 .deckbtn:active{border-color:var(--accent)}
@@ -1676,22 +1679,32 @@ function renderMemoHome(){
       ${sc?`<span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%</span></span>`:''}
       </button>`;
   });
+  const arrow=memoSort.dir==='asc'?'▲':'▼';
   memoPanel.innerHTML=`
     <h2>🧠 暗記モード</h2>
     <div class="card-ui">
       <div style="font-size:13.5px;line-height:1.8">セットを選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
     <div class="card-ui">
-      <div class="scopebtns">
-        <button id="sortNo" class="${memoSort.field==='no'?'sel':''}">No順</button>
-        <button id="sortPct" class="${memoSort.field==='pct'?'sel':''}">正答率順</button>
-        <button id="sortDirBtn">${memoSort.dir==='asc'?'▲昇順':'▼降順'}</button>
+      <div class="decklist-head">
+        <b>セットを選ぶ</b>
+        <div style="display:flex;gap:4px">
+          <button id="sortNo" class="sortmini ${memoSort.field==='no'?'sel':''}">No順${memoSort.field==='no'?' '+arrow:''}</button>
+          <button id="sortPct" class="sortmini ${memoSort.field==='pct'?'sel':''}">正答率順${memoSort.field==='pct'?' '+arrow:''}</button>
+        </div>
       </div>
-    </div>
-    <div class="card-ui"><b>セットを選ぶ</b><div class="decklist">${list}</div></div>`;
-  document.getElementById('sortNo').onclick=()=>{memoSort.field='no';renderMemoHome();};
-  document.getElementById('sortPct').onclick=()=>{memoSort.field='pct';renderMemoHome();};
-  document.getElementById('sortDirBtn').onclick=()=>{memoSort.dir=memoSort.dir==='asc'?'desc':'asc';renderMemoHome();};
+      <div class="decklist">${list}</div>
+    </div>`;
+  document.getElementById('sortNo').onclick=()=>{
+    if(memoSort.field==='no')memoSort.dir=memoSort.dir==='asc'?'desc':'asc';
+    else{memoSort.field='no';memoSort.dir='asc';}
+    renderMemoHome();
+  };
+  document.getElementById('sortPct').onclick=()=>{
+    if(memoSort.field==='pct')memoSort.dir=memoSort.dir==='asc'?'desc':'asc';
+    else{memoSort.field='pct';memoSort.dir='asc';}
+    renderMemoHome();
+  };
   memoPanel.querySelectorAll('.deckbtn').forEach(b=>{
     b.onclick=()=>startMemoQuiz(b.dataset.id);
   });
