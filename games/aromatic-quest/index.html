@@ -33,6 +33,8 @@ header{
   flex:none;display:flex;align-items:center;gap:10px;
 }
 header .title{font-weight:700;font-size:15px;letter-spacing:.02em}
+.questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:12px;padding:5px 6px;font-family:inherit;margin-right:6px}
+.questSelect option{color:var(--ink)}
 header .sub{font-size:10px;opacity:.75}
 .progress-wrap{flex:1;min-width:60px}
 .progress-label{font-size:10px;text-align:right;opacity:.9;margin-bottom:2px}
@@ -235,7 +237,11 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-label" id="progLabel">0 / 0 反応</div>
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
-  <a id="btnSwitchGame" href="../aliphatic-quest/index.html" style="background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;font-size:11px;padding:4px 8px;text-decoration:none;white-space:nowrap;margin-right:6px">🧬 脂肪族クエストへ</a>
+  <select class="questSelect" id="questSelect">
+    <option value="index.html" selected>芳香族クエスト</option>
+    <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
+    <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+  </select>
   <button id="btnReset">リセット</button>
 </header>
 
@@ -1760,6 +1766,8 @@ document.querySelectorAll('.modebtns button').forEach(b=>{
     renderMap();
   });
 });
+
+document.getElementById('questSelect').addEventListener('change',e=>{location.href=e.target.value;});
 
 /* ================= 起動 ================= */
 load();

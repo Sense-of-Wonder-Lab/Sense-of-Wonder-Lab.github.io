@@ -1,0 +1,4008 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a8a">
+<title>無機化学クエスト 〜暗記事項マスター〜</title>
+<style>
+:root{
+  --ink:#1e293b;
+  --bg:#f6f7f4;
+  --accent:#f59e0b;
+  --accent-deep:#d97706;
+  --blue:#2563eb;
+  --green:#16a34a;
+  --red:#dc2626;
+  --gray:#94a3b8;
+  --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  font-family:Century,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column;height:100dvh;
+}
+header{
+  background:#1e3a8a;color:#fff;padding:8px 12px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  flex:none;display:flex;align-items:center;gap:10px;
+}
+header .title{font-weight:700;font-size:15px;letter-spacing:.02em;flex:1}
+header .sub{font-size:10px;opacity:.75}
+.questSelect{flex:1;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:14px;padding:6px 10px;font-family:inherit}
+.questSelect option{color:var(--ink)}
+.backrow{margin-bottom:10px}
+.backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
+main{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:none;overflow-y:auto}
+.view.active{display:block}
+.panel{height:100%;padding:16px 14px calc(20px + env(safe-area-inset-bottom));max-width:620px;margin:0 auto}
+.panel h2{font-size:17px;margin:6px 0 12px}
+.card-ui{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:12px}
+.bigbtn{display:block;width:100%;padding:14px;border-radius:14px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;margin-top:10px}
+.bigbtn.secondary{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.bigbtn.amber{background:var(--accent-deep)}
+.bigbtn:disabled{background:#cbd5e1;color:#f1f5f9;border:none}
+.muted{color:#64748b;font-size:12px;line-height:1.6}
+nav{flex:none;display:flex;background:#fff;border-top:1px solid #e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:8px 0 6px;border:none;background:none;font-size:11px;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav button .ico{font-size:20px;line-height:1}
+nav button.active{color:var(--blue);font-weight:700}
+.badge{position:absolute;top:2px;right:calc(50% - 24px);background:var(--red);color:#fff;border-radius:9px;font-size:10px;min-width:17px;height:17px;line-height:17px;padding:0 4px;font-weight:700}
+/* 単元一覧(デッキ選択) */
+.decklist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.deckbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:12px 14px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:700;color:var(--ink)}
+.deckbtn:active{border-color:var(--accent)}
+.deckbtn.perfect{background:#f0fdf4;border-color:#86efac}
+.deckbtn-score{flex:none;text-align:right;font-size:19px;font-weight:800;color:var(--blue);white-space:nowrap}
+.deckbtn.perfect .deckbtn-score{color:var(--green)}
+.deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
+/* 正誤ポップアップ・自動送り */
+.viewfx-toggle{position:absolute;right:10px;top:8px;z-index:5;background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.viewfx-toggle2{top:44px}
+.viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
+#answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
+#answerFxPopup.show{display:flex}
+.afx-box{text-align:center;animation:afxpop .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes afxpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.afx-symbol{font-size:130px;font-weight:900;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.18)}
+.afx-symbol.ok{color:var(--green)}
+.afx-symbol.ng{color:var(--red)}
+.afx-sub{font-size:26px;margin-top:2px}
+.afx-confetti{font-size:30px;margin-top:4px;letter-spacing:6px}
+.fixed-next{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:592px;margin:0 auto;z-index:60;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.fixed-back{position:fixed;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:60;padding:8px 14px;border-radius:99px;border:2px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+/* 復習からもう一度 */
+.review-item.review-tap{cursor:pointer;display:flex;align-items:center;gap:6px}
+.review-item.review-tap:active{background:#f8fafc}
+.review-item.review-tap::after{content:'↻ もう一度';margin-left:auto;flex:none;font-size:11px;color:var(--blue);font-weight:700;white-space:nowrap}
+/* モーダル */
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;z-index:80}
+.modal.open{display:flex}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;padding:16px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media(min-width:640px){
+  .modal{align-items:center;padding:20px}
+  .sheet{border-radius:20px;max-height:86vh}
+}
+.sheet h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.closex{margin-left:auto;border:none;background:#f1f5f9;border-radius:99px;width:30px;height:30px;font-size:14px;color:#64748b;flex:none}
+/* quiz */
+.qprompt{font-size:15px;font-weight:700;margin-bottom:14px;line-height:1.6;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px}
+.choices{display:flex;flex-direction:column;gap:9px}
+.choice{border:2px solid #e2e8f0;border-radius:14px;background:#fff;padding:12px 14px;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.5;text-align:left}
+.choice:active{background:#f8fafc}
+.choice.correct{border-color:var(--green);background:#f0fdf4}
+.choice.wrong{border-color:var(--red);background:#fef2f2;animation:shake .3s}
+.choice.dim{opacity:.45}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.explain{margin-top:12px;border-radius:14px;padding:12px;font-size:13px;line-height:1.7;display:none}
+.explain.ok{display:block;background:#f0fdf4;border:1.5px solid #86efac}
+.explain.ng{display:block;background:#fef2f2;border:1.5px solid #fca5a5}
+.explain .rname{font-weight:800;font-size:13.5px;margin-bottom:3px}
+.explain .note{margin-top:4px}
+/* challenge/drill common */
+.chal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:#475569}
+.chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
+.chal-timer.urgent{color:var(--red)}
+.rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
+.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
+.review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
+.review-item .ok{color:var(--green);font-weight:700}
+.review-item .ng{color:var(--red);font-weight:700}
+.scopebtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.scopebtns button{flex:1;min-width:100px;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
+.scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <select class="questSelect" id="questSelect">
+    <option value="../aromatic-quest/index.html">芳香族クエスト</option>
+    <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
+    <option value="index.html" selected>無機化学クエスト</option>
+  </select>
+</header>
+
+<main>
+  <div class="view active" id="view-home">
+    <button id="btnAnswerFx" class="viewfx-toggle"></button>
+    <button id="btnAnswerAuto" class="viewfx-toggle viewfx-toggle2"></button>
+    <div class="panel" id="homePanel"></div>
+  </div>
+  <div class="view" id="view-challenge"><div class="panel" id="chalPanel"></div></div>
+  <div class="view" id="view-weak"><div class="panel" id="weakPanel"></div></div>
+</main>
+
+<nav>
+  <button data-view="home" class="active"><span class="ico">📚</span>暗記</button>
+  <button data-view="challenge"><span class="ico">⚡</span>チャレンジ</button>
+  <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
+</nav>
+
+<div class="modal" id="infoModal"><div class="sheet" id="infoSheet"></div></div>
+<div id="answerFxPopup"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ================= データ(MONOXER「無機」教材準拠) ================= */
+const DATA = {
+ "categories": [
+  {
+   "name": "アルカリ金属",
+   "count": 15
+  },
+  {
+   "name": "アルカリ土類金属",
+   "count": 15
+  },
+  {
+   "name": "アルミニウム",
+   "count": 12
+  },
+  {
+   "name": "鉄",
+   "count": 18
+  },
+  {
+   "name": "銅",
+   "count": 19
+  },
+  {
+   "name": "銀・クロム",
+   "count": 11
+  },
+  {
+   "name": "ハロゲン",
+   "count": 31
+  },
+  {
+   "name": "酸素",
+   "count": 18
+  },
+  {
+   "name": "硫黄",
+   "count": 18
+  },
+  {
+   "name": "窒素",
+   "count": 28
+  },
+  {
+   "name": "リン",
+   "count": 8
+  },
+  {
+   "name": "炭素",
+   "count": 17
+  },
+  {
+   "name": "ケイ素",
+   "count": 11
+  },
+  {
+   "name": "気体発生",
+   "count": 52
+  },
+  {
+   "name": "沈殿・イオン反応",
+   "count": 11
+  }
+ ],
+ "items": [
+  {
+   "q": "アルミニウムは周期表の(ア)族に属する元素である。価電子数は(イ)である。",
+   "correct": "(ア）１３　（イ）３",
+   "wrongs": [
+    "(ア）3　（イ）３",
+    "(ア）１３　（イ）１３",
+    "(ア）3　（イ）１３",
+    "(ア）１２　（イ）２"
+   ],
+   "cat": "アルミニウム",
+   "id": "q19"
+  },
+  {
+   "q": "アルミニウムは（ア）酸化物である。",
+   "correct": "両性",
+   "wrongs": [
+    "酸化",
+    "還元",
+    "塩基性",
+    "酸性"
+   ],
+   "cat": "アルミニウム",
+   "id": "q20"
+  },
+  {
+   "q": "アルミニウムの単体は常温で(ア)と反応し、(イ)を発生する。",
+   "correct": "(ア）濃水酸化ナトリウム水溶液　（イ）水素",
+   "wrongs": [
+    "(ア）水（イ）水素",
+    "(ア）濃硝酸（イ）水素",
+    "(ア）濃水酸化ナトリウム水溶液（イ）酸素",
+    "(ア）濃硝酸（イ）二酸化窒素"
+   ],
+   "cat": "アルミニウム",
+   "id": "q21"
+  },
+  {
+   "q": "アルミニウムの単体は濃硝酸を加えると(ア)となり、侵されなくなる(一般に反応しないとされる)。",
+   "correct": "不動態",
+   "wrongs": [
+    "半導体",
+    "絶縁体",
+    "不導体",
+    "不動熊"
+   ],
+   "cat": "アルミニウム",
+   "id": "q22"
+  },
+  {
+   "q": "アルミニウムの表面を人口的に酸化して、ち密な酸化被膜を付けた製品を（ア）という。",
+   "correct": "アルマイト",
+   "wrongs": [
+    "ジュラルミン",
+    "アルミナ",
+    "ボーキサイト",
+    "ステンレス鋼"
+   ],
+   "cat": "アルミニウム",
+   "id": "q23"
+  },
+  {
+   "q": "ジュラルミンはアルミニウムと（ア）と（イ）とマンガンの合金である。",
+   "correct": "(ア）銅（イ）マグネシウム",
+   "wrongs": [
+    "(ア）銅（イ）鉄",
+    "(ア）マグネシウム（イ）クロム",
+    "(ア）鉄（イ）マグネシウム",
+    "(ア）銅（イ）クロム"
+   ],
+   "cat": "アルミニウム",
+   "id": "q24"
+  },
+  {
+   "q": "（ア） に不純物としてCr³⁺を含むとルビー、Fe³⁺(もしくはTi³⁺)を含むとサファイヤとして産出する。",
+   "correct": "酸化アルミニウム",
+   "wrongs": [
+    "水酸化アルミニウム",
+    "酸化鉄",
+    "塩化アルミニウム",
+    "ミョウバン"
+   ],
+   "cat": "アルミニウム",
+   "id": "q25"
+  },
+  {
+   "q": "ミョウバンに含まれない元素はどれか、1つ選べ",
+   "correct": "N",
+   "wrongs": [
+    "S",
+    "Al",
+    "K",
+    "O"
+   ],
+   "cat": "アルミニウム",
+   "id": "q26"
+  },
+  {
+   "q": "ミョウバンの水和水の数はいくつか",
+   "correct": "12",
+   "wrongs": [
+    "1",
+    "5",
+    "10",
+    "16"
+   ],
+   "cat": "アルミニウム",
+   "id": "q27"
+  },
+  {
+   "q": "単体のアルミニウムの原料となる鉱物はどれか",
+   "correct": "ボーキサイト",
+   "wrongs": [
+    "ジュラルミン",
+    "アルミナ",
+    "アルマイト",
+    "氷晶石"
+   ],
+   "cat": "アルミニウム",
+   "id": "q28"
+  },
+  {
+   "q": "単体のアルミニウムの製造時(溶融塩電解時)に酸化アルミニウムとともに入れるものは何か",
+   "correct": "氷晶石",
+   "wrongs": [
+    "ボーキサイト",
+    "ジュラルミン",
+    "アルミナ",
+    "蛍石"
+   ],
+   "cat": "アルミニウム",
+   "id": "q29"
+  },
+  {
+   "q": "単体のアルミニウムを生成する際、陽極で発生する気体はなにか。",
+   "correct": "CO",
+   "wrongs": [
+    "H₂",
+    "O₂",
+    "Cl₂",
+    "NO"
+   ],
+   "cat": "アルミニウム",
+   "id": "q30"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。水にナトリウムの単体を加える。",
+   "correct": "水素",
+   "wrongs": [
+    "酸素",
+    "ナトリウム",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q31"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。石灰石を加熱する。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "酸素",
+    "水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q32"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。水酸化カルシウムと塩化アンモニウムを混合して加熱する。",
+   "correct": "アンモニア",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "塩素",
+    "塩化水素"
+   ],
+   "cat": "気体発生",
+   "id": "q33"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。炭酸水素ナトリウムを加熱する",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "塩素",
+    "塩化水素"
+   ],
+   "cat": "気体発生",
+   "id": "q34"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。水にカルシウムの単体を加える。",
+   "correct": "水素",
+   "wrongs": [
+    "酸素",
+    "カルシウム",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q35"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。炭酸水素カルシウムを加熱する。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q36"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。生石灰とコークスを炉に入れて加熱する。",
+   "correct": "一酸化炭素",
+   "wrongs": [
+    "カーバイド",
+    "アセチレン",
+    "水素",
+    "二酸化炭素"
+   ],
+   "exp": "カーバイドは固体",
+   "cat": "気体発生",
+   "id": "q37"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。カーバイドに水を加える。",
+   "correct": "アセチレン",
+   "wrongs": [
+    "エチレン",
+    "水素",
+    "酸素",
+    "二酸化炭素"
+   ],
+   "exp": "同時に水酸化カルシウムが生成",
+   "cat": "気体発生",
+   "id": "q38"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。アルミニウムに濃水酸化ナトリウムを加える。",
+   "correct": "水素",
+   "wrongs": [
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q39"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。酸化アルミニウムの溶融塩電解(炭素電極)の陽極側。",
+   "correct": "一酸化炭素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q40"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銀に希硝酸を加える。",
+   "correct": "一酸化窒素",
+   "wrongs": [
+    "二酸化窒素",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q41"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銅に希硝酸を加える。",
+   "correct": "一酸化窒素",
+   "wrongs": [
+    "二酸化窒素",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q42"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銀に濃硝酸を加える。",
+   "correct": "二酸化窒素",
+   "wrongs": [
+    "一酸化窒素",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q43"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銅に濃硝酸を加える。",
+   "correct": "二酸化窒素",
+   "wrongs": [
+    "一酸化窒素",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q44"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銅に希硫酸を加える。",
+   "correct": "発生しない",
+   "wrongs": [
+    "二酸化硫黄",
+    "水素",
+    "酸素"
+   ],
+   "exp": "反応しない",
+   "cat": "気体発生",
+   "id": "q45"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銅に濃硫酸を加えて加熱する。",
+   "correct": "二酸化硫黄",
+   "wrongs": [
+    "発生しない",
+    "水素",
+    "酸素"
+   ],
+   "cat": "気体発生",
+   "id": "q46"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。銀に濃硫酸を加えて加熱する。",
+   "correct": "二酸化硫黄",
+   "wrongs": [
+    "発生しない",
+    "水素",
+    "酸素"
+   ],
+   "cat": "気体発生",
+   "id": "q47"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。アルミニウムに濃硝酸を加える。",
+   "correct": "発生しない",
+   "wrongs": [
+    "二酸化窒素",
+    "一酸化窒素",
+    "水素",
+    "酸素"
+   ],
+   "exp": "不動態になり反応しない",
+   "cat": "気体発生",
+   "id": "q48"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。鉄に濃硝酸を加える。",
+   "correct": "発生しない",
+   "wrongs": [
+    "二酸化窒素",
+    "一酸化窒素",
+    "水素",
+    "酸素"
+   ],
+   "exp": "不動態になり反応しない",
+   "cat": "気体発生",
+   "id": "q49"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。アルミニウムに希硫酸を加える。",
+   "correct": "水素",
+   "wrongs": [
+    "発生しない",
+    "二酸化硫黄",
+    "三酸化硫黄"
+   ],
+   "cat": "気体発生",
+   "id": "q50"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。フッ素と水を混合する。",
+   "correct": "酸素",
+   "wrongs": [
+    "水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q51"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。さらし粉に塩酸を加え加熱する。",
+   "correct": "塩素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q52"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。次亜塩素酸ナトリウムに塩酸を加える。",
+   "correct": "塩素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q53"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。食塩に濃硫酸を加えて加熱する。",
+   "correct": "塩化水素",
+   "wrongs": [
+    "塩素",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q54"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。蛍石に濃硫酸を加えて加熱する。",
+   "correct": "フッ化水素",
+   "wrongs": [
+    "二酸化硫黄",
+    "水素",
+    "酸素",
+    "硫化水素"
+   ],
+   "cat": "気体発生",
+   "id": "q55"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。酸化マンガン(Ⅳ)に濃塩酸を加えて加熱する。",
+   "correct": "塩素",
+   "wrongs": [
+    "水素",
+    "塩化水素",
+    "発生しない",
+    "酸素"
+   ],
+   "cat": "気体発生",
+   "id": "q56"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。加熱した塩素酸カリウムに酸化マンガン(Ⅳ)を加える。",
+   "correct": "酸素",
+   "wrongs": [
+    "塩素",
+    "水素",
+    "オゾン",
+    "塩化水素"
+   ],
+   "cat": "気体発生",
+   "id": "q57"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。酸素に紫外線を照射する。",
+   "correct": "オゾン",
+   "wrongs": [
+    "クロロフルオロカーボン",
+    "ボソン",
+    "クメンヒドロペルオキシド"
+   ],
+   "cat": "気体発生",
+   "id": "q58"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。硫化鉄に硫酸を加える。",
+   "correct": "硫化水素",
+   "wrongs": [
+    "酸素",
+    "二酸化硫黄",
+    "三酸化硫黄",
+    "水素"
+   ],
+   "cat": "気体発生",
+   "id": "q59"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。亜硫酸ナトリウムに希硫酸を加える。",
+   "correct": "二酸化硫黄",
+   "wrongs": [
+    "硫化水素",
+    "水素",
+    "三酸化硫黄"
+   ],
+   "cat": "気体発生",
+   "id": "q60"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。黄鉄鉱を燃焼させる。",
+   "correct": "二酸化硫黄",
+   "wrongs": [
+    "三酸化硫黄",
+    "硫化水素",
+    "発生しない"
+   ],
+   "exp": "黄鉄鉱はFeS₂。燃焼すると二酸化硫黄と酸化鉄が生成する。",
+   "cat": "気体発生",
+   "id": "q61"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。硫黄を燃焼させた後、さらに酸化バナジウム触媒下で酸素と反応させる。",
+   "correct": "三酸化硫黄",
+   "wrongs": [
+    "二酸化硫黄",
+    "硫化水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q62"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。亜硝酸アンモニウムを加熱分解する。",
+   "correct": "窒素",
+   "wrongs": [
+    "亜硝酸",
+    "一酸化窒素",
+    "二酸化窒素",
+    "アンモニア"
+   ],
+   "cat": "気体発生",
+   "id": "q63"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。塩化アンモニウムと水酸化ナトリウムの混合物を加熱する。",
+   "correct": "アンモニア",
+   "wrongs": [
+    "水素",
+    "塩素",
+    "塩化水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q64"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。ハーバー・ボッシュ法",
+   "correct": "アンモニア",
+   "wrongs": [
+    "硫酸",
+    "二酸化窒素",
+    "硝酸",
+    "塩化水素"
+   ],
+   "cat": "気体発生",
+   "id": "q65"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。アンモニアを鉄触媒下、燃焼させる。",
+   "correct": "一酸化窒素",
+   "wrongs": [
+    "二酸化窒素",
+    "窒素",
+    "水素"
+   ],
+   "cat": "気体発生",
+   "id": "q66"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。一酸化窒素を空気に触れさせる。",
+   "correct": "二酸化窒素",
+   "wrongs": [
+    "一酸化窒素",
+    "アンモニア",
+    "水素",
+    "四酸化二窒素"
+   ],
+   "cat": "気体発生",
+   "id": "q67"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。二酸化窒素を水に溶かす。(同時に硝酸が生じる)",
+   "correct": "一酸化窒素",
+   "wrongs": [
+    "アンモニア",
+    "水素",
+    "酸素",
+    "窒素"
+   ],
+   "cat": "気体発生",
+   "id": "q68"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。二酸化窒素を空気中で放置する。",
+   "correct": "四酸化二窒素",
+   "wrongs": [
+    "アンモニア",
+    "一酸化窒素",
+    "水素",
+    "窒素"
+   ],
+   "cat": "気体発生",
+   "id": "q69"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。ギ酸に濃硫酸を加えて加熱する。",
+   "correct": "一酸化炭素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "二酸化硫黄",
+    "二酸化炭素"
+   ],
+   "cat": "気体発生",
+   "id": "q70"
+  },
+  {
+   "q": "次の操作を行ったとき、主に発生する気体は何か。コークスを高温で燃焼させる。",
+   "correct": "一酸化炭素",
+   "wrongs": [
+    "二酸化炭素",
+    "メタン",
+    "アセチレン"
+   ],
+   "exp": "二酸化炭素もできるが、主は一酸化炭素として覚えておく",
+   "cat": "気体発生",
+   "id": "q71"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。炭酸カルシウムを加熱する。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "酸素",
+    "水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q72"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。炭酸カルシウムに塩酸を加える。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "塩素",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q73"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。過酸化水素水に二酸化マンガンを加える。",
+   "correct": "酸素のみ",
+   "wrongs": [
+    "水素のみ",
+    "酸素と水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q74"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。エタノールにナトリウムの単体を加える。",
+   "correct": "水素",
+   "wrongs": [
+    "酸素",
+    "ナトリウム",
+    "エチレン",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q75"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。ジエチルエーテルにナトリウムの単体を加える。",
+   "correct": "発生しない",
+   "wrongs": [
+    "酸素",
+    "ナトリウム",
+    "エチレン",
+    "水素"
+   ],
+   "exp": "ジエチルエーテルはヒドロキシ基を持たず反応しない",
+   "cat": "気体発生",
+   "id": "q76"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。硫酸酸性の過マンガン酸カリウムに過酸化水素を加える。",
+   "correct": "酸素",
+   "wrongs": [
+    "水素",
+    "二酸化硫黄",
+    "硫化水素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q77"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。硫酸酸性の過マンガン酸カリウムにシュウ酸を加える。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "水素",
+    "二酸化硫黄",
+    "硫化水素",
+    "酸素"
+   ],
+   "cat": "気体発生",
+   "id": "q78"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。ヨウ化カリウム水溶液にオゾンを通じる。",
+   "correct": "酸素",
+   "wrongs": [
+    "ヨウ素",
+    "酸化カリウム",
+    "水酸化カリウム",
+    "ヨウ化水素"
+   ],
+   "cat": "気体発生",
+   "id": "q79"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。鉄鉱石を一酸化炭素で還元する。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q80"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。二酸化ケイ素と炭酸ナトリウムを混ぜて加熱する。",
+   "correct": "二酸化炭素",
+   "wrongs": [
+    "ケイ酸",
+    "水素",
+    "酸素",
+    "発生しない"
+   ],
+   "cat": "気体発生",
+   "id": "q81"
+  },
+  {
+   "q": "次の操作を行ったとき、発生する気体は何か。過酸化水素水に二酸化硫黄を加える。",
+   "correct": "発生しない",
+   "wrongs": [
+    "酸素",
+    "水素",
+    "二酸化硫黄",
+    "三酸化硫黄"
+   ],
+   "exp": "硫酸が生成する。",
+   "cat": "気体発生",
+   "id": "q82"
+  },
+  {
+   "q": "Cu²⁺、Ag⁺のうち、塩酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "AgCl　白色",
+   "wrongs": [
+    "CuCl₂　白色",
+    "CuCl₂　褐色",
+    "AgCl　褐色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q83"
+  },
+  {
+   "q": "Cu²⁺、Zn²⁺、Ba²⁺、Ag⁺のうち、塩酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "AgCl　白色",
+   "wrongs": [
+    "ZnCl₂　白色",
+    "CuCl₂　青色",
+    "BaCl₂　黄色",
+    "AgCl₂　白色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q84"
+  },
+  {
+   "q": "Pb²⁺、Sn²⁺のうち、塩酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "PbCl₂　白色",
+   "wrongs": [
+    "SnCl₂　白色",
+    "PbCl₂　黄色",
+    "SnCl₂　黄色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q85"
+  },
+  {
+   "q": "Zn²⁺、Sn²⁺、Ag⁺のうち、塩酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "AgCl　白色",
+   "wrongs": [
+    "SnCl₂　白色",
+    "AgCl　褐色",
+    "SnCl₂　黄色",
+    "ZnCl₂　白色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q86"
+  },
+  {
+   "q": "Pb²⁺、Cu²⁺のうち、硫酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "PbSO₄　白色",
+   "wrongs": [
+    "CuSO₄　白色",
+    "PbSO₄　青色",
+    "CuSO₄　青色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q87"
+  },
+  {
+   "q": "Zn²⁺、Ca²⁺のうち、硫酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "CaSO₄　白色",
+   "wrongs": [
+    "ZnSO₄　白色",
+    "CaSO₄　黄色",
+    "ZnSO₄　黄色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q88"
+  },
+  {
+   "q": "Ba²⁺、Ni²⁺のうち、硫酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "BaSO₄　白色",
+   "wrongs": [
+    "NiSO₄　白色",
+    "BaSO₄　黄色",
+    "NiSO₄　青色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q89"
+  },
+  {
+   "q": "Pb²⁺、Na⁺のうち、炭酸アンモニウムを加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "PbCO₃　白色",
+   "wrongs": [
+    "Na₂CO₃　白色",
+    "PbCO₃　黄色",
+    "Na₂CO₃　黄色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q90"
+  },
+  {
+   "q": "K⁺、Ca²⁺のうち炭酸アンモニウムを加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "CaCO₃　白色",
+   "wrongs": [
+    "K₂CO₃　白色",
+    "CaCO₃　黄色",
+    "K₂CO₃　黄色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q91"
+  },
+  {
+   "q": "Ba²⁺、Na⁺のうち、硫酸を加えたときに沈殿する物質の化学式と色はどれか。1つ選べ。",
+   "correct": "BaSO₄　白色",
+   "wrongs": [
+    "Na₂SO₄　白色",
+    "BaSO₄　黄色",
+    "Na₂SO₄　黄色"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q92"
+  },
+  {
+   "q": "塩酸を加えたときに沈殿する陽イオンの組み合わせとして最も適当なものはどれか。1つ選べ。",
+   "correct": "Pb²⁺、Ag⁺",
+   "wrongs": [
+    "Ba²⁺、Ag⁺",
+    "Cu²⁺、Ag⁺",
+    "Pb²⁺、Ca²⁺",
+    "Pb²⁺、Cu²⁺"
+   ],
+   "cat": "沈殿・イオン反応",
+   "id": "q93"
+  },
+  {
+   "q": "鉄は常温で塩酸と反応し、(ア)が発生する。",
+   "correct": "水素",
+   "wrongs": [
+    "(ア）塩素",
+    "(ア）塩化水素",
+    "(ア）酸素",
+    "(ア）水"
+   ],
+   "cat": "鉄",
+   "id": "q94"
+  },
+  {
+   "q": "トタンは鉄の表面を何で覆ったものか",
+   "correct": "亜鉛",
+   "wrongs": [
+    "スズ",
+    "銅",
+    "クロム",
+    "アルミニウム"
+   ],
+   "cat": "鉄",
+   "id": "q95"
+  },
+  {
+   "q": "ブリキ鉄の表面を何で覆ったものか",
+   "correct": "スズ",
+   "wrongs": [
+    "銅",
+    "クロム",
+    "アルミニウム"
+   ],
+   "cat": "鉄",
+   "id": "q96"
+  },
+  {
+   "q": "鉄、クロム、ニッケルの合金は何と呼ばれるか。",
+   "correct": "ステンレス鋼",
+   "wrongs": [
+    "アルマイト",
+    "ジュラルミン",
+    "ボーキサイト"
+   ],
+   "cat": "鉄",
+   "id": "q97"
+  },
+  {
+   "q": "鉄(Ⅱ)イオンの色は？",
+   "correct": "淡緑色",
+   "wrongs": [
+    "黄褐色",
+    "赤褐色",
+    "緑白色",
+    "無色"
+   ],
+   "cat": "鉄",
+   "id": "q98"
+  },
+  {
+   "q": "鉄(Ⅲ)イオンの色は？",
+   "correct": "黄褐色",
+   "wrongs": [
+    "淡緑色",
+    "赤褐色",
+    "緑白色",
+    "無色"
+   ],
+   "cat": "鉄",
+   "id": "q99"
+  },
+  {
+   "q": "Fe(OH)₂の色は？",
+   "correct": "緑白色",
+   "wrongs": [
+    "淡緑色",
+    "赤褐色",
+    "黒色",
+    "白色"
+   ],
+   "cat": "鉄",
+   "id": "q100"
+  },
+  {
+   "q": "Fe(OH)₃の色は？",
+   "correct": "赤褐色",
+   "wrongs": [
+    "淡緑色",
+    "緑白色",
+    "黒色",
+    "白色"
+   ],
+   "cat": "鉄",
+   "id": "q101"
+  },
+  {
+   "q": "K₃[Fe(CN)₆](ヘキサシアノ鉄(III)酸カリウム)は(ア)と反応し、(イ)の沈殿を生じる。",
+   "correct": "(ア)Fe²⁺　(イ)濃青色",
+   "wrongs": [
+    "(ア)Fe³⁺　(イ)濃青色",
+    "(ア)Fe²⁺　(イ)血赤色",
+    "(ア)Fe³⁺　(イ)血赤色",
+    "(ア)Fe²⁺　(イ)青白色"
+   ],
+   "cat": "鉄",
+   "id": "q102"
+  },
+  {
+   "q": "KSCNは(ア)と反応し、(イ)になる。",
+   "correct": "(ア)Fe³⁺　(イ)血赤色",
+   "wrongs": [
+    "(ア)Fe²⁺　(イ)濃青色",
+    "(ア)Fe³⁺　(イ)濃青色",
+    "(ア)Fe²⁺　(イ)血赤色",
+    "(ア)Fe²⁺　(イ)青白色"
+   ],
+   "cat": "鉄",
+   "id": "q103"
+  },
+  {
+   "q": "磁鉄鉱の化学式は？",
+   "correct": "Fe₃O₄",
+   "wrongs": [
+    "FeO",
+    "Fe₂O₃",
+    "FeO₂"
+   ],
+   "cat": "鉄",
+   "id": "q104"
+  },
+  {
+   "q": "赤鉄鉱の化学式は？",
+   "correct": "Fe₂O₃",
+   "wrongs": [
+    "FeO",
+    "Fe₃O₄",
+    "FeO₂"
+   ],
+   "cat": "鉄",
+   "id": "q105"
+  },
+  {
+   "q": "酸化鉄を(ア)や石灰石と共に(イ)に入れ、熱風を吹き込むと順に還元される。",
+   "correct": "(ア)コークス(イ)高炉",
+   "wrongs": [
+    "(ア)コークス(イ)転炉",
+    "(ア)カーバイド(イ)高炉",
+    "(ア)カーバイド(イ)転炉"
+   ],
+   "cat": "鉄",
+   "id": "q106"
+  },
+  {
+   "q": "酸化鉄の還元は(ア)で行い、銑鉄を得る。これを(イ)に移し鋼を得る。",
+   "correct": "(ア)高炉(イ)転炉",
+   "wrongs": [
+    "(ア)転炉(イ)高炉",
+    "(ア)高炉(イ)溶鉱炉",
+    "(ア)溶鉱炉(イ)高炉"
+   ],
+   "cat": "鉄",
+   "id": "q107"
+  },
+  {
+   "q": "酸化鉄の還元で得られた鉄を(ア)といい、炭素を4%ほど含むためもろく、加工しにくい。これを転炉に移し、炭素を除いたものを(イ)という。これは炭素を0.02～2%含む。",
+   "correct": "(ア)銑鉄(イ)鋼",
+   "wrongs": [
+    "(ア)鋼(イ)銑鉄",
+    "(ア)鋼(イ)ステンレス鋼",
+    "(ア)銑鉄(イ)ステンレス鋼"
+   ],
+   "cat": "鉄",
+   "id": "q108"
+  },
+  {
+   "q": "鋼の純度を上げるために、(ア)に入れ、(イ)を送り込む。",
+   "correct": "(ア)転炉(イ)酸素",
+   "wrongs": [
+    "(ア)転炉(イ)二酸化炭素",
+    "(ア)高炉(イ)酸素",
+    "(ア)高炉(イ)二酸化炭素"
+   ],
+   "cat": "鉄",
+   "id": "q109"
+  },
+  {
+   "q": "鉄の製錬中に、鉄鉱石中の不純物が主にケイ酸塩として出てくる。これを何というか。",
+   "correct": "スラグ",
+   "wrongs": [
+    "銑鉄",
+    "鋼",
+    "ステンレス鋼",
+    "ダスト"
+   ],
+   "cat": "鉄",
+   "id": "q110"
+  },
+  {
+   "q": "ブリキは鉄の表面を何で覆ったものか",
+   "correct": "スズ",
+   "wrongs": [
+    "銅",
+    "クロム",
+    "アルミニウム"
+   ],
+   "cat": "鉄",
+   "id": "q111"
+  },
+  {
+   "q": "銀イオンは(ア)をとる",
+   "correct": "（ア）＋１",
+   "wrongs": [
+    "（ア）＋2",
+    "（ア）＋３",
+    "（ア）＋４"
+   ],
+   "cat": "銀・クロム",
+   "id": "q112"
+  },
+  {
+   "q": "全元素中、銀の（ア）は最も高い。",
+   "correct": "電気伝導性",
+   "wrongs": [
+    "密度",
+    "融点",
+    "延性",
+    "展性"
+   ],
+   "cat": "銀・クロム",
+   "id": "q113"
+  },
+  {
+   "q": "銀の展性・延性は全元素中何番目か",
+   "correct": "２番目",
+   "wrongs": [
+    "1番目",
+    "３番目",
+    "4番目",
+    "7番目"
+   ],
+   "cat": "銀・クロム",
+   "id": "q114"
+  },
+  {
+   "q": "銀のハロゲン化物は（ア）をもち、写真の現像に使われる。（イ）で保存する。",
+   "correct": "（ア）感光性（イ）褐色ビン",
+   "wrongs": [
+    "（ア）酸化力（イ）ガラスビン",
+    "（ア）自然発火性（イ）水中",
+    "（ア）水に入れると発火する性質（イ）灯油中",
+    "（ア）ガラスを溶かす性質（イ）ポリエチレン容器"
+   ],
+   "cat": "銀・クロム",
+   "id": "q115"
+  },
+  {
+   "q": "AgFは(ア)で水に（イ）。",
+   "correct": "(ア)黄色(イ)溶ける",
+   "wrongs": [
+    "(ア)白色(イ)溶ける",
+    "(ア)淡黄色(イ)溶ける",
+    "(ア)黄色(イ)溶けない",
+    "(ア)白色(イ)溶けない"
+   ],
+   "cat": "銀・クロム",
+   "id": "q116"
+  },
+  {
+   "q": "AgClは(ア)で水に（イ）。",
+   "correct": "(ア)白色(イ)溶けない",
+   "wrongs": [
+    "(ア)白色(イ)溶ける",
+    "(ア)淡黄色(イ)溶ける",
+    "(ア)黄色(イ)溶けない",
+    "(ア)黄色(イ)溶ける"
+   ],
+   "cat": "銀・クロム",
+   "id": "q117"
+  },
+  {
+   "q": "AgIはNH₃過剰でも溶けず、（ア）を加えると溶ける。",
+   "correct": "チオ硫酸ナトリウム",
+   "wrongs": [
+    "水酸化ナトリウム",
+    "塩酸",
+    "硫酸",
+    "塩化ナトリウム"
+   ],
+   "cat": "銀・クロム",
+   "id": "q118"
+  },
+  {
+   "q": "Cr³⁺を含む水溶液は何色か",
+   "correct": "緑色",
+   "wrongs": [
+    "青色",
+    "橙赤色",
+    "黄褐色",
+    "黄色"
+   ],
+   "cat": "銀・クロム",
+   "id": "q119"
+  },
+  {
+   "q": "Cr₂O₇²⁻を含む水溶液は何色か",
+   "correct": "橙赤色",
+   "wrongs": [
+    "青色",
+    "緑色",
+    "黄褐色",
+    "黄色"
+   ],
+   "cat": "銀・クロム",
+   "id": "q120"
+  },
+  {
+   "q": "CrO₄²⁻を含む水溶液は何色か",
+   "correct": "黄色",
+   "wrongs": [
+    "青色",
+    "緑色",
+    "黄褐色",
+    "橙赤色"
+   ],
+   "cat": "銀・クロム",
+   "id": "q121"
+  },
+  {
+   "q": "クロム、アルミ、鉄、ニッケルなどは、硝酸に溶けない。(ア)になるためである。",
+   "correct": "不動態",
+   "wrongs": [
+    "絶縁体",
+    "半導体",
+    "不働熊",
+    "不動体"
+   ],
+   "cat": "銀・クロム",
+   "id": "q122"
+  },
+  {
+   "q": "銅イオンは(ア)と（イ）をとる",
+   "correct": "（ア）＋１（イ）＋２",
+   "wrongs": [
+    "（ア）＋2（イ）＋３",
+    "（ア）＋１（イ）＋３",
+    "（ア）＋２（イ）＋４",
+    "（ア）＋１（イ）＋４"
+   ],
+   "cat": "銅",
+   "id": "q123"
+  },
+  {
+   "q": "全元素中、銅の（ア）は銀についで二番目である。銀より安価で電線に用いられる。",
+   "correct": "電気伝導性",
+   "wrongs": [
+    "密度",
+    "融点",
+    "延性",
+    "展性"
+   ],
+   "cat": "銅",
+   "id": "q124"
+  },
+  {
+   "q": "展性・延性は全元素中何番目か",
+   "correct": "3番目",
+   "wrongs": [
+    "1番目",
+    "2番目",
+    "4番目",
+    "7番目"
+   ],
+   "cat": "銅",
+   "id": "q125"
+  },
+  {
+   "q": "酸化銅(Ⅰ)は(ア)、酸化銅(Ⅱ)は(イ)である。",
+   "correct": "（ア）赤色（イ）黒色",
+   "wrongs": [
+    "（ア）赤色（イ）白色",
+    "（ア）白色（イ）黒色",
+    "（ア）黒色（イ）赤色",
+    "（ア）黒色（イ）白色"
+   ],
+   "cat": "銅",
+   "id": "q126"
+  },
+  {
+   "q": "銅を湿った空気中に放置すると何が得られるか。",
+   "correct": "緑青",
+   "wrongs": [
+    "青緑",
+    "黄緑",
+    "緑黄",
+    "青紫"
+   ],
+   "cat": "銅",
+   "id": "q127"
+  },
+  {
+   "q": "硫酸銅五水和物は（ア）、無水物は（イ）である。",
+   "correct": "（ア）青色（イ）白色",
+   "wrongs": [
+    "（ア）白色（イ）白色",
+    "（ア）青色（イ）青色",
+    "（ア）青色（イ黒色",
+    "（ア）黒色（イ）青色"
+   ],
+   "cat": "銅",
+   "id": "q128"
+  },
+  {
+   "q": "銅と亜鉛の合金を何というか。",
+   "correct": "黄銅",
+   "wrongs": [
+    "赤銅",
+    "青銅",
+    "白銅",
+    "緑銅"
+   ],
+   "cat": "銅",
+   "id": "q129"
+  },
+  {
+   "q": "銅とスズの合金を何というか。",
+   "correct": "青銅",
+   "wrongs": [
+    "赤銅",
+    "黄銅",
+    "白銅",
+    "緑銅"
+   ],
+   "cat": "銅",
+   "id": "q130"
+  },
+  {
+   "q": "銅とニッケルの合金を何というか。",
+   "correct": "白銅",
+   "wrongs": [
+    "赤銅",
+    "青銅",
+    "黄銅",
+    "緑銅"
+   ],
+   "cat": "銅",
+   "id": "q131"
+  },
+  {
+   "q": "銅の合金の名前と、用途の組み合わせとして、誤っているものはどれか。",
+   "correct": "白銅、楽器",
+   "wrongs": [
+    "ブラス、五円玉",
+    "青銅、ブロンズ像",
+    "白銅、50円玉",
+    "真鍮、五円玉"
+   ],
+   "cat": "銅",
+   "id": "q132"
+  },
+  {
+   "q": "銅の合金の名前と、用途の組み合わせとして、誤っているものはどれか。",
+   "correct": "黄銅、10円玉",
+   "wrongs": [
+    "ブラス、五円玉",
+    "青銅、ブロンズ像",
+    "白銅、100円玉",
+    "真鍮、五円玉"
+   ],
+   "cat": "銅",
+   "id": "q133"
+  },
+  {
+   "q": "銅の合金の名前と、用途の組み合わせとして、誤っているものはどれか。",
+   "correct": "青銅、50円玉",
+   "wrongs": [
+    "ブラス、五円玉",
+    "青銅、ブロンズ像",
+    "白銅、100円玉",
+    "真鍮、五円玉"
+   ],
+   "cat": "銅",
+   "id": "q134"
+  },
+  {
+   "q": "銅（Ⅱ）イオンを含む水溶液にアンモニア水を”少量”加えると(ア)が沈殿する。(ア)の色は（イ）である。",
+   "correct": "（ア）水酸化銅（イ）青白色",
+   "wrongs": [
+    "（ア）水酸化銅（イ）深青色",
+    "（ア）水酸化銅（イ）濃青色",
+    "（ア）テトラアンミン銅イオン（イ）青白色",
+    "（ア）テトラアンミン銅イオン（イ）深青色"
+   ],
+   "cat": "銅",
+   "id": "q135"
+  },
+  {
+   "q": "銅（Ⅱ）イオンを含む水溶液にアンモニア水を”多量”加えると(ア)が生成する。(ア)の水溶液の色は（イ）である。",
+   "correct": "（ア）テトラアンミン銅イオン（イ）深青色",
+   "wrongs": [
+    "（ア）水酸化銅（イ）深青色",
+    "（ア）水酸化銅（イ）濃青色",
+    "（ア）テトラアンミン銅イオン（イ）青白色",
+    "（ア）水酸化銅（イ）青白色"
+   ],
+   "cat": "銅",
+   "id": "q136"
+  },
+  {
+   "q": "純度約99％の銅を何というか。",
+   "correct": "粗銅",
+   "wrongs": [
+    "純銅",
+    "黄銅",
+    "青銅"
+   ],
+   "cat": "銅",
+   "id": "q137"
+  },
+  {
+   "q": "純度約99.99％の銅を何というか。",
+   "correct": "純銅",
+   "wrongs": [
+    "粗銅",
+    "白銅",
+    "黄銅"
+   ],
+   "cat": "銅",
+   "id": "q138"
+  },
+  {
+   "q": "銅の電解精錬では、陽極になにを用いるか",
+   "correct": "粗銅",
+   "wrongs": [
+    "純銅",
+    "黄銅",
+    "青銅",
+    "Ar³⁺"
+   ],
+   "cat": "銅",
+   "id": "q139"
+  },
+  {
+   "q": "銅の電解精錬では粗銅に含まれる（ア）は溶液中に溶けだし、（イ）は陽極泥となって沈殿する。（ア）（イ）の組み合わせとして、最も適当なものを選べ。",
+   "correct": "(ア)ニッケル(イ)銀",
+   "wrongs": [
+    "(ア)ニッケル(イ)亜鉛",
+    "(ア)銀(イ)ニッケル",
+    "(ア)金(イ)銀",
+    "(ア)銅(イ)銅"
+   ],
+   "cat": "銅",
+   "id": "q140"
+  },
+  {
+   "q": "銅の電解精錬ではイオン化傾向の小さい金属は酸化されず、そのまま電極下に沈む。これを何というか",
+   "correct": "陽極泥",
+   "wrongs": [
+    "陰極泥",
+    "スラグ",
+    "粗銅",
+    "純銅"
+   ],
+   "cat": "銅",
+   "id": "q141"
+  },
+  {
+   "q": "ケイ素は周期表の何族に属するか。",
+   "correct": "14",
+   "wrongs": [
+    "15",
+    "16",
+    "13"
+   ],
+   "cat": "ケイ素",
+   "id": "nm1"
+  },
+  {
+   "q": "ケイ素がもつ価電子数はどれ。",
+   "correct": "4",
+   "wrongs": [
+    "5",
+    "3",
+    "6"
+   ],
+   "cat": "ケイ素",
+   "id": "nm2"
+  },
+  {
+   "q": "ケイ素は [ A ] 形の [ B ] 結合の結晶であるが、融点や硬度は [ A ] よりかなり低い。高純度のケイ素の結晶は、[ C ] である。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A:ダイヤモンド、B:共有、C:半導体",
+   "wrongs": [
+    "A:ダイヤモンド、B:イオン、C:半導体",
+    "A:ダイヤモンド、B:共有、C:シリカゲル",
+    "A:黒鉛、B:共有、C:シリカゲル",
+    "A:黒鉛、B:イオン、C:半導体"
+   ],
+   "cat": "ケイ素",
+   "id": "nm3"
+  },
+  {
+   "q": "二酸化ケイ素は、主に自然界では [ A ] として存在する。[ A ] の透明な結晶を [ B ] と呼び、砂状のものを [ C ] と呼ぶ。A~Cに当てはまる組み合わせはどれか。",
+   "correct": "A:石英、B:水晶、C:ケイ砂",
+   "wrongs": [
+    "A:石灰、B:石英、C:ソーダ灰",
+    "A:石英、B:石晶、C:ソーダ灰",
+    "A:石灰、B:石英、C:ケイ砂",
+    "A:石灰、B:水晶、C:ケイ砂"
+   ],
+   "cat": "ケイ素",
+   "id": "nm4"
+  },
+  {
+   "q": "二酸化ケイ素は安定な化合物であるが、[ A ] とは反応し、[ B ] が生成する。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:フッ化水素酸、B:H₂SiF₆",
+   "wrongs": [
+    "A:フッ化水素酸、B:H₂SiF₄",
+    "A:濃硝酸、B:Si",
+    "A:濃硝酸、B:SiO₄"
+   ],
+   "cat": "ケイ素",
+   "id": "nm5",
+   "exp": "反応式は、SiO₂ + 6HF → H₂SiF₆ + 2H₂O である。"
+  },
+  {
+   "q": "二酸化ケイ素を融解させた後、冷却するとできるものはどれ。",
+   "correct": "石英ガラス",
+   "wrongs": [
+    "シリカゲル",
+    "水ガラス",
+    "グラファイト"
+   ],
+   "cat": "ケイ素",
+   "id": "nm6"
+  },
+  {
+   "q": "二酸化ケイ素は [ A ] のため、水酸化ナトリウムと反応して、[ B ](ケイ酸ナトリウム)を生成する。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:酸性酸化物、B:Na₂SiO₃",
+   "wrongs": [
+    "A:酸性酸化物、B:Na₂SiO₄",
+    "A:塩基性酸化物、B:Na₂SiO₃",
+    "A:塩基性酸化物、B:Na₂SiO₄"
+   ],
+   "cat": "ケイ素",
+   "id": "nm7",
+   "exp": "反応式は、SiO₂ + 2NaOH → Na₂SiO₃ + H₂O である。"
+  },
+  {
+   "q": "二酸化ケイ素やケイ酸塩を含むものとして誤っているものはどれか。",
+   "correct": "ミョウバン",
+   "wrongs": [
+    "ガラス",
+    "セメント",
+    "陶磁器"
+   ],
+   "cat": "ケイ素",
+   "id": "nm8"
+  },
+  {
+   "q": "ケイ酸ナトリウムに水を加えて加熱すると得られるものはどれ。",
+   "correct": "水ガラス",
+   "wrongs": [
+    "石英ガラス",
+    "シリカゲル",
+    "ミョウバン"
+   ],
+   "cat": "ケイ素",
+   "id": "nm9"
+  },
+  {
+   "q": "ケイ酸を加熱・脱水して得られるものはどれ。",
+   "correct": "シリカゲル",
+   "wrongs": [
+    "水ガラス",
+    "石英ガラス",
+    "ケイ砂"
+   ],
+   "cat": "ケイ素",
+   "id": "nm10"
+  },
+  {
+   "q": "シリカゲルの用途として正しいものはどれ。",
+   "correct": "乾燥剤及び吸着剤",
+   "wrongs": [
+    "乾燥剤及び酸化剤",
+    "乾燥剤及び還元剤",
+    "吸着剤及び酸化剤"
+   ],
+   "cat": "ケイ素",
+   "id": "nm11"
+  },
+  {
+   "q": "ハロゲンは周期表の第何族の元素か。",
+   "correct": "17",
+   "wrongs": [
+    "1",
+    "2",
+    "18"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm12"
+  },
+  {
+   "q": "ハロゲンがもつ価電子の数はいくつか。",
+   "correct": "7",
+   "wrongs": [
+    "6",
+    "1",
+    "17"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm13"
+  },
+  {
+   "q": "ハロゲンの単体について説明したものとして正しいものを選べ。",
+   "correct": "二原子分子であり、有色・有毒である。",
+   "wrongs": [
+    "単原子分子であり、有色・有毒である。",
+    "二原子分子であり、無色・無毒である。",
+    "二原子分子であり、有色・無毒である。"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm14"
+  },
+  {
+   "q": "ハロゲンの単体の融点・沸点について説明したものとして正しいものを選べ。",
+   "correct": "分子量が大きいほど高い。",
+   "wrongs": [
+    "分子量が大きいほど小さい。",
+    "分子量に依らずそれぞれほぼ同じ値となる。"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm15"
+  },
+  {
+   "q": "ハロゲンの単体で酸化力が最も強いのは次のうちどれか。",
+   "correct": "F₂",
+   "wrongs": [
+    "Cl₂",
+    "Br₂",
+    "I₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm16",
+   "exp": "酸化力は、周期表の上から順に、F₂>Cl₂>Br₂>I₂ である。"
+  },
+  {
+   "q": "常温・常圧で液体のものはどれか。",
+   "correct": "Br₂",
+   "wrongs": [
+    "F₂",
+    "Cl₂",
+    "I₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm17"
+  },
+  {
+   "q": "常温・常圧で固体のものはどれか。",
+   "correct": "I₂",
+   "wrongs": [
+    "F₂",
+    "Cl₂",
+    "Br₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm18"
+  },
+  {
+   "q": "常温・常圧の状態で、淡黄色のものはどれか。",
+   "correct": "F₂",
+   "wrongs": [
+    "Cl₂",
+    "Br₂",
+    "I₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm19"
+  },
+  {
+   "q": "常温・常圧の状態で、黄緑色のものはどれか。",
+   "correct": "Cl₂",
+   "wrongs": [
+    "F₂",
+    "Br₂",
+    "I₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm20"
+  },
+  {
+   "q": "常温・常圧の状態で、赤褐色のものはどれか。",
+   "correct": "Br₂",
+   "wrongs": [
+    "F₂",
+    "Cl₂",
+    "I₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm21"
+  },
+  {
+   "q": "常温・常圧の状態で、黒紫色のものはどれか。",
+   "correct": "I₂",
+   "wrongs": [
+    "F₂",
+    "Cl₂",
+    "Br₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm22"
+  },
+  {
+   "q": "次のうち、一般に反応が起こらないのはどちらか。",
+   "correct": "I₂ + 2KBr → Br₂ + 2KI",
+   "wrongs": [
+    "Cl₂ + 2KBr → Br₂ + 2KCl"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm23",
+   "exp": "酸化力は、F₂ > Cl₂ > Br₂ > I₂ のため。"
+  },
+  {
+   "q": "ヨウ素デンプン反応は、デンプン水溶液をヨウ素を溶かした[A]水溶液（[B]色の液体）に入れると、[C]色になる反応である。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：ヨウ化カリウム　B：褐　C：青紫",
+   "wrongs": [
+    "A：ヨウ化カリウム　B：青紫　C：褐",
+    "A：ヨウ化カリウム　B：無　C：青紫",
+    "A：ヨードホルム　B：褐　C：青紫"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm24"
+  },
+  {
+   "q": "フッ素と水の反応について、正しいものはどれか。",
+   "correct": "フッ化水素と酸素が生成。",
+   "wrongs": [
+    "反応しない。",
+    "フッ化水素と過酸化水素が生成。",
+    "フッ化水素と水素及び酸素が生成。"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm25",
+   "exp": "反応式は、2F₂ + 2H₂O → 4HF + O₂ である。"
+  },
+  {
+   "q": "塩素の製法は、実験室では[A]に[B]を加えて加熱する。このとき、1molの塩素を得るために[C]molの[B]が必要である。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：酸化マンガン(Ⅳ)　B：濃塩酸　C：4",
+   "wrongs": [
+    "A：酸化マンガン(Ⅳ)　B：希塩酸　C：2",
+    "A：塩化ナトリウム　B：希塩酸　C：2",
+    "A：塩化ナトリウム　B：濃塩酸　C：4",
+    "A：酸化マンガン(Ⅳ)　B：濃塩酸　C：2"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm26",
+   "exp": "反応式は、MnO₂ + 4HCl → MnCl₂ + Cl₂ + 2H₂O である。"
+  },
+  {
+   "q": "塩素の製法は、実験室では高度さらし粉[A]に塩酸を加えて加熱する。このとき、塩素・水及び[B]が生成する。なお、高度さらし粉の代わりに、さらし粉[C]を用いても良い。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：Ca(ClO)₂・2H₂O　B：塩化カルシウム　C：CaCl(ClO)・H₂O",
+   "wrongs": [
+    "A：CaCl(ClO)・H₂O　B：塩化カルシウム　C：Ca(ClO)₂・2H₂O",
+    "A：CaCl(ClO)・2H₂O　B：塩化カルシウム　C：Ca(ClO)₂・H₂O",
+    "A：Ca(ClO)₂・2H₂O　B：水酸化カルシウム　C：CaCl(ClO)・H₂O",
+    "A：Ca(ClO)₂・H₂O　B：水酸化カルシウム　C：CaCl(ClO)・2H₂O"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm27",
+   "exp": "反応式は、Ca(ClO)₂・2H₂O + 4HCl → CaCl₂ + 4H₂O +2Cl₂ である。 さらし粉だと、CaCl(ClO)・H₂O + 2HCl → CaCl₂ +2H₂O +Cl₂ である。"
+  },
+  {
+   "q": "塩素水中では、塩素の一部が水と反応し、[A]と[B]を生じる。[B]は強い酸化作用があり、[C]効果のため、水道水やプールの水等に使用される。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：HCl　B：HClO　C：漂白・殺菌",
+   "wrongs": [
+    "A：HClO　B：HCl　C：漂白・殺菌",
+    "A：HCl　B：HClO₃　C：漂白・殺菌",
+    "A：HClO₃　B：HCl　C：漂白・殺菌",
+    "A：HCl　B：HClO　C：脱水・吸湿"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm28",
+   "exp": "反応式は、Cl₂ +H₂O → HCl + HClO である。"
+  },
+  {
+   "q": "次のハロゲン化水素のうち、弱酸はどれ。",
+   "correct": "HF",
+   "wrongs": [
+    "HCl",
+    "HBr",
+    "HI"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm29"
+  },
+  {
+   "q": "次のハロゲン化水素のうち、最も強い酸はどれ。",
+   "correct": "HI",
+   "wrongs": [
+    "HCl",
+    "HBr",
+    "HF"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm30"
+  },
+  {
+   "q": "次のハロゲン化水素のうち、沸点が最も高い(約20℃)のものはどれ。",
+   "correct": "HF",
+   "wrongs": [
+    "HCl",
+    "HBr",
+    "HI"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm31"
+  },
+  {
+   "q": "ハロゲン化水素のうち、[A]はガラスを溶かすため、[B]に保存する。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：HF　B：ポリエチレン製の容器",
+   "wrongs": [
+    "A：HF　B：褐色のビン",
+    "A：HF　B：水中",
+    "A：HI　B：ポリエチレン製の容器",
+    "A：HI　B：褐色のビン"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm32"
+  },
+  {
+   "q": "フッ化水素の製法は、実験室では[A]に[B]を加えて加熱する。[B]を用いるのは、[B]の[C]の性質を利用するためである。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：ホタル石　B：濃硫酸　C：不揮発性の酸",
+   "wrongs": [
+    "A：ホタル石　B：希硫酸　C：強酸",
+    "A：ホタル石　B：濃硫酸　C：酸化作用",
+    "A：水ガラス　B：濃硫酸　C：不揮発性の酸",
+    "A：水ガラス　B：希硫酸　C：強酸"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm33",
+   "exp": "ホタル石はCaF₂。 反応式は、CaF₂ + H₂SO₄ → CaSO₄ + 2HF である。"
+  },
+  {
+   "q": "フッ化水素の製法は、実験室では[A]に[B]を加えて加熱する。副生成物として、[C]が生じる。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：蛍石　B：濃硫酸　C：硫酸カルシウム",
+   "wrongs": [
+    "A：蛍石　B：希硫酸　C：硫酸カルシウム",
+    "A：大理石　B：濃硫酸　C：硫酸カルシウム",
+    "A：大理石　B：濃硝酸　C：硝酸カルシウム",
+    "A：CaF　B：濃硝酸　C：硝酸カルシウム"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm34",
+   "exp": "ホタル石はフッ化カルシウムCaF₂。 反応式は、CaF₂ + H₂SO₄ → CaSO₄ + 2HF である。揮発性酸の遊離として、もしくは弱酸の塩の遊離としてとらえられる。"
+  },
+  {
+   "q": "フッ化水素酸により石英[A]が溶けると、[B]が生じる。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：SiO₂　B：H₂SiF₆(ヘキサフルオロケイ酸)",
+   "wrongs": [
+    "A：SiO₄　B：H₂SiF₆(ヘキサフルオロケイ酸)",
+    "A：SiO₂　B：H₂Si₂F₆(ヘキサフルオロケイ酸)",
+    "A：SiO₂　B：H₂SiF₄(ヘキサフルオロケイ酸)",
+    "A：SiO₄　B：H₂Si₂F₆(ヘキサフルオロケイ酸)"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm35",
+   "exp": "反応式は、SiO₂ + 6HF → H₂SiF₆ + 2H₂O である。 ちなみに『ヘキサ』は『6』を意味する。"
+  },
+  {
+   "q": "塩化水素の製法は、実験室では塩化ナトリウムに[A]を加えて加熱する。[A]を用いるのは、[A]の[B]の性質を利用するためであり、塩化水素と同時に[C]が生じる。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：濃硫酸　B：不揮発性の酸　C：硫酸水素ナトリウム",
+   "wrongs": [
+    "A：濃硫酸　B：酸化作用　C：硫酸水素ナトリウム",
+    "A：濃硫酸　B：酸化作用　C：硫酸ナトリウム",
+    "A：濃硫酸　B：不揮発性の酸　C：硫酸ナトリウム",
+    "A：希硫酸　B：強酸　C：硫酸ナトリウム"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm36",
+   "exp": "反応式は、NaCl +H₂SO₄ → NaHSO₄ + HCl である。 2NaCl + H₂SO₄ → Na₂SO₄ + 2HCl とはならないので注意。"
+  },
+  {
+   "q": "塩化水素はある気体を接触させると白煙を生じる。この気体として適当なものはどれ。",
+   "correct": "アンモニア",
+   "wrongs": [
+    "二酸化炭素",
+    "一酸化炭素",
+    "二酸化窒素"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm37",
+   "exp": "反応式は、HCl + NH₃ → NH₄Cl(白煙) である。"
+  },
+  {
+   "q": "次のハロゲン化銀のうち、水に溶けるのはどれ。",
+   "correct": "AgF",
+   "wrongs": [
+    "AgCl",
+    "AgBr",
+    "AgI"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm38"
+  },
+  {
+   "q": "AgClの沈殿の色はどれ。",
+   "correct": "白",
+   "wrongs": [
+    "淡黄",
+    "黄",
+    "黒"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm39"
+  },
+  {
+   "q": "AgBrの沈殿の色はどれ。",
+   "correct": "淡黄",
+   "wrongs": [
+    "白",
+    "黄",
+    "黒"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm40"
+  },
+  {
+   "q": "AgIの沈殿の色はどれ。",
+   "correct": "黄",
+   "wrongs": [
+    "淡黄",
+    "白",
+    "黒"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm41"
+  },
+  {
+   "q": "次のハロゲン化鉛の沈殿のうち、白色ではなく黄色のものはどれ。",
+   "correct": "PbI₂",
+   "wrongs": [
+    "PbF₂",
+    "PbCl₂",
+    "PbBr₂"
+   ],
+   "cat": "ハロゲン",
+   "id": "nm42",
+   "exp": "PbF₂、PbCl₂、PbBr₂の３つは白色沈殿。"
+  },
+  {
+   "q": "リンは周期表の何族に属するか。",
+   "correct": "15",
+   "wrongs": [
+    "14",
+    "13",
+    "12"
+   ],
+   "cat": "リン",
+   "id": "nm43"
+  },
+  {
+   "q": "リンがもつ価電子数はどれ。",
+   "correct": "5",
+   "wrongs": [
+    "3",
+    "6",
+    "4"
+   ],
+   "cat": "リン",
+   "id": "nm44"
+  },
+  {
+   "q": "リンの同素体について。空気中で自然発火するのは [ A ] で、毒性が強いのは [ B ] で、分子式が P₄ として表されるのは [ C ] で、二硫化炭素へ溶けるのは [ D ] である。A～Dに当てはまる組み合わせはどれか。",
+   "correct": "A:黄リン、B:黄リン、C:黄リン、D:黄リン",
+   "wrongs": [
+    "A:黄リン、B:赤リン、C:赤リン、D:黄リン",
+    "A:黄リン、B:黄リン、C:黄リン、D:赤リン",
+    "A:赤リン、B:黄リン、C:黄リン、D:赤リン",
+    "A:赤リン、B:赤リン、C:赤リン、D:赤リン"
+   ],
+   "cat": "リン",
+   "id": "nm45",
+   "exp": "二硫化炭素CS₂は常温で液体。水に溶けないリンや硫黄の単体を溶かす、ちょっと変わった溶媒である。"
+  },
+  {
+   "q": "空気中でリンを燃焼させるとできるのはどれ。",
+   "correct": "P₄O₁₀",
+   "wrongs": [
+    "PO₄",
+    "P₂O₄",
+    "P₃O₄"
+   ],
+   "cat": "リン",
+   "id": "nm46"
+  },
+  {
+   "q": "十酸化四リンは、[ A ] 色の粉末で、強力な [ B ] として用いられる。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:白、B:乾燥剤",
+   "wrongs": [
+    "A:白、B:還元剤",
+    "A:白、B:酸化剤",
+    "A:黒、B:還元剤",
+    "A:黒、B:酸化剤"
+   ],
+   "cat": "リン",
+   "id": "nm47"
+  },
+  {
+   "q": "十酸化四リンを乾燥剤として用いる場合に、適さないものはどれ。",
+   "correct": "塩基性の気体",
+   "wrongs": [
+    "中性の気体",
+    "酸性の気体"
+   ],
+   "cat": "リン",
+   "id": "nm48",
+   "exp": "十酸化四リンは、酸性乾燥剤であり、塩基性の気体とは反応するため不適である。"
+  },
+  {
+   "q": "リン酸の製法として正しいものはどれ。",
+   "correct": "十酸化四リンを水に溶かして加熱。",
+   "wrongs": [
+    "黄リンを水に溶かして加熱。",
+    "赤リンを水に溶かして加熱。"
+   ],
+   "cat": "リン",
+   "id": "nm49",
+   "exp": "反応式は、P₄O₁₀ + 6H₂O → 4H₃PO₄ である。"
+  },
+  {
+   "q": "リン酸の結晶またはリン酸の水溶液の示す性質はどれ。",
+   "correct": "結晶は潮解性をもつ。",
+   "wrongs": [
+    "結晶は硬く融点が高い。",
+    "水溶液は強酸性。",
+    "水溶液は酸化作用をもつ。"
+   ],
+   "cat": "リン",
+   "id": "nm50"
+  },
+  {
+   "q": "炭素は周期表の何族に属するか。",
+   "correct": "14",
+   "wrongs": [
+    "13",
+    "12",
+    "15"
+   ],
+   "cat": "炭素",
+   "id": "nm51"
+  },
+  {
+   "q": "炭素のもつ価電子数はどれ。",
+   "correct": "4",
+   "wrongs": [
+    "3",
+    "5",
+    "8"
+   ],
+   "cat": "炭素",
+   "id": "nm52"
+  },
+  {
+   "q": "炭素の同素体のうち、構造が層状でやわらかいものはどれ。",
+   "correct": "黒鉛",
+   "wrongs": [
+    "ダイヤモンド",
+    "フラーレン",
+    "カーボンナノチューブ"
+   ],
+   "cat": "炭素",
+   "id": "nm53"
+  },
+  {
+   "q": "炭素の同素体のうち、構造が球状のものはどれ。",
+   "correct": "フラーレン",
+   "wrongs": [
+    "黒鉛",
+    "ダイヤモンド",
+    "カーボンナノチューブ"
+   ],
+   "cat": "炭素",
+   "id": "nm54"
+  },
+  {
+   "q": "炭素の同素体のうち、C₆₀ や C₇₀ と表記されるものはどれ。",
+   "correct": "フラーレン",
+   "wrongs": [
+    "黒鉛",
+    "ダイヤモンド",
+    "カーボンナノチューブ"
+   ],
+   "cat": "炭素",
+   "id": "nm55"
+  },
+  {
+   "q": "炭素の同素体のうち、電気を一切通さないもの（絶縁体）の組み合わせとして正しいものはどれ。",
+   "correct": "ダイヤモンド、フラーレン",
+   "wrongs": [
+    "ダイヤモンド、カーボンナノチューブ",
+    "フラーレン、カーボンナノチューブ",
+    "黒鉛、カーボンナノチューブ"
+   ],
+   "cat": "炭素",
+   "id": "nm56"
+  },
+  {
+   "q": "黒鉛(グラファイト)のアモルファスを [ A ] と呼び、また網目構造の層１枚の構造を [ B ] と呼ぶ。これらは全て炭素の同素体である。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:無定形炭素、B:グラフェン",
+   "wrongs": [
+    "A:グラフェン、B:無定形炭素",
+    "A:カーボンブラック、B:無定形炭素",
+    "A:グラフェン、B:カーボンブラック"
+   ],
+   "cat": "炭素",
+   "id": "nm57"
+  },
+  {
+   "q": "実験室における一酸化炭素の製法はどれ。",
+   "correct": "ギ酸を濃硫酸で脱水する。",
+   "wrongs": [
+    "アルコール発酵。",
+    "石灰石の強熱による熱分解。",
+    "石灰石に塩酸を加える。"
+   ],
+   "cat": "炭素",
+   "id": "nm58",
+   "exp": "反応式は、HCOOH → CO + H₂O である。"
+  },
+  {
+   "q": "一酸化炭素の性質として正しいものはどれ。",
+   "correct": "無色、無臭、有毒気体。水に溶けにくい。",
+   "wrongs": [
+    "無色、刺激臭、有毒気体。水に溶けにくい。",
+    "無色、無臭、有毒気体。水に溶けやすい。",
+    "無色、刺激臭、有毒気体。水に溶けやすい。"
+   ],
+   "cat": "炭素",
+   "id": "nm59"
+  },
+  {
+   "q": "高温の一酸化炭素は [ A ] 作用が強いため、Fe₂O₃と反応させると、[ B ] が生じる。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:還元、B:Fe",
+   "wrongs": [
+    "A:還元、B:FeCO₃",
+    "A:酸化、B:Fe",
+    "A:酸化、B:FeCO₃"
+   ],
+   "cat": "炭素",
+   "id": "nm60",
+   "exp": "反応式は、Fe₂O₃ + 3CO → 2Fe + 3CO₂ である。"
+  },
+  {
+   "q": "生物の呼吸においては、[ A ] と酸素が反応し、二酸化炭素と [ B ] が生成する。このとき、酸素1molに対して、二酸化炭素は [ C ] mol生じる。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A:C₆H₁₂O₆、B:水、C:1",
+   "wrongs": [
+    "A:C₆H₁₂O₆、B:水、C:2",
+    "A:C₆H₁₀O₅、B:水、C:2",
+    "A:C₆H₁₀O₅、B:水、C:1",
+    "A:C₆H₁₂O₆、B:水素、C:2"
+   ],
+   "cat": "炭素",
+   "id": "nm61",
+   "exp": "反応式は、C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O である。"
+  },
+  {
+   "q": "アルコール発酵により二酸化炭素が生成する反応は、[ A ] が、[ B ] と二酸化炭素に分解する反応である。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:C₆H₁₂O₆、B:C₂H₅OH",
+   "wrongs": [
+    "A:C₆H₁₀O₅、B:C₂H₅OH",
+    "A:C₆H₁₂O₆、B:CH₃OH",
+    "A:C₆H₁₀O₅、B:CH₃OH"
+   ],
+   "cat": "炭素",
+   "id": "nm62",
+   "exp": "反応式は、C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂ である。"
+  },
+  {
+   "q": "CO₂の工業的製法は、[ A ](名称 [ B ] ) を強熱して熱分解させる。副生成物は[ C ]。A～ ～Cに当てはまる組み合わせはどれか。",
+   "correct": "A:CaCO₃、B:石灰石、C:酸化カルシウム",
+   "wrongs": [
+    "A:CaCO₃、B:消石灰、C:酸化カルシウム",
+    "A:CaCO₃、B:石灰石、C:カルシウム(単体)",
+    "A:Ca(OH)₂、B:消石灰、C:酸化カルシウム",
+    "A:Ca(OH)₂、B:石灰石、C:カルシウム(単体)"
+   ],
+   "cat": "炭素",
+   "id": "nm63",
+   "exp": "反応式は、CaCO₃ → CaO + CO₂ である。(炭酸塩の熱分解)"
+  },
+  {
+   "q": "CO₂の実験室での製法は、炭酸塩、例えば石灰石や大理石 (主成分は、[ A ])に、塩酸を加えて発生させる。副生成物は[ B ]と水。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A:CaCO₃、B:塩化カルシウム",
+   "wrongs": [
+    "A:CaCO₃、B:塩素",
+    "A:MgCO₃、B:塩化マグネシウム",
+    "A:MgCO₃、B:塩素"
+   ],
+   "cat": "炭素",
+   "id": "nm64",
+   "exp": "反応式は、CaCO₃ + 2HCl → CaCl₂ + H₂O +CO₂である。"
+  },
+  {
+   "q": "石灰水で水に溶けているのはどれ。",
+   "correct": "Ca(OH)₂",
+   "wrongs": [
+    "CaO",
+    "CaCO₃"
+   ],
+   "cat": "炭素",
+   "id": "nm65"
+  },
+  {
+   "q": "CO₂を石灰水に通すと白濁する。白濁する要因となる物質はどれ。",
+   "correct": "炭酸カルシウム",
+   "wrongs": [
+    "酸化カルシウム",
+    "水酸化カルシウム"
+   ],
+   "cat": "炭素",
+   "id": "nm66",
+   "exp": "反応式は、CO₂ + Ca(OH)₂ → CaCO₃ +H₂O である。"
+  },
+  {
+   "q": "二酸化炭素の固体の名称はどれ。",
+   "correct": "ドライアイス",
+   "wrongs": [
+    "フラーレン",
+    "グラフェン",
+    "グラファイト"
+   ],
+   "cat": "炭素",
+   "id": "nm67"
+  },
+  {
+   "q": "硫黄は周期表の何族に属するか。",
+   "correct": "16",
+   "wrongs": [
+    "17",
+    "15",
+    "14"
+   ],
+   "cat": "硫黄",
+   "id": "nm68"
+  },
+  {
+   "q": "硫黄がもつ価電子はどれ。",
+   "correct": "6",
+   "wrongs": [
+    "7",
+    "2",
+    "17",
+    "16"
+   ],
+   "cat": "硫黄",
+   "id": "nm69"
+  },
+  {
+   "q": "硫黄の同素体の中で、最も安定なものは[A]硫黄である。[A]の温度を上げていき、融解後250℃ほどにしたのち、水に入れて急冷することで[B]硫黄となる。A、Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：斜方　B：ゴム状",
+   "wrongs": [
+    "A：斜方　B：単斜",
+    "A：単斜　B：ゴム状",
+    "A：単斜　B：斜方",
+    "A：ゴム状　B：単斜"
+   ],
+   "cat": "硫黄",
+   "id": "nm70"
+  },
+  {
+   "q": "硫化水素は、[A]色・[B]臭の有毒の気体であり、火山ガスや温泉に含まれる。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：無　B：腐卵",
+   "wrongs": [
+    "A：無　B：刺激",
+    "A：淡黄　B：腐卵",
+    "A：淡黄　B：刺激"
+   ],
+   "cat": "硫黄",
+   "id": "nm71",
+   "exp": "腐卵臭と言われるのは、H₂Sのみ。"
+  },
+  {
+   "q": "硫化水素は、水に溶けやすく[A]酸性を示す。また、強い[B]性を持ち、二酸化硫黄と反応し、[C]を生成する。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：弱　B：還元　C：硫黄の単体",
+   "wrongs": [
+    "A：弱　B：還元　C：硫酸",
+    "A：弱　B：酸化　C：硫黄の単体",
+    "A：弱　B：酸化　C：硫酸",
+    "A：強　B：還元　C：硫黄の単体"
+   ],
+   "cat": "硫黄",
+   "id": "nm72",
+   "exp": "反応式は、2H₂S + SO₂ → 2H₂O +3S である。"
+  },
+  {
+   "q": "二酸化硫黄は、硫黄または[A](主成分[B])を燃焼して得られる。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：黄鉄鉱　B：FeS₂",
+   "wrongs": [
+    "A：黄鉄鉱　B：FeS",
+    "A：赤鉄鉱　B：FeS",
+    "A：赤鉄鉱　B：FeS₂"
+   ],
+   "cat": "硫黄",
+   "id": "nm73",
+   "exp": "黄鉄鉱の反応式は、4FeS₂ + 11O₂ → 2Fe₂O₃ + 8SO₂ である。"
+  },
+  {
+   "q": "1molの黄鉄鉱を燃焼させると、[ A ] molの二酸化硫黄が生じ、副生成物は [ B ] である。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：2、B：Fe₂O₃",
+   "wrongs": [
+    "A：2、B：FeO",
+    "A：2、B：Fe₃O₄",
+    "A：1.5、B：Fe₂O₃",
+    "A：1.5、B：Fe₃O₄"
+   ],
+   "cat": "硫黄",
+   "id": "nm74",
+   "exp": "反応式は、4FeS₂ + 11O₂ → 2Fe₂O₃ + 8SO₂ である。"
+  },
+  {
+   "q": "二酸化硫黄は、実験室では[　　]と希硫酸を反応させて得られる。空欄に入る物質名はどれ。",
+   "correct": "亜硫酸ナトリウム",
+   "wrongs": [
+    "硫酸ナトリウム",
+    "銅の単体",
+    "硫酸水素ナトリウム"
+   ],
+   "cat": "硫黄",
+   "id": "nm75",
+   "exp": "反応式は、Na₂SO₃ + H₂SO₄ → Na₂SO₄ + H₂O +SO₂ である。"
+  },
+  {
+   "q": "二酸化硫黄は、実験室では[A]と[B]を反応させて得られる。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：銅の単体　B：熱濃硫酸",
+   "wrongs": [
+    "A：銅の単体　B：濃硫酸(常温)",
+    "A：銅の単体　B：希硫酸",
+    "A：硫酸ナトリウム　B：濃硫酸(常温)",
+    "A：硫酸水素ナトリウム　B：濃硫酸(常温)"
+   ],
+   "cat": "硫黄",
+   "id": "nm76",
+   "exp": "反応式は、Cu + 2H₂SO₄ → CuSO₄ + 2H₂O + SO₂ である。"
+  },
+  {
+   "q": "二酸化硫黄は、[A]色・[B]臭の有毒の気体であり、腐食性をもつ。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：無　B：刺激",
+   "wrongs": [
+    "A：無　B：腐卵",
+    "A：淡黄　B：腐卵",
+    "A：淡黄　B：刺激"
+   ],
+   "cat": "硫黄",
+   "id": "nm77"
+  },
+  {
+   "q": "二酸化硫黄は、水に溶け[A]を生じ、[B]酸性を示す。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：亜硫酸　B：弱",
+   "wrongs": [
+    "A：亜硫酸　B：強",
+    "A：硫酸　B：強",
+    "A：硫酸　B：弱"
+   ],
+   "cat": "硫黄",
+   "id": "nm78",
+   "exp": "反応式は、SO₂ + H₂O → H₂SO₃ である。"
+  },
+  {
+   "q": "二酸化硫黄は、主に[A]としてはたらき、漂白剤などに用いられるが、強い[A]である[B]に対しては、[C]としてもはたらく。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：還元剤　B：H₂S　C：酸化剤",
+   "wrongs": [
+    "A：還元剤　B：H₂O₂　C：酸化剤",
+    "A：酸化剤　B：H₂S　C：還元剤",
+    "A：酸化剤　B：H₂O₂　C：還元剤"
+   ],
+   "cat": "硫黄",
+   "id": "nm79"
+  },
+  {
+   "q": "濃硫酸の工業的製法は、[A]と呼ばれ、触媒として[B]を用いる。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：接触法　B：V₂O₅",
+   "wrongs": [
+    "A：接触法　B：Fe₃O₄",
+    "A：ハーバー法　B：Pt",
+    "A：ハーバー法　B：V₂O₅",
+    "A：オストワルト法　B：Fe₃O₄"
+   ],
+   "cat": "硫黄",
+   "id": "nm80",
+   "exp": "ハーバー法：アンモニアの製法（触媒:Fe₃O₄） オストワルト法：硝酸の製法（触媒:Pt） V₂O₅は、酸化バナジウム(V)である。"
+  },
+  {
+   "q": "接触法は、[A]を酸化バナジウム(V)を触媒に用いて[B]を生成し、[B]を濃硫酸に吸収させて[C]とし、希硫酸で薄めて濃硫酸を生成する。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：SO₂　B：SO₃　C：発煙硫酸",
+   "wrongs": [
+    "A：SO₂　B：SO₃　C：熱濃硫酸",
+    "A：S　B：SO₂　C：熱濃硫酸",
+    "A：S　B：SO₂　C：発煙硫酸"
+   ],
+   "cat": "硫黄",
+   "id": "nm81",
+   "exp": "反応式は、 2SO₂ + O₂ → 2SO₃ (触媒利用) SO₃ + H₂O → H₂SO₄ である。"
+  },
+  {
+   "q": "濃硫酸について説明したものとして、誤っているものはどれか。無い場合は、この中にはない、を選べ。",
+   "correct": "強酸性を示す。",
+   "wrongs": [
+    "吸湿性を示し、乾燥剤として使われる。",
+    "脱水作用を示し、有機物から水を奪う。",
+    "不揮発性の酸であり、揮発性の酸の塩と反応し、揮発性の酸を生成させる。",
+    "加熱すると強い酸化作用を示す。"
+   ],
+   "cat": "硫黄",
+   "id": "nm82"
+  },
+  {
+   "q": "[A]に銀を入れると、[B]の気体が発生する。これは[A]の[C]に依る反応である。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：熱濃硫酸　B：二酸化硫黄　C：酸化作用",
+   "wrongs": [
+    "A：熱濃硫酸　B：二酸化硫黄　C：不揮発性",
+    "A：濃硫酸　B：三酸化硫黄　C：酸化作用",
+    "A：濃硫酸　B：二酸化硫黄　C：不揮発性"
+   ],
+   "cat": "硫黄",
+   "id": "nm83",
+   "exp": "反応式は、2Ag + H₂SO₄ → Ag₂SO₄ + 2H₂O + SO₂ である。"
+  },
+  {
+   "q": "塩化ナトリウムに濃硫酸を作用させると、[A]と塩化水素が発生する。これは濃硫酸の[B]の性質に依る反応である。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：硫酸水素ナトリウム　B：不揮発性",
+   "wrongs": [
+    "A：硫酸ナトリウム　B：不揮発性",
+    "A：硫酸水素ナトリウム　B：酸化作用",
+    "A：硫酸ナトリウム　B：酸化作用"
+   ],
+   "cat": "硫黄",
+   "id": "nm84",
+   "exp": "反応式は、NaCl + H₂SO₄ → NaHSO₄ + HCl である。 2NaCl + H₂SO₄ → Na₂SO₄ + 2HCl ではないので注意。"
+  },
+  {
+   "q": "濃硫酸から希硫酸を作る際は、[A]に[B]を少しずつ加えて混ぜる。これは、[C]で水が瞬時に沸騰し液体がはねるのを防ぐためである。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：水　B：濃硫酸　C：溶解熱",
+   "wrongs": [
+    "A：水　B：濃硫酸　C：蒸発熱",
+    "A：濃硫酸　B：水　C：蒸発熱",
+    "A：濃硫酸　B：水　C：溶解熱"
+   ],
+   "cat": "硫黄",
+   "id": "nm85"
+  },
+  {
+   "q": "窒素は周期表の何族に属するか。",
+   "correct": "15",
+   "wrongs": [
+    "5",
+    "14",
+    "16"
+   ],
+   "cat": "窒素",
+   "id": "nm86"
+  },
+  {
+   "q": "窒素がもつ価電子は次のうちどれ。",
+   "correct": "5",
+   "wrongs": [
+    "3",
+    "16",
+    "6",
+    "15"
+   ],
+   "cat": "窒素",
+   "id": "nm87"
+  },
+  {
+   "q": "窒素は、空気中に約 [ A ] %含まれ、工業的には [ B ] を [ C ] して得られる。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A：78、B：液体空気、C：分留",
+   "wrongs": [
+    "A：78、B：液体空気、C：抽出",
+    "A：20、B：液体空気、C：抽出",
+    "A：78、B：重油、C：分留"
+   ],
+   "cat": "窒素",
+   "id": "nm88",
+   "exp": "分留は２つ以上の気体を沸点の違いで分けて取り出すこと。抽出は溶けやすい溶媒の方に目的物質を溶かす。"
+  },
+  {
+   "q": "窒素は、実験室において、[ A ] （化学式：[ B ]）の熱分解（副生成物：[ C ]）により発生させることができる。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A：亜硝酸アンモニウム、B：NH₄NO₂、C：水",
+   "wrongs": [
+    "A：硝酸アンモニウム、B：NH₄NO₂、C：水",
+    "A：硝酸アンモニウム、B：(NH₄)₂NO₃、C：水",
+    "A：亜硝酸アンモニウム、B：NH₄NO₂、C：過酸化水素",
+    "A：硝酸アンモニウム、B：NH₄NO₃、C：過酸化水素"
+   ],
+   "cat": "窒素",
+   "id": "nm89",
+   "exp": "反応式は、NH₄NO₂ → N₂ ＋2H₂O である。"
+  },
+  {
+   "q": "ハーバー（・ボッシュ）法の反応として正しいのはどれ。",
+   "correct": "窒素と水素から、アンモニアが生成される。",
+   "wrongs": [
+    "アンモニアから、窒素と水素が生成される。",
+    "アンモニアを段階的酸化の後、水と反応させ、硝酸を得る。",
+    "硝酸から脱水させ、還元させてアンモニアを得る。"
+   ],
+   "cat": "窒素",
+   "id": "nm90",
+   "exp": "反応式は、N₂ + 3H₂ → 2NH₃ である。"
+  },
+  {
+   "q": "ハーバー（・ボッシュ）法で用いられる触媒はどれ。",
+   "correct": "四酸化三鉄(Fe₃O₄)",
+   "wrongs": [
+    "白金(Pt)",
+    "酸化バナジウム(V)(V₂O₅)",
+    "炭素(C)"
+   ],
+   "cat": "窒素",
+   "id": "nm91",
+   "exp": "白金(Pt)はオストワルト法。酸化バナジウム(V)は接触法。"
+  },
+  {
+   "q": "アンモニアは、実験室では [ A ] と強塩基の混合物を加熱させて得られる。強塩基を Ca(OH)₂ とした場合、[ B ] と [ C ] が副生成物として生じる。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A：NH₄Cl、B：CaCl₂、C：H₂O",
+   "wrongs": [
+    "A：NH₄Cl、B：Ca、C：HClO",
+    "A：NH₄Cl、B：Ca、C：HClO₃",
+    "A：N₂、B：Ca、C：O₂",
+    "A：NH₄Cl、B：CaCl(ClO)、C：H₂"
+   ],
+   "cat": "窒素",
+   "id": "nm92",
+   "exp": "反応式は、2NH₄Cl + Ca(OH)₂ → CaCl₂ + 2NH₃ + 2H₂O である。"
+  },
+  {
+   "q": "アンモニアの性質として正しいものはどれ。",
+   "correct": "無色、刺激臭の気体。水溶液は弱塩基性。",
+   "wrongs": [
+    "淡黄色、刺激臭の気体。水溶液は弱塩基性。",
+    "淡黄色、刺激臭の気体。水溶液は弱酸性。",
+    "淡黄色、刺激臭の気体。水に溶けない。",
+    "無色、腐乱臭の気体。水溶液は弱酸性。"
+   ],
+   "cat": "窒素",
+   "id": "nm93"
+  },
+  {
+   "q": "生成された気体がアンモニアであることを確認する方法として適切なものはどれ。",
+   "correct": "上方置換で気体収集。濃塩酸を近づけて白煙が生成するかを確認。",
+   "wrongs": [
+    "上方置換で気体収集。希硫酸を近づけて白煙が生成するかを確認。",
+    "上方置換で気体収集。塩化アンモニウムを近づけて白煙が生成するかを確認。",
+    "下方置換で気体収集。濃塩酸を近づけて白煙が生成するかを確認。",
+    "下方置換で気体収集。希硫酸を近づけて白煙が生成するかを確認。"
+   ],
+   "cat": "窒素",
+   "id": "nm94",
+   "exp": "アンモニアは水に溶け、空気より軽いので上方置換法。 白煙の反応式は、NH₃ + HCl → NH₄Cl(白煙) である。"
+  },
+  {
+   "q": "一酸化窒素について説明したものとして正しいものはどれ。",
+   "correct": "水に溶けにくい気体。無色。空気中ですぐに酸化され二酸化窒素へ。",
+   "wrongs": [
+    "水に溶けやすい気体。赤褐色。有毒。水に溶けると硝酸へ。",
+    "水に溶けにくい気体。赤褐色。空気中ですぐに酸化され二酸化窒素へ。",
+    "水に溶けやすい気体。無色。有毒。水に溶けると硝酸へ。",
+    "水に溶けやすい気体。無色。有毒。水に溶けると亜硝酸へ。"
+   ],
+   "cat": "窒素",
+   "id": "nm95"
+  },
+  {
+   "q": "二酸化窒素について説明したものとして正しいものはどれ。",
+   "correct": "水に溶けやすい気体。赤褐色。有毒。水に溶けると硝酸へ。",
+   "wrongs": [
+    "水に溶けにくい気体。無色。空気中ですぐに酸化され二酸化窒素へ。",
+    "水に溶けにくい気体。赤褐色。空気中ですぐに酸化され二酸化窒素へ。",
+    "水に溶けやすい気体。無色。有毒。水に溶けると硝酸へ。",
+    "水に溶けやすい気体。無色。有毒。水に溶けると亜硝酸へ。"
+   ],
+   "cat": "窒素",
+   "id": "nm96"
+  },
+  {
+   "q": "一酸化窒素は、銅に [ A ] を反応させて、[ B ] 置換で捕集する。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A：希硝酸、B：水上",
+   "wrongs": [
+    "A：濃硝酸、B：下方",
+    "A：希硝酸、B：下方",
+    "A：濃硝酸、B：水上"
+   ],
+   "cat": "窒素",
+   "id": "nm97",
+   "exp": "反応式は、3Cu + 8HNO₃ → 3Cu(NO₃)₂ + 4H₂O + 2NO である。"
+  },
+  {
+   "q": "二酸化窒素は、銅に [ A ] を反応させて、[ B ] 置換で捕集する。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A：濃硝酸、B：下方",
+   "wrongs": [
+    "A：希硝酸、B：水上",
+    "A：希硝酸、B：下方",
+    "A：濃硝酸、B：水上"
+   ],
+   "cat": "窒素",
+   "id": "nm98",
+   "exp": "反応式は、Cu + 4HNO₃ → Cu(NO₃)₂ + 2H₂O + 2NO₂ である。"
+  },
+  {
+   "q": "銅に希硝酸を加え反応させた。1.2molの銅を全て反応させたとき、希硝酸は [ A ] mol反応し、一酸化窒素は [ B ] mol生成する。A・Bに入る数値の組み合わせはどれか。",
+   "correct": "A：3.2、B：0.8",
+   "wrongs": [
+    "A：4.8、B：2.4",
+    "A：3.2、B：1.6",
+    "A：4.8、B：1.6",
+    "A：2.4、B：1.2"
+   ],
+   "cat": "窒素",
+   "id": "nm99",
+   "exp": "反応式は、3Cu + 8HNO₃ → 3Cu(NO₃)₂ + 4H₂O + 2NO である。"
+  },
+  {
+   "q": "銅に濃硝酸を加え反応させた。1.2molの銅を全て反応させたとき、濃硝酸は [ A ] mol反応し、二酸化窒素は [ B ] mol生成する。A・Bに入る数値の組み合わせはどれか。",
+   "correct": "A：4.8、B：2.4",
+   "wrongs": [
+    "A：3.2、B：0.8",
+    "A：3.2、B：1.6",
+    "A：4.8、B：1.6",
+    "A：2.4、B：1.2"
+   ],
+   "cat": "窒素",
+   "id": "nm100",
+   "exp": "反応式は、Cu + 4HNO₃ → Cu(NO₃)₂ + 2H₂O + 2NO₂ である。"
+  },
+  {
+   "q": "常温においては、二酸化窒素はある物質と平衡関係にある。この物質について説明したものとして正しいものはどれ。",
+   "correct": "無色気体の四酸化二窒素",
+   "wrongs": [
+    "無色気体の一酸化窒素及び酸素",
+    "赤褐色気体の四酸化二窒素",
+    "赤褐色気体の一酸化窒素及び酸素"
+   ],
+   "cat": "窒素",
+   "id": "nm101"
+  },
+  {
+   "q": "硝酸の製法として最も適当なものはどれ。",
+   "correct": "硝酸ナトリウムに濃硫酸を加えて加熱する。",
+   "wrongs": [
+    "硝酸ナトリウムに希硫酸を加えて加熱する。",
+    "硝酸ナトリウムに濃塩酸を加えて加熱する。",
+    "硝酸ナトリウムに希塩酸を加えて加熱する。"
+   ],
+   "cat": "窒素",
+   "id": "nm102",
+   "exp": "反応式は、NaNO₃ + H₂SO₄ → NaHSO₄ + HNO₃ である。 濃硫酸が不揮発性の酸である事を利用している。"
+  },
+  {
+   "q": "硝酸ナトリウムに濃硫酸を加えて加熱すると、硝酸と硫酸水素ナトリウムが生成する。この反応が生じる理由として、最も適当な濃硫酸の性質は次のうちどれ。",
+   "correct": "不揮発性の酸",
+   "wrongs": [
+    "強酸性",
+    "脱水作用",
+    "酸化作用"
+   ],
+   "cat": "窒素",
+   "id": "nm103",
+   "exp": "反応式は、NaNO₃ + H₂SO₄ → NaHSO₄ + HNO₃ である。 2NaNO₃ + H₂SO₄ → Na₂SO₄ + 2HNO₃ ではないので注意。"
+  },
+  {
+   "q": "オストワルト法の反応として正しいのはどれ。",
+   "correct": "アンモニアを段階的酸化の後、水と反応させ、硝酸を得る。",
+   "wrongs": [
+    "窒素と水素から、アンモニアが生成される。",
+    "アンモニアから、窒素と水素が生成される。",
+    "硝酸から脱水させ、還元させてアンモニアを得る。"
+   ],
+   "cat": "窒素",
+   "id": "nm104",
+   "exp": "4NH₃ + 5O₂ → 4NO + 6H₂O 2NO + O₂ → 2NO₂ 3NO₂ + H₂O → 2HNO₃ + NO の３段階反応。"
+  },
+  {
+   "q": "オストワルト法で用いられる触媒はどれ。",
+   "correct": "白金(Pt)",
+   "wrongs": [
+    "四酸化三鉄(Fe₃O₄)",
+    "酸化バナジウム(V)(V₂O₅)",
+    "炭素(C)"
+   ],
+   "cat": "窒素",
+   "id": "nm105",
+   "exp": "四酸化三鉄(Fe₃O₄)はハーバー法。酸化バナジウム(V)は接触法。"
+  },
+  {
+   "q": "オストワルト法の三段階の反応のうち、触媒を必要とする反応はどれ。",
+   "correct": "4NH₃ + 5O₂ → 4NO + 6H₂O",
+   "wrongs": [
+    "2NO + O₂ → 2NO₂",
+    "3NO₂ + H₂O → 2HNO₃ + NO"
+   ],
+   "cat": "窒素",
+   "id": "nm106"
+  },
+  {
+   "q": "オストワルト法の３つの化学反応式を１つの化学反応式にまとめると、どのような反応になるか。正しいものを選べ。",
+   "correct": "アンモニアと酸素が硝酸と水になる。",
+   "wrongs": [
+    "アンモニアと水が硝酸となる。",
+    "アンモニアと二酸化窒素が硝酸となる。",
+    "アンモニアと一酸化窒素が硝酸となる。"
+   ],
+   "cat": "窒素",
+   "id": "nm107",
+   "exp": "4NH₃ + 5O₂ → 4NO + 6H₂O 2NO + O₂ → 2NO₂ 3NO₂ + H₂O → 2HNO₃ + NO これらをまとめて… NH₃ + 2O₂ → HNO₃ + H₂O"
+  },
+  {
+   "q": "次のうち、硝酸の説明として正しいものはどれ。",
+   "correct": "無色、刺激臭の液体で、揮発性がある。",
+   "wrongs": [
+    "褐色、刺激臭の液体で、揮発性がある。",
+    "無色、刺激臭の液体で、不揮発性である。",
+    "褐色、刺激臭の液体で、不揮発性である。",
+    "無色、無臭の液体で、揮発性がある。"
+   ],
+   "cat": "窒素",
+   "id": "nm108"
+  },
+  {
+   "q": "濃硝酸は、光により分解し [ A ] 色となるため、[ B ] に入れて冷暗所に保存する。A・Bに当てはまる組み合わせはどれか。",
+   "correct": "A：淡黄、B：褐色びん",
+   "wrongs": [
+    "A：無、B：褐色びん",
+    "A：淡黄、B：ポリエチレン製の容器",
+    "A：無、B：ポリエチレン製の容器"
+   ],
+   "cat": "窒素",
+   "id": "nm109",
+   "exp": "ポリエチレン製の容器に入れるのは、ガラスを溶かしてしまう『フッ化水素酸』"
+  },
+  {
+   "q": "希硝酸、濃硝酸、希塩酸、濃塩酸、希硫酸、濃硫酸の液性について、正しいものはどれ。",
+   "correct": "濃硫酸のみ強酸ではない。残りは強酸。",
+   "wrongs": [
+    "濃硝酸、濃硫酸のみ強酸ではない。残りは強酸。",
+    "濃塩酸、濃硫酸のみ強酸ではない。残りは強酸。",
+    "濃塩酸、濃硝酸、濃硫酸は強酸ではない。残りは強酸。"
+   ],
+   "cat": "窒素",
+   "id": "nm110",
+   "exp": "濃硫酸は強酸とは言えない。水で希釈し、希硫酸になると強酸となる。"
+  },
+  {
+   "q": "硝酸は強い酸化作用をもつ。次のうち、硝酸によって溶かされる金属として正しいものはどれか。なお、水素よりもイオン化傾向の小さい金属は、順に Cu＞Hg＞Ag＞Pt＞Au である。",
+   "correct": "Cu、Hg、Ag",
+   "wrongs": [
+    "Cu、Hg",
+    "Cu",
+    "Cu、Hg、Ag、Pt"
+   ],
+   "cat": "窒素",
+   "id": "nm111"
+  },
+  {
+   "q": "ある金属を濃硝酸に入れると、表面に薄い緻密な酸化被膜ができ、それ以上反応しなくなる。これを何というか。",
+   "correct": "不動態",
+   "wrongs": [
+    "不導体",
+    "不動体",
+    "不導態"
+   ],
+   "cat": "窒素",
+   "id": "nm112",
+   "exp": "動かない状態…不動態 電気を通さない…不導体"
+  },
+  {
+   "q": "濃硝酸に入れると不動態を形成する金属として正しい組み合わせを選べ。",
+   "correct": "Fe、Al、Ni",
+   "wrongs": [
+    "Mg、Al、Fe",
+    "Pb、Ni、Fe",
+    "Pb、Sn、Ni",
+    "Al、Fe、Sn"
+   ],
+   "cat": "窒素",
+   "id": "nm113",
+   "exp": "他に Cr (クロム) も不動態を形成する。"
+  },
+  {
+   "q": "酸素は周期表の何族に属するか。",
+   "correct": "16",
+   "wrongs": [
+    "17",
+    "15",
+    "14"
+   ],
+   "cat": "酸素",
+   "id": "nm114"
+  },
+  {
+   "q": "酸素がもつ価電子はどれ。",
+   "correct": "6",
+   "wrongs": [
+    "7",
+    "2",
+    "1"
+   ],
+   "cat": "酸素",
+   "id": "nm115"
+  },
+  {
+   "q": "酸素の同素体は何か。",
+   "correct": "オゾン（O₃)",
+   "wrongs": [
+    "オゾン（O₄）",
+    "オキソニウム（O₃）",
+    "オキソニウム（O₄）"
+   ],
+   "cat": "酸素",
+   "id": "nm116"
+  },
+  {
+   "q": "酸素の製法は、実験室では [ A ] に [ B ] を触媒として加える。副生成物は [ C ] である。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A：過酸化水素　B：酸化マンガン(Ⅳ)、C：水",
+   "wrongs": [
+    "A：過酸化水素　B：酸化バナジウム(Ⅴ)、C：水",
+    "A：水　B：酸化マンガン(Ⅳ)、C：水素",
+    "A：水　B：酸化バナジウム(Ⅴ)、C：水素",
+    "A：過酸化水素　B：酸化マンガン(Ⅳ)、C：水素"
+   ],
+   "cat": "酸素",
+   "id": "nm117",
+   "exp": "反応式は、2H₂O₂ → O₂ +2H₂O である。"
+  },
+  {
+   "q": "酸素の製法は、実験室では [ A ] に [ B ] を触媒として加える。副生成物は [ C ] である。A～Cに当てはまる組み合わせはどれか。",
+   "correct": "A：KClO₃(塩素酸カリウム)　B：酸化マンガン(Ⅳ)、C：KCl",
+   "wrongs": [
+    "A：KClO₃(塩素酸カリウム)　B：酸化バナジウム(V)、C：KCl",
+    "A：KClO₃(過塩素酸カリウム)　B：酸化マンガン(Ⅳ)、C：KCl",
+    "A：KClO₃(過塩素酸カリウム)　B：酸化バナジウム(V)、C：KCl"
+   ],
+   "cat": "酸素",
+   "id": "nm118",
+   "exp": "反応式は、2KClO₃ → 2KCl + 3O₂である。 KClO₃は塩素酸カリウム。 過塩素酸カリウムはKClO₄。"
+  },
+  {
+   "q": "オゾンの製法は、酸素中で[A]をおこなうか、酸素に強い[B]を照射して生成する。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：無声放電　B：紫外線",
+   "wrongs": [
+    "A：無声放電　B：赤外線",
+    "A：乾留　B：赤外線",
+    "A：乾留　B：紫外線"
+   ],
+   "cat": "酸素",
+   "id": "nm119",
+   "exp": "反応式は、3O₂ → 2O₃ である。"
+  },
+  {
+   "q": "オゾンの色として最も適当なものはどれか。",
+   "correct": "淡青色",
+   "wrongs": [
+    "深青色",
+    "黄緑色",
+    "淡黄色"
+   ],
+   "cat": "酸素",
+   "id": "nm120"
+  },
+  {
+   "q": "オゾンは[A]臭をもつ、[B]毒の気体である。A・Bの空欄について正しい組み合わせを選べ。",
+   "correct": "A：特異　B：有",
+   "wrongs": [
+    "A：特異　B：無",
+    "A：腐乱　B：無",
+    "A：腐乱　B：有"
+   ],
+   "cat": "酸素",
+   "id": "nm121"
+  },
+  {
+   "q": "水に溶けて[A]を生じたり、[B]と反応して塩を生じたりする酸化物を、[C]といい、例としてはCO₂、NO₂等がある。A～Cの空欄について正しい組み合わせを選べ。",
+   "correct": "A：酸　B：塩基　C：酸性酸化物",
+   "wrongs": [
+    "A：酸　B：塩基　C：塩基性酸化物",
+    "A：塩基　B：酸　C：酸性酸化物",
+    "A：塩基　B：酸　C：塩基性酸化物"
+   ],
+   "cat": "酸素",
+   "id": "nm122"
+  },
+  {
+   "q": "二酸化窒素は次のうちどれ。",
+   "correct": "酸性酸化物",
+   "wrongs": [
+    "塩基性酸化物",
+    "両性酸化物"
+   ],
+   "cat": "酸素",
+   "id": "nm123"
+  },
+  {
+   "q": "十酸化四リンは次のうちどれ。",
+   "correct": "酸性酸化物",
+   "wrongs": [
+    "塩基性酸化物",
+    "両性酸化物"
+   ],
+   "cat": "酸素",
+   "id": "nm124"
+  },
+  {
+   "q": "酸化マグネシウムは次のうちどれ。",
+   "correct": "塩基性酸化物",
+   "wrongs": [
+    "酸性酸化物",
+    "両性酸化物"
+   ],
+   "cat": "酸素",
+   "id": "nm125"
+  },
+  {
+   "q": "酸化鉄(Ⅲ)は次のうちどれ。",
+   "correct": "塩基性酸化物",
+   "wrongs": [
+    "酸性酸化物",
+    "両性酸化物"
+   ],
+   "cat": "酸素",
+   "id": "nm126"
+  },
+  {
+   "q": "両性酸化物は次のうちどれ。",
+   "correct": "Al₂O₃",
+   "wrongs": [
+    "SiO₂",
+    "CuO",
+    "BaO"
+   ],
+   "cat": "酸素",
+   "id": "nm127"
+  },
+  {
+   "q": "両性酸化物は次のうちどれ。",
+   "correct": "ZnO",
+   "wrongs": [
+    "SO₂",
+    "CaO",
+    "MgO"
+   ],
+   "cat": "酸素",
+   "id": "nm128"
+  },
+  {
+   "q": "塩素のオキソ酸である塩素酸はどれ。",
+   "correct": "HClO₃",
+   "wrongs": [
+    "HClO",
+    "HClO₂",
+    "HClO₄"
+   ],
+   "cat": "酸素",
+   "id": "nm129",
+   "exp": "HClO：次亜塩素酸、HClO₂：亜塩素酸、HClO₃：塩素酸、HClO₄：過塩素酸。"
+  },
+  {
+   "q": "HClO₄の名称は。",
+   "correct": "過塩素酸",
+   "wrongs": [
+    "塩素酸",
+    "亜塩素酸",
+    "次亜塩素酸"
+   ],
+   "cat": "酸素",
+   "id": "nm130",
+   "exp": "HClO：次亜塩素酸、HClO₂：亜塩素酸、HClO₃：塩素酸、HClO₄：過塩素酸。"
+  },
+  {
+   "q": "次亜塩素酸の塩素の酸化数は[A]であり、塩素酸のそれは[B]である。酸化数が大きいほど、酸としての性質が[C]いので、[D]の方が強い酸である。A～Dの空欄について正しい組み合わせを選べ。",
+   "correct": "A：+1　B：+5　C：強　D：塩素酸",
+   "wrongs": [
+    "A：+1　B：+5　C：弱　D：次亜塩素酸",
+    "A：+1　B：+7　C：強　D：塩素酸",
+    "A：+1　B：+7　C：弱　D：次亜塩素酸"
+   ],
+   "cat": "酸素",
+   "id": "nm131",
+   "exp": "HClO：次亜塩素酸、HClO₂：亜塩素酸、HClO₃：塩素酸、HClO₄：過塩素酸。"
+  },
+  {
+   "q": "アルカリ金属は原子番号が大きくなるほど、原子半径が(ア)なり、イオン化エネルギーが(イ)なる。",
+   "correct": "（ア）大きく　（イ）小さく",
+   "wrongs": [
+    "（ア）大きく　（イ）大きく",
+    "（ア）小さく　（イ）大きく",
+    "（ア）小さく　（イ）小さく"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak0"
+  },
+  {
+   "q": "ナトリウムの単体の製法は？",
+   "correct": "食塩の溶融塩電解",
+   "wrongs": [
+    "アンモニアソーダ法",
+    "食塩とコークスを混ぜて高炉で還元",
+    "陽イオン交換膜法"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak1",
+   "exp": "ナトリウムの単体はイオン化傾向が大きいので、通常の電気分解はできず、溶融塩電解で還元する。"
+  },
+  {
+   "q": "アルカリ金属の単体はやわらかく、融点が低く、密度も小さい。保存方法は？",
+   "correct": "石油中に保存",
+   "wrongs": [
+    "ポリエチレン容器で保存",
+    "褐色ビンで保存",
+    "水中に保存"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak2",
+   "exp": "アルカリ金属の単体はイオン化傾向が大きく、水と容易に反応し、水素を発生する。そのため石油中に保存する。"
+  },
+  {
+   "q": "アルカリ金属の単体は(ア)と激しく反応し、(イ)を発生する。",
+   "correct": "(ア)水　(イ)水素",
+   "wrongs": [
+    "(ア)水酸化ナトリウム　(イ)水素",
+    "(ア)水素　(イ)水",
+    "(ア)酸素　(イ)水酸化ナトリウム"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak3",
+   "exp": "アルカリ金属の単体はイオン化傾向が大きく、水と容易に反応し、水素を発生する。"
+  },
+  {
+   "q": "アルカリ金属の酸化物は(ア)酸化物で、水と容易に反応し、(イ)を生成する。",
+   "correct": "(ア)塩基性　(イ)水酸化物",
+   "wrongs": [
+    "(ア)酸性　(イ)オキソ酸",
+    "(ア)塩基性　(イ)オキソ酸",
+    "(ア)酸性　(イ)水酸化物"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak4",
+   "exp": "アルカリ金属の酸化物は塩基性酸化物で、水と容易に反応し、水酸化物を生成する。 例)　Na₂O＋H₂O　→2NaOH"
+  },
+  {
+   "q": "アルカリ金属の水酸化物は強い塩基性を示し、(ア)を吸収し、(イ)を生成する。",
+   "correct": "(ア)二酸化炭素　(イ)炭酸塩",
+   "wrongs": [
+    "(ア)酸素　(イ)酸化物",
+    "(ア)二酸化炭素　(イ)酸化物",
+    "(ア)酸素　(イ)炭酸塩"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak5",
+   "exp": "アルカリ金属の水酸化物は強い塩基性を示し、二酸化炭素を吸収し、炭酸塩を生成する。 例)2NaOH＋CO₂→Na₂CO₃＋H₂O"
+  },
+  {
+   "q": "水酸化ナトリウムの工業的製法は何か。",
+   "correct": "イオン交換膜法",
+   "wrongs": [
+    "アンモニアソーダ法",
+    "食塩の溶融塩電解",
+    "接触法",
+    "ハーバー・ボッシュ法"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak6",
+   "exp": "イオン交換膜法は、陽イオン交換膜を用い、食塩の電気分解を行う。 陽極側で塩化物イオンが酸化され塩素が発生し、陰極側で水が還元され水素と水酸化物イオンが生成する。陽極側から陰極側にナトリウムイオンが移動し、陰極側に水酸化ナトリウム水溶液が生成する。"
+  },
+  {
+   "q": "炭酸水素ナトリウムの工業的製法は？",
+   "correct": "アンモニアソーダ法",
+   "wrongs": [
+    "イオン交換膜法",
+    "食塩の溶融塩電解",
+    "接触法",
+    "ハーバー・ボッシュ法"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak7",
+   "exp": "現在の炭酸水素ナトリウムの工業的製法はアンモニアソーダ法(ソルベー法)である。"
+  },
+  {
+   "q": "飽和の食塩水にアンモニアを吸収させてから二酸化炭素を吹き込むと、（ア）が生成し、その後(ア)を加熱すると、(イ)が生成する。",
+   "correct": "(ア)炭酸水素ナトリウム　(イ)炭酸ナトリウム",
+   "wrongs": [
+    "(ア)炭酸ナトリウム　(イ)炭酸水素ナトリウム",
+    "(ア)水酸化ナトリウム　(イ)炭酸ナトリウム",
+    "(ア)炭酸ナトリウム　(イ)水酸化ナトリウム"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak8",
+   "exp": "飽和の食塩水にアンモニアを吸収させてから二酸化炭素を吹き込むと、炭酸水素ナトリウムが生成し、その後炭酸水素ナトリウムを加熱すると、炭酸ナトリウムが生成する。"
+  },
+  {
+   "q": "水酸化ナトリウムの固体は(ア)があり、また空気中の(イ)を吸収する。",
+   "correct": "(ア)潮解性　(イ)二酸化炭素",
+   "wrongs": [
+    "(ア)潮解性　(イ)酸素",
+    "(ア)風解性　(イ)酸素",
+    "(ア)風解性　(イ)二酸化炭素"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak9",
+   "exp": "水酸化ナトリウムの固体は潮解性があり、また空気中の二酸化炭素を吸収する。"
+  },
+  {
+   "q": "炭酸水素ナトリウムNaHCO₃は水に溶かすと何性を示すか。",
+   "correct": "塩基性",
+   "wrongs": [
+    "酸性",
+    "中性"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak10",
+   "exp": "炭酸水素ナトリウムNaHCO₃は水に溶かすと塩基性を示す。 これは炭酸水素イオンの加水分解が起こるためである。 HCO₃⁻　＋　H₂O　→　H₂O＋　CO₂ ＋OH⁻"
+  },
+  {
+   "q": "炭酸ナトリウムは何の原料として用いられるか。",
+   "correct": "ガラス",
+   "wrongs": [
+    "肥料",
+    "ベーキングパウダー",
+    "セッコウ",
+    "X線の造影剤"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak11",
+   "exp": "炭酸ナトリウムはガラスの原料として用いられる。 ソーダ石灰ガラスやホウケイ酸ガラスなどがある。"
+  },
+  {
+   "q": "炭酸ナトリウム十水和物を空気中に放置すると、どのような現象が起きるか。",
+   "correct": "風解",
+   "wrongs": [
+    "潮解",
+    "融解",
+    "昇華"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak12",
+   "exp": "炭酸ナトリウムは風解(結晶水を失い)し、一水和物になる。"
+  },
+  {
+   "q": "アルカリ金属の中で、(ア)はイオン半径が小さく、密度が小さいため、小型で軽量化しやすく、単位重量当たりの電池容量を増やすことができる。とくにスマートフォンや電気自動車には(ア)を用いた(イ)が二次電池として使われている。",
+   "correct": "(ア)リチウム　(イ）リチウムイオン電池",
+   "wrongs": [
+    "(ア)ナトリウム　(イ）ナトリウムイオン電池",
+    "(ア)ナトリウム　(イ）ナトリウム電池",
+    "(ア)リチウム　(イ）リチウム電池"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak13",
+   "exp": "リチウムイオン電池は二次電池、リチウム電池は一次電池である。リチウムイオン電池の起電力は高く4Vほどである。 (アルカリマンガン乾電池は1.5V)。リチウムイオン電池の発明者の一人として吉野彰がノーベル化学賞を受賞している。"
+  },
+  {
+   "q": "炎色反応を示す元素と色の組み合わせが正しいものを選べ。",
+   "correct": "リチウム Li：赤　 カリウム　K :赤紫",
+   "wrongs": [
+    "リチウム Li：赤　 ナトリウム　Na :赤紫",
+    "カリウム K：青　 ナトリウム　Na :黄",
+    "カリウムK :青　ナトリウム　Na:赤",
+    "リチウム Li：緑　 ナトリウム　Na :黄"
+   ],
+   "cat": "アルカリ金属",
+   "id": "ak14",
+   "exp": "リチウム Li 赤、ナトリウム Na 黄、カリウム K 赤紫(入試必須) ルビジウムRb　紅紫　セシウム　Cs　青　(完全に趣味レベル)"
+  },
+  {
+   "q": "アルカリ土類金属は周期表の(ア)族に属する元素である。価電子数は(イ)である。",
+   "correct": "（ア）２　（イ）２",
+   "wrongs": [
+    "（ア）１　（イ）1",
+    "（ア）１7　（イ）17",
+    "（ア）１8　（イ）０"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae0",
+   "exp": "アルカリ土類金属は周期表の2族に属する元素である。価電子数は2である。"
+  },
+  {
+   "q": "アルカリ土類金属の単体であるカルシウムは(ア)と激しく反応し、(イ)を発生する。",
+   "correct": "(ア)水　(イ)水素",
+   "wrongs": [
+    "(ア)水酸化ナトリウム　(イ)水素",
+    "(ア)水素　(イ)水",
+    "(ア)酸素　(イ)水酸化カルシウム"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae1",
+   "exp": "アルカリ土類金属の単体であるカルシウムは水と激しく反応し、水素と水酸化カルシウムを生成する。"
+  },
+  {
+   "q": "塩化カルシウムは潮解性があり、(ア)剤として用いられる。 また溶解による発熱量が大きく、凝固点降下の影響も大きいため、(イ)剤として用いられる。",
+   "correct": "(ア)乾燥　(イ)融雪",
+   "wrongs": [
+    "(ア)酸化　(イ)還元",
+    "(ア)融雪　(イ)乾燥",
+    "(ア)還元　(イ)酸化"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae2",
+   "exp": "塩化カルシウムは潮解性があり、乾燥剤として用いられる。 また溶解による発熱量が大きく、凝固点降下の影響も大きいため、融雪剤として用いられる。"
+  },
+  {
+   "q": "アルカリ土類金属の酸化物の融点はアルカリ金属の酸化物の融点と比べ(ア)。これはアルカリ土類金属の陽イオンの方が、電荷が(イ)ためである。",
+   "correct": "(ア)高い　(イ)大きい",
+   "wrongs": [
+    "(ア)低い　(イ)小さい",
+    "(ア)低い　(イ)大きい",
+    "(ア)高い　(イ)小さい"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae3",
+   "exp": "クーロン力は電荷に比例するので、アルカリ金属は＋１、アルカリ土類金属は＋２なので、2倍の差になる。NaClとCaOだと四倍の差になる。"
+  },
+  {
+   "q": "酸化カルシウムCaOは(ア)と呼ばれ、水に溶かすと激しく発熱し、水酸化カルシウムCa(OH)₂になる。水酸化カルシウムは(イ)と呼ばれる。",
+   "correct": "(ア)生石灰　(イ)消石灰",
+   "wrongs": [
+    "(ア)消石灰　(イ)生石灰"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae4",
+   "exp": "酸化カルシウムCaOは生石灰と呼ばれ、水に溶かすと激しく発熱し、水酸化カルシウムCa(OH)₂になる。水酸化カルシウムは消石灰と呼ばれる。"
+  },
+  {
+   "q": "アルカリ土類金属の酸化物は(ア)酸化物で、水と容易に反応し、(イ)を生成する。",
+   "correct": "(ア)塩基性　(イ)水酸化物",
+   "wrongs": [
+    "(ア)酸性　(イ)オキソ酸",
+    "(ア)塩基性　(イ)オキソ酸",
+    "(ア)酸性　(イ)水酸化物"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae5",
+   "exp": "アルカリ金属の酸化物は塩基性酸化物で、水と容易に反応し、水酸化物を生成する。 CaO ＋H₂O →　Ca(OH)₂"
+  },
+  {
+   "q": "生石灰を水に溶かすと何が生成するか。",
+   "correct": "消石灰",
+   "wrongs": [
+    "石灰石",
+    "ソーダ石灰",
+    "大理石",
+    "セッコウ"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae6",
+   "exp": "生石灰は酸化カルシウムCaO,水に溶かすと水酸化カルシウムが生成する。水酸化カルシウムは消石灰という。 石灰石、大理石はともにCaCO₃、セッコウはCaSO₄・2H₂O、ソーダ石灰はCaOとNaOHの混合物"
+  },
+  {
+   "q": "石灰石を加熱すると固体として何が生成するか。",
+   "correct": "生石灰",
+   "wrongs": [
+    "消石灰",
+    "大理石",
+    "ソーダ石灰",
+    "セッコウ"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae7",
+   "exp": "石灰石は炭酸カルシウムCaCO₃ 炭酸カルシウムを加熱すると、CaCO₃→CaO ＋CO₂ が起こり、酸化カルシウムCaOが生成する。CaOは生石灰と呼ばれる。 消石灰はCa（OH)₂、石灰石、大理石はともにCaCO₃、セッコウはCaSO₄・2H₂O、ソーダ石灰はCaOとNaOHの混合物"
+  },
+  {
+   "q": "石灰水は何の水溶液か",
+   "correct": "水酸化カルシウム",
+   "wrongs": [
+    "炭酸カルシウム",
+    "硫酸カルシウム",
+    "塩化カルシウム"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae8",
+   "exp": "石灰水は水酸化カルシウムの水溶液である。"
+  },
+  {
+   "q": "石灰水に二酸化炭素を通じると何が生成するか。",
+   "correct": "炭酸カルシウム",
+   "wrongs": [
+    "水酸化カルシウム",
+    "酸化カルシウム",
+    "塩化カルシウム"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae9",
+   "exp": "石灰水に二酸化炭素を通じると白濁する。これは炭酸カルシウムの沈殿である。 Ca(OH)₂ ＋　CO₂　→　CaCO₃ ＋ H₂O"
+  },
+  {
+   "q": "石灰水に二酸化炭素を通じると炭酸カルシウムが生成する。ここにさらに二酸化炭素を通じるとどうなるか。",
+   "correct": "炭酸水素カルシウムが生成し溶解する。",
+   "wrongs": [
+    "水酸化カルシウムが生成し、沈殿する。",
+    "水酸化カルシウムが生成し、溶解する。",
+    "炭酸水素カルシウムが生成し沈殿する。"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae10",
+   "exp": "石灰水に二酸化炭素を通じると炭酸カルシウムが生成する。ここにさらに二酸化炭素を通じると、炭酸水素カルシウムが生成し、溶解する。(濁りが消える) CaCO₃ ＋ CO₂ + H₂O →　Ca(HCO₃)₂"
+  },
+  {
+   "q": "CaSO₄・2H₂Oは(ア)の主成分である。これを焼くと、CaSO₄・1/２H₂Oとあらわされる(イ)となる。(イ)に適量の水を加えると、体積を増しながら硬化して、再び(ア)となる。",
+   "correct": "(ア)セッコウ　(イ)焼きセッコウ",
+   "wrongs": [
+    "(ア)焼きセッコウ　(イ)セッコウ"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae11",
+   "exp": "CaSO₄・2H₂Oはセッコウの主成分である。これを焼くと、CaSO₄・1/２H₂Oとあらわされる焼きセッコウとなる。焼きセッコウに適量の水を加えると、体積を増しながら硬化して、再びセッコウとなる。"
+  },
+  {
+   "q": "生石灰CaOとコークスCを炉に入れて加熱すると(ア)が生成し、(ア)を水に溶かすと(イ)が発生する。",
+   "correct": "(ア)カーバイド　(イ)アセチレン",
+   "wrongs": [
+    "(ア)カーバイド　(イ)炭酸カルシウム",
+    "(ア)炭酸カルシウム　(イ)カーバイド",
+    "(ア)アセチレン　(イ)カーバイド"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae12"
+  },
+  {
+   "q": "X線の造影剤として用いられるのはどれか",
+   "correct": "BaSO₄",
+   "wrongs": [
+    "Ba(OH)₂",
+    "CaSO₄・2H₂O",
+    "CaCl₂"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae13",
+   "exp": "BaSO₄硫酸バリウムはX線の造影剤として用いられる。"
+  },
+  {
+   "q": "過リン酸石灰は何と何の混合物か。",
+   "correct": "リン酸二水素カルシウムと硫酸カルシウム",
+   "wrongs": [
+    "リン酸と石灰石",
+    "硫酸とリン酸カルシウム",
+    "リン酸カルシウムと石灰石"
+   ],
+   "cat": "アルカリ土類金属",
+   "id": "ae14",
+   "exp": "過リン酸石灰は肥料として用いられる。硫酸とリン酸カルシウムを混ぜて作られ、リン酸二水素カルシウムと硫酸カルシウムの混合物である。"
+  }
+ ]
+};
+const CATEGORIES = DATA.categories;
+const ITEMS = DATA.items;
+const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
+
+/* ================= 状態 ================= */
+let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
+function save(){try{localStorage.setItem('inorganicQuest1',JSON.stringify(state));}catch(e){}}
+function load(){try{const s=localStorage.getItem('inorganicQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+function isMastered(id){return state.mastered.includes(id);}
+function markMastered(id){if(!isMastered(id)){state.mastered.push(id);save();}}
+function weakCount(){return Object.keys(state.weak).length;}
+function updateWeakBadge(){
+  const b=document.getElementById('weakBadge');
+  const n=weakCount();
+  b.style.display=n?'block':'none'; b.textContent=n;
+}
+
+/* ================= 共通ユーティリティ ================= */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sample(a,n){return shuffle(a.slice()).slice(0,n);}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function buildChoices(it){
+  const choices=[{text:it.correct,ok:true},...it.wrongs.map(w=>({text:w,ok:false}))];
+  return shuffle(choices);
+}
+function renderQuiz(el,it,onDone,progressText){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt">${it.q}</div>
+    ${ch}
+    <div class="explain" id="explainBox"></div>
+    <button class="bigbtn" id="nextBtn" style="display:none">つぎへ</button>`;
+  let answered=false;
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=choices[+btn.dataset.i];
+      el.querySelectorAll('.choice').forEach((b,j)=>{
+        const cc=choices[j];
+        if(cc.ok)b.classList.add('correct');
+        else if(b===btn)b.classList.add('wrong');
+        else b.classList.add('dim');
+      });
+      const ex=el.querySelector('#explainBox');
+      ex.className='explain '+(c.ok?'ok':'ng');
+      ex.innerHTML=`<div class="rname">${c.ok?'⭕ 正解!':'❌ 不正解… 正解は「'+it.correct+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
+      const nb=el.querySelector('#nextBtn');
+      nb.style.display='block';
+      nb.onclick=()=>onDone(c.ok);
+      nb.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  });
+}
+
+/* ================= 正誤ポップアップ・自動送り(芳香族クエストと共通仕様) ================= */
+function refreshAnswerFxBtn(){
+  const popup=state.answerFx!=='simple';
+  const btn=document.getElementById('btnAnswerFx');
+  btn.textContent=popup?'🎊 ポップアップ':'🟩 シンプル';
+  btn.title='正誤リアクションの切り替え';
+}
+document.getElementById('btnAnswerFx').addEventListener('click',()=>{
+  state.answerFx=state.answerFx!=='simple'?'simple':'popup';
+  save(); refreshAnswerFxBtn();
+  toast(state.answerFx==='simple'?'正誤リアクション:シンプルに切り替えました':'正誤リアクション:ポップアップに切り替えました');
+});
+function refreshAnswerAutoBtn(){
+  const on=state.answerAuto===true;
+  const btn=document.getElementById('btnAnswerAuto');
+  btn.textContent=on?'⏭ 自動:ON':'⏭ 自動:OFF';
+  btn.classList.toggle('on',on);
+  btn.title='正解/不正解後に自動で次へ進む';
+}
+document.getElementById('btnAnswerAuto').addEventListener('click',()=>{
+  state.answerAuto=state.answerAuto!==true;
+  save(); refreshAnswerAutoBtn();
+  toast(state.answerAuto?'自動で次へ進むようにしました':'自動で次へ進むのをOFFにしました');
+});
+const ANSWER_FX_DURATION=900;
+function showAnswerFxPopup(ok){
+  const el=document.getElementById('answerFxPopup');
+  el.innerHTML=ok?
+    `<div class="afx-box"><div class="afx-symbol ok">○</div><div class="afx-confetti">🎉🎊✨</div></div>`:
+    `<div class="afx-box"><div class="afx-symbol ng">×</div><div class="afx-sub">( ；∀；)</div></div>`;
+  el.classList.add('show');
+  clearTimeout(showAnswerFxPopup._t);
+  showAnswerFxPopup._t=setTimeout(()=>el.classList.remove('show'),ANSWER_FX_DURATION);
+}
+function renderMemoQ(el,it,onDone,progressText){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt">${it.q}</div>
+    ${ch}
+    <div style="height:80px"></div>
+    <button class="bigbtn fixed-next" id="memoNextBtn" style="display:none">次へ</button>`;
+  let answered=false;
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=choices[+btn.dataset.i];
+      btn.classList.add(c.ok?'correct':'wrong');
+      if(state.answerFx!=='simple')showAnswerFxPopup(c.ok);
+      const nb=el.querySelector('#memoNextBtn');
+      nb.style.display='block';
+      let advanced=false;
+      const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok);};
+      nb.onclick=advance;
+      if(state.answerAuto)setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
+    });
+  });
+}
+function reviewRetry(it){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  infoSheet.innerHTML=`<h3>もう一度<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div class="qprompt">${it.q}</div>
+    ${ch}`;
+  infoModal.classList.add('open');
+  let answered=false;
+  infoSheet.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=choices[+btn.dataset.i];
+      infoSheet.querySelectorAll('.choice').forEach((b,j)=>{
+        const cc=choices[j];
+        if(cc.ok)b.classList.add('correct');
+        else if(b===btn)b.classList.add('wrong');
+        else b.classList.add('dim');
+      });
+    });
+  });
+}
+
+/* ================= 単元別ドリル(暗記モード) ================= */
+const homePanel=document.getElementById('homePanel');
+const infoModal=document.getElementById('infoModal');
+const infoSheet=document.getElementById('infoSheet');
+infoModal.addEventListener('click',e=>{if(e.target===infoModal)infoModal.classList.remove('open');});
+let catDrill=null;
+function catStats(cat){
+  return state.catStats[cat]||null;
+}
+function renderHome(){
+  let list='';
+  for(const c of CATEGORIES){
+    const s=catStats(c.name);
+    const lastPct=s?Math.round(100*s.correct/s.total):0;
+    const bestPct=s?(s.best||lastPct):0;
+    const ip=state.inProgress[c.name];
+    list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-cat="${c.name}">
+      <span>${c.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.ids.length})・`:''}${c.count}問</span></span>
+      <span class="deckbtn-score">直近 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%</span></span>
+      </button>`;
+  }
+  homePanel.innerHTML=`
+    <h2>📚 暗記モード</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">単元を選ぶと4択でランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
+    </div>
+    <div class="card-ui"><b>単元を選ぶ</b><div class="decklist">${list}</div></div>`;
+  homePanel.querySelectorAll('.deckbtn').forEach(el=>{
+    el.addEventListener('click',()=>startCatDrill(el.dataset.cat));
+  });
+}
+function startCatDrill(cat,mode){
+  const ip=state.inProgress[cat];
+  if(ip&&!mode){
+    homePanel.innerHTML=`<div class="card-ui" style="text-align:center">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${cat}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
+      <button class="bigbtn" id="resumeBtn">続きから</button>
+      <button class="bigbtn secondary" id="restartBtn">最初から</button>
+      <button class="backbtn" id="chooseBack" style="margin-top:8px">← 単元一覧に戻る</button>
+    </div>`;
+    document.getElementById('resumeBtn').onclick=()=>startCatDrill(cat,'resume');
+    document.getElementById('restartBtn').onclick=()=>startCatDrill(cat,'restart');
+    document.getElementById('chooseBack').onclick=()=>renderHome();
+    return;
+  }
+  if(mode==='resume'){
+    catDrill={cat,its:ip.ids.map(id=>IMAP[id]),i:ip.i,results:ip.results||[]};
+  }else{
+    delete state.inProgress[cat]; save();
+    catDrill={cat,its:shuffle(ITEMS.filter(it=>it.cat===cat)),i:0,results:[]};
+  }
+  nextCatQ();
+}
+function catResult(){
+  const correct=catDrill.results.filter(x=>x.ok).length;
+  const total=catDrill.results.length;
+  const pct=Math.round(100*correct/total);
+  const prev=state.catStats[catDrill.cat];
+  const best=Math.max(prev?prev.best:0,pct);
+  state.catStats[catDrill.cat]={correct,total,best};
+  delete state.inProgress[catDrill.cat];
+  save();
+  let review='';
+  catDrill.results.forEach((x,i)=>{
+    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.it.q} → ${x.it.correct}</div>`;
+  });
+  homePanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line" style="font-size:22px">正解 ${correct} / ${total}(${pct}%)</div>
+      <div class="muted">${pct>=best?'自己ベスト更新!':`最高記録 ${best}%`}</div>
+      <button class="bigbtn" id="catAgain">もう一度</button>
+      <button class="bigbtn secondary" id="catHome">単元一覧に戻る</button>
+    </div>
+    <div class="card-ui"><b>復習リスト</b>${review}</div>`;
+  homePanel.querySelectorAll('.review-tap').forEach(el=>{
+    el.onclick=()=>reviewRetry(catDrill.results[+el.dataset.i].it);
+  });
+  document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat);
+  document.getElementById('catHome').onclick=()=>{catDrill=null;renderHome();};
+  homePanel.scrollTop=0;
+}
+function nextCatQ(){
+  if(catDrill.i>=catDrill.its.length)return catResult();
+  const it=catDrill.its[catDrill.i];
+  homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← 単元選択</button>';
+  document.getElementById('catBack').onclick=()=>{
+    state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results};
+    save();
+    catDrill=null; renderHome();
+  };
+  renderMemoQ(document.getElementById('cdq'),it,ok=>{
+    catDrill.results.push({it,ok});
+    if(ok)markMastered(it.id);
+    else{state.weak[it.id]=2;save();updateWeakBadge();}
+    catDrill.i++; nextCatQ();
+  },`${catDrill.cat}　${catDrill.i+1} / ${catDrill.its.length}`);
+  homePanel.scrollTop=0;
+}
+
+/* ================= チャレンジモード(1問ミスでゲームオーバー・芳香族クエストと共通仕様) ================= */
+const chalPanel=document.getElementById('chalPanel');
+let chal=null, chalKind='score', chalTimerIv=null;
+function stopChalTimer(){if(chalTimerIv){clearInterval(chalTimerIv);chalTimerIv=null;}}
+const CHAL_DESC={
+  score:'ランダム出題。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!',
+  time:'制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!'
+};
+const CHAL_TIME_LIMIT=60;
+function chalRank(kind,correct){
+  if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
+  return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+}
+function renderChallengeHome(){
+  const list=(state.bestList&&state.bestList[chalKind])||[];
+  chalPanel.innerHTML=`
+    <h2>⚡ チャレンジモード</h2>
+    <div class="card-ui">
+      <div class="scopebtns">
+        <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
+        <button id="kTime" class="${chalKind==='time'?'sel':''}">⏱ 1分間タイムアタック</button>
+      </div>
+      <div style="font-size:13.5px;line-height:1.8;margin-top:10px">${CHAL_DESC[chalKind]}</div>
+      <button class="bigbtn" id="chalStart">スタート!</button>
+    </div>
+    ${list.length?`<div class="card-ui"><b>🏆 ベストTOP3</b>${list.map((b,i)=>`<div class="muted" style="margin-top:4px;font-size:13px">${i+1}位　正解 ${b.correct}問・タイム ${b.sec}秒・ランク ${b.rank}</div>`).join('')}</div>`:''}`;
+  document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
+  document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
+  document.getElementById('chalStart').onclick=startChallenge;
+}
+function buildChalQueue(){
+  return shuffle(ITEMS.slice());
+}
+function startChallenge(){
+  chal={kind:chalKind,queue:buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
+  nextChalQ();
+}
+function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    ${timeLimitSec?`<div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>`:''}
+    <div class="qprompt">${it.q}</div>
+    ${ch}`;
+  let answered=false;
+  function finish(ok,timedOut){
+    if(answered)return; answered=true;
+    stopChalTimer();
+    el.querySelectorAll('.choice').forEach(b=>{
+      const c=choices[+b.dataset.i];
+      if(c.ok)b.classList.add('correct');
+      else if(!timedOut&&b.dataset.clicked)b.classList.add('wrong');
+    });
+    setTimeout(()=>onDone(ok,timedOut),650);
+  }
+  if(timeLimitSec){
+    const t0=Date.now();
+    const timerEl=el.querySelector('#chalTimer');
+    chalTimerIv=setInterval(()=>{
+      const left=timeLimitSec-(Date.now()-t0)/1000;
+      if(left<=0){finish(false,true);}
+      else{timerEl.textContent=`⏱ ${Math.ceil(left)}秒`;timerEl.classList.toggle('urgent',left<=3);}
+    },100);
+  }
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return;
+      btn.dataset.clicked='1';
+      finish(choices[+btn.dataset.i].ok,false);
+    });
+  });
+}
+function nextChalQ(){
+  if(chal.kind==='time'){
+    const left=CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000;
+    if(left<=0)return chalResult(true);
+  }
+  if(chal.idx>=chal.queue.length)return chalResult(true);
+  const it=chal.queue[chal.idx];
+  const session=chal;
+  const timeLimitSec=chal.kind==='score'?10:Math.max(1,Math.ceil(CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000));
+  const progressText=chal.kind==='score'?`連続正解 ${chal.correct}問`:`正解 ${chal.correct}問`;
+  chalPanel.innerHTML='<div id="cq"></div>';
+  renderChalQuiz(document.getElementById('cq'),it,progressText,timeLimitSec,(ok,timedOut)=>{
+    if(chal!==session||chal.over)return;
+    if(chal.kind==='time'&&timedOut){chalResult(true);return;}
+    if(ok){
+      if(ok)markMastered(it.id);
+      chal.correct++; chal.idx++; nextChalQ();
+    }else{
+      state.weak[it.id]=2; save(); updateWeakBadge();
+      chalResult(false);
+    }
+  });
+  chalPanel.scrollTop=0;
+}
+function chalResult(reachedEnd){
+  if(!chal||chal.over)return;
+  chal.over=true;
+  stopChalTimer();
+  const correct=chal.correct;
+  const sec=Math.floor((Date.now()-chal.t0)/1000);
+  const rank=chalRank(chal.kind,correct);
+  if(!state.bestList)state.bestList={score:[],time:[]};
+  const list=state.bestList[chal.kind]||[];
+  list.push({correct,sec,rank});
+  list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
+  state.bestList[chal.kind]=list.slice(0,3);
+  save();
+  const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
+  chalPanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line" style="font-size:17px">${headline}</div>
+      <div class="rankbig rank-${rank}">${rank}</div>
+      <div class="score-line">正解 ${correct}問　⏱ ${sec}秒</div>
+      <div class="muted">${rank==='S'?'完璧!無機マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'弱点特訓で復習しよう!':'暗記モードで基礎から固めよう!'}</div>
+      <button class="bigbtn" id="chalAgain">もう一度</button>
+      <button class="bigbtn secondary" id="chalHome">トップへ</button>
+    </div>`;
+  document.getElementById('chalAgain').onclick=startChallenge;
+  document.getElementById('chalHome').onclick=renderChallengeHome;
+  chalPanel.scrollTop=0;
+}
+
+/* ================= 弱点特訓 ================= */
+const weakPanel=document.getElementById('weakPanel');
+let drill=null;
+function renderWeakHome(){
+  const n=weakCount();
+  let list='';
+  for(const id in state.weak){
+    const it=IMAP[id];
+    if(!it){delete state.weak[id];continue;}
+    list+=`<div class="review-item">🎯 ${it.q} <b>${it.correct}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
+  }
+  weakPanel.innerHTML=`
+    <h2>🎯 弱点特訓</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">間違えた問題がここに溜まります。<b>2回連続で正解</b>するとリストから消えます。</div>
+      <button class="bigbtn amber" id="drillStart" ${n?'':'disabled'}>${n?`特訓スタート(${n}件)`:'弱点はありません🎉'}</button>
+    </div>
+    ${list?`<div class="card-ui"><b>弱点リスト</b>${list}</div>`:''}`;
+  const ds=document.getElementById('drillStart');
+  if(n)ds.onclick=startDrill;
+}
+function startDrill(){
+  drill={ids:shuffle(Object.keys(state.weak)),i:0};
+  nextDrillQ();
+}
+function nextDrillQ(){
+  while(drill.i<drill.ids.length&&!(drill.ids[drill.i] in state.weak))drill.i++;
+  if(drill.i>=drill.ids.length){drill=null;renderWeakHome();updateWeakBadge();toast('特訓おつかれさま!');return;}
+  const id=drill.ids[drill.i];
+  const it=IMAP[id];
+  weakPanel.innerHTML='<div id="dq"></div>';
+  renderQuiz(document.getElementById('dq'),it,ok=>{
+    if(ok){
+      state.weak[id]--;
+      if(state.weak[id]<=0){delete state.weak[id];markMastered(id);}
+    }else state.weak[id]=2;
+    save(); updateWeakBadge();
+    drill.i++; nextDrillQ();
+  },`弱点特訓　残り ${drill.ids.length-drill.i} 件`);
+  weakPanel.scrollTop=0;
+}
+
+/* ================= 確認ダイアログ ================= */
+function confirmDialog(message,onConfirm){
+  infoSheet.innerHTML=`<h3>確認<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div style="font-size:13.5px;line-height:1.8;margin-bottom:6px">${message}</div>
+    <button class="bigbtn amber" id="confirmYes">終了する</button>
+    <button class="bigbtn secondary" id="confirmNo">続ける</button>`;
+  infoModal.classList.add('open');
+  document.getElementById('confirmYes').onclick=()=>{infoModal.classList.remove('open');onConfirm();};
+  document.getElementById('confirmNo').onclick=()=>infoModal.classList.remove('open');
+}
+
+/* ================= ナビ・共通 ================= */
+function switchView(view){
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  if(view==='home'&&!catDrill)renderHome();
+  if(view==='challenge'&&(!chal||chal.over))renderChallengeHome();
+  if(view==='weak'&&!drill)renderWeakHome();
+}
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const target=b.dataset.view;
+    const activeView=document.querySelector('.view.active').id.replace('view-','');
+    if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
+      confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
+        stopChalTimer(); chal.over=true; chal=null;
+        switchView(target);
+      });
+      return;
+    }
+    switchView(target);
+  });
+});
+document.getElementById('questSelect').addEventListener('change',e=>{location.href=e.target.value;});
+
+/* ================= 起動 ================= */
+load();
+updateWeakBadge();
+refreshAnswerFxBtn();
+refreshAnswerAutoBtn();
+renderHome();
+</script>
+</body>
+</html>
