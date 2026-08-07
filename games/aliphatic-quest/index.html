@@ -57,8 +57,8 @@ main{flex:1;position:relative;overflow:hidden}
 .modebtns{position:absolute;right:10px;top:8px;display:flex;gap:4px;z-index:5}
 .modebtns button{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:5px 8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .modebtns button.active{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
-.viewfx-toggle{position:absolute;right:10px;top:8px;z-index:5;background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.viewfx-toggle2{top:44px}
+.viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
+.viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 #memoPanel{padding-top:84px}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
@@ -286,8 +286,10 @@ nav button.active{color:var(--blue);font-weight:700}
   </div>
 
   <div class="view" id="view-memo">
-    <button id="btnAnswerFx" class="viewfx-toggle"></button>
-    <button id="btnAnswerAuto" class="viewfx-toggle viewfx-toggle2"></button>
+    <div class="viewfx-toggles">
+      <button id="btnAnswerAuto" class="viewfx-toggle"></button>
+      <button id="btnAnswerFx" class="viewfx-toggle"></button>
+    </div>
     <div class="panel" id="memoPanel"></div>
   </div>
 </main>
@@ -1702,7 +1704,7 @@ function renderMemoHome(){
   };
   document.getElementById('sortPct').onclick=()=>{
     if(memoSort.field==='pct')memoSort.dir=memoSort.dir==='asc'?'desc':'asc';
-    else{memoSort.field='pct';memoSort.dir='asc';}
+    else{memoSort.field='pct';memoSort.dir='desc';}
     renderMemoHome();
   };
   memoPanel.querySelectorAll('.deckbtn').forEach(b=>{
