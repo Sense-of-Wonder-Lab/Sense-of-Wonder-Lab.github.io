@@ -60,8 +60,8 @@ nav button.active{color:var(--blue);font-weight:700}
 .deckbtn.perfect .deckbtn-score{color:var(--green)}
 .deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
 /* 正誤ポップアップ・自動送り */
-.viewfx-toggle{position:absolute;right:10px;top:8px;z-index:5;background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.viewfx-toggle2{top:44px}
+.viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
+.viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
 #answerFxPopup.show{display:flex}
@@ -137,8 +137,10 @@ nav button.active{color:var(--blue);font-weight:700}
 
 <main>
   <div class="view active" id="view-home">
-    <button id="btnAnswerFx" class="viewfx-toggle"></button>
-    <button id="btnAnswerAuto" class="viewfx-toggle viewfx-toggle2"></button>
+    <div class="viewfx-toggles">
+      <button id="btnAnswerAuto" class="viewfx-toggle"></button>
+      <button id="btnAnswerFx" class="viewfx-toggle"></button>
+    </div>
     <div class="panel" id="homePanel"></div>
   </div>
   <div class="view" id="view-challenge"><div class="panel" id="chalPanel"></div></div>
@@ -3752,7 +3754,7 @@ function renderHome(){
   };
   document.getElementById('sortPct').onclick=()=>{
     if(catSort.field==='pct')catSort.dir=catSort.dir==='asc'?'desc':'asc';
-    else{catSort.field='pct';catSort.dir='asc';}
+    else{catSort.field='pct';catSort.dir='desc';}
     renderHome();
   };
   homePanel.querySelectorAll('.deckbtn').forEach(el=>{
