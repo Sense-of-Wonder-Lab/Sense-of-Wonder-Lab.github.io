@@ -248,6 +248,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
   <button id="btnReset">リセット</button>
+  <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
 </header>
 
 <main>
@@ -321,10 +322,13 @@ nav button.active{color:var(--blue);font-weight:700}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js"></script>
 <script>
 'use strict';
 LB.init('aromatic');
+document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(教材「有機化学学習の朋」準拠) ================= */
 const NW=150, NH=112;
 
@@ -695,8 +699,10 @@ function compoundHTML(id,big){
 
 /* ================= 状態 ================= */
 let state={comp:[],reag:[],weak:{},seen:false,bestList:{score:[],time:[]},mode:'normal',memoScores:{},memoInProgress:{}};
-function save(){try{localStorage.setItem('aromaQuest2',JSON.stringify(state));}catch(e){}}
+function save(){try{localStorage.setItem('aromaQuest2',JSON.stringify(state));}catch(e){}LB.pushState('aromaQuest2',state);}
 function load(){try{const s=localStorage.getItem('aromaQuest2');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+LB.attachStateSync('aromaQuest2',()=>localStorage.getItem('aromaQuest2'));
+LB.maybeShowOnboarding('aromaQuest2');
 let mapMode='normal';
 let AUTO_REVEAL=new Set();
 function recomputeAutoReveal(){
@@ -1362,15 +1368,15 @@ function chalRank(kind,correct){
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
   if(!box)return;
-  if(LB.isRegistered()){
+  if(LB.currentUser()){
     box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
     LB.fetchTop(kind,10).then(list=>{
       const b=document.getElementById('lbBox');
-      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list);
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list,LB.currentUser().uid);
     });
   }else{
-    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ニックネーム登録すると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">登録する</button>`;
-    document.getElementById('lbRegisterBtn').onclick=()=>LB.openRegisterModal(()=>refreshLbBox(kind));
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ログインすると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">ログインする</button>`;
+    document.getElementById('lbRegisterBtn').onclick=()=>LB.openAccountModal();
   }
 }
 function renderChallengeHome(){
@@ -1441,7 +1447,7 @@ function chalResult(reachedEnd){
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
   state.bestList[chal.kind]=list.slice(0,3);
   save();
-  if(LB.isRegistered())LB.submitScore(chal.kind,correct,sec,rank);
+  if(LB.currentUser())LB.submitScore(chal.kind,correct,sec,rank);
   chalHeaderUpdate('結果発表');
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`

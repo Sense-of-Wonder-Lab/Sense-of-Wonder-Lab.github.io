@@ -248,6 +248,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
   <button id="btnReset">リセット</button>
+  <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
 </header>
 
 <main>
@@ -321,10 +322,13 @@ nav button.active{color:var(--blue);font-weight:700}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js"></script>
 <script>
 'use strict';
 LB.init('aliphatic');
+document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(教材「有機化学学習の朋」準拠) ================= */
 const NW=150, NH=112;
 
@@ -362,7 +366,7 @@ const COMPOUNDS={
   formaldehyde:{name:'ホルムアルデヒド',alt:'常温で気体。37%水溶液はホルマリン',x:2300,y:380,kind:'text',text:'HCHO'},
   formicAcid:{name:'ギ酸',alt:'アルデヒド基をもち還元性あり(銀鏡反応陽性)',x:2620,y:380,kind:'text',text:'HCOOH'},
 
-  calciumCarbide:{name:'炭化カルシウム',alt:'(カーバイド)',x:-260,y:700,start:true,kind:'text',text:'CaC₂'},
+  calciumCarbide:{name:'炭化カルシウム(カーバイド)',x:-260,y:700,start:true,kind:'text',text:'CaC₂'},
   acetylene:{name:'アセチレン',alt:'(エチン)臭素水を脱色する',x:60,y:700,chain:{c:2,bonds:['#']}},
   vinylChloride:{name:'塩化ビニル',alt:'ポリ塩化ビニル(PVC)の原料',x:60,y:1020,chain:{c:2,bonds:['='],right:'Cl'}},
   vinylAlcohol:{name:'ビニルアルコール',alt:'不安定・すぐ転位する',x:60,y:380,chain:{c:2,bonds:['='],right:'OH'}},
@@ -706,7 +710,7 @@ function chainSVG(spec){
 function structSVG(c){
   if(c.kind==='ring') return `<g class="struct">${ringHex(0,0,24)}</g>`;
   if(c.kind==='text')
-    return `<g class="struct"><text x="0" y="5" text-anchor="middle" font-size="15" font-weight="600" stroke="none">${c.text}</text></g>`;
+    return `<g class="struct"><text x="0" y="7" text-anchor="middle" font-size="22" font-weight="600" stroke="none">${c.text}</text></g>`;
   return chainSVG(c.chain||{c:1});
 }
 const BBOX={};
@@ -732,13 +736,16 @@ const IMG_MAP={
   dichloromethane:'dichloromethane.png', tetrachloromethane:'tetrachloromethane.png',
   vinylAcetate:'vinylAcetate.png', trichloromethane:'trichloromethane.png',
 };
+const IMG_FILL_OVERRIDE={diethylEther:1.35,methanol:1.35};
 function structFit(id,availW,availH,maxScale){
   if(IMG_MAP[id]){
-    const w=availW*0.94, h=availH*0.94;
+    const f=(IMG_FILL_OVERRIDE[id]||1)*0.94;
+    const w=availW*f, h=availH*f;
     return `<image href="assets/compounds/${IMG_MAP[id]}" x="${(-w/2).toFixed(1)}" y="${(-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`;
   }
   const b=BBOX[id];
-  const s=Math.min(availW/(b.width+8),availH/(b.height+8),maxScale||1.1);
+  const cap=COMPOUNDS[id].kind==='text'?(maxScale||1.1)*2.2:(maxScale||1.1);
+  const s=Math.min(availW/(b.width+8),availH/(b.height+8),cap);
   const tx=-(b.x+b.width/2)*s, ty=-(b.y+b.height/2)*s;
   return `<g transform="translate(${tx.toFixed(1)},${ty.toFixed(1)}) scale(${s.toFixed(3)})">${structSVG(COMPOUNDS[id])}</g>`;
 }
@@ -749,8 +756,10 @@ function compoundHTML(id,big){
 
 /* ================= 状態 ================= */
 let state={comp:[],reag:[],weak:{},seen:false,bestList:{score:[],time:[]},mode:'normal',memoScores:{},memoInProgress:{}};
-function save(){try{localStorage.setItem('aliphaQuest1',JSON.stringify(state));}catch(e){}}
+function save(){try{localStorage.setItem('aliphaQuest1',JSON.stringify(state));}catch(e){}LB.pushState('aliphaQuest1',state);}
 function load(){try{const s=localStorage.getItem('aliphaQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+LB.attachStateSync('aliphaQuest1',()=>localStorage.getItem('aliphaQuest1'));
+LB.maybeShowOnboarding('aliphaQuest1');
 let mapMode='normal';
 let AUTO_REVEAL=new Set();
 function recomputeAutoReveal(){
@@ -1420,15 +1429,15 @@ function chalRank(kind,correct){
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
   if(!box)return;
-  if(LB.isRegistered()){
+  if(LB.currentUser()){
     box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
     LB.fetchTop(kind,10).then(list=>{
       const b=document.getElementById('lbBox');
-      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list);
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list,LB.currentUser().uid);
     });
   }else{
-    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ニックネーム登録すると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">登録する</button>`;
-    document.getElementById('lbRegisterBtn').onclick=()=>LB.openRegisterModal(()=>refreshLbBox(kind));
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ログインすると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">ログインする</button>`;
+    document.getElementById('lbRegisterBtn').onclick=()=>LB.openAccountModal();
   }
 }
 function renderChallengeHome(){
@@ -1499,7 +1508,7 @@ function chalResult(reachedEnd){
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
   state.bestList[chal.kind]=list.slice(0,3);
   save();
-  if(LB.isRegistered())LB.submitScore(chal.kind,correct,sec,rank);
+  if(LB.currentUser())LB.submitScore(chal.kind,correct,sec,rank);
   chalHeaderUpdate('結果発表');
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`

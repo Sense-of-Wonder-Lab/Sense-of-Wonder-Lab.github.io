@@ -31,7 +31,7 @@ header{
 }
 header .title{font-weight:700;font-size:15px;letter-spacing:.02em;flex:1}
 header .sub{font-size:10px;opacity:.75}
-.questSelect{flex:1;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:14px;padding:6px 10px;font-family:inherit}
+.questSelect{flex:1;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
 .questSelect option{color:var(--ink)}
 .backrow{margin-bottom:10px}
 .backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
@@ -133,6 +133,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <option value="index.html" selected>無機化学クエスト</option>
   </select>
   <div class="title" id="hdrTitle" style="display:none"></div>
+  <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
 </header>
 
 <main>
@@ -159,10 +160,13 @@ nav button.active{color:var(--blue);font-weight:700}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js"></script>
 <script>
 'use strict';
 LB.init('inorganic');
+document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(MONOXER「無機」教材準拠) ================= */
 const DATA = {
  "categories": [
@@ -3911,8 +3915,10 @@ const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
 
 /* ================= 状態 ================= */
 let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
-function save(){try{localStorage.setItem('inorganicQuest1',JSON.stringify(state));}catch(e){}}
+function save(){try{localStorage.setItem('inorganicQuest1',JSON.stringify(state));}catch(e){}LB.pushState('inorganicQuest1',state);}
 function load(){try{const s=localStorage.getItem('inorganicQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+LB.attachStateSync('inorganicQuest1',()=>localStorage.getItem('inorganicQuest1'));
+LB.maybeShowOnboarding('inorganicQuest1');
 function isMastered(id){return state.mastered.includes(id);}
 function markMastered(id){if(!isMastered(id)){state.mastered.push(id);save();}}
 function weakCount(){return Object.keys(state.weak).length;}
@@ -4203,15 +4209,15 @@ function chalRank(kind,correct){
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
   if(!box)return;
-  if(LB.isRegistered()){
+  if(LB.currentUser()){
     box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
     LB.fetchTop(kind,10).then(list=>{
       const b=document.getElementById('lbBox');
-      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list);
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list,LB.currentUser().uid);
     });
   }else{
-    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ニックネーム登録すると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">登録する</button>`;
-    document.getElementById('lbRegisterBtn').onclick=()=>LB.openRegisterModal(()=>refreshLbBox(kind));
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ログインすると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">ログインする</button>`;
+    document.getElementById('lbRegisterBtn').onclick=()=>LB.openAccountModal();
   }
 }
 function renderChallengeHome(){
@@ -4315,7 +4321,7 @@ function chalResult(reachedEnd){
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
   state.bestList[chal.kind]=list.slice(0,3);
   save();
-  if(LB.isRegistered())LB.submitScore(chal.kind,correct,sec,rank);
+  if(LB.currentUser())LB.submitScore(chal.kind,correct,sec,rank);
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`
     <h2>結果発表</h2>
