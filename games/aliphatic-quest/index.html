@@ -710,7 +710,7 @@ function chainSVG(spec){
 function structSVG(c){
   if(c.kind==='ring') return `<g class="struct">${ringHex(0,0,24)}</g>`;
   if(c.kind==='text')
-    return `<g class="struct"><text x="0" y="7" text-anchor="middle" font-size="22" font-weight="600" stroke="none">${c.text}</text></g>`;
+    return `<g class="struct"><text x="0" y="7" text-anchor="middle" font-size="22" font-weight="600" font-family="'Times New Roman',Times,serif" stroke="none">${c.text}</text></g>`;
   return chainSVG(c.chain||{c:1});
 }
 const BBOX={};
@@ -737,11 +737,16 @@ const IMG_MAP={
   vinylAcetate:'vinylAcetate.png', trichloromethane:'trichloromethane.png',
 };
 const IMG_FILL_OVERRIDE={diethylEther:1.35,methanol:1.35};
+let structFitClipN=0;
 function structFit(id,availW,availH,maxScale){
   if(IMG_MAP[id]){
     const f=(IMG_FILL_OVERRIDE[id]||1)*0.94;
     const w=availW*f, h=availH*f;
-    return `<image href="assets/compounds/${IMG_MAP[id]}" x="${(-w/2).toFixed(1)}" y="${(-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`;
+    const img=`<image href="assets/compounds/${IMG_MAP[id]}" x="${(-w/2).toFixed(1)}" y="${(-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`;
+    if(!IMG_FILL_OVERRIDE[id]) return img;
+    const cw=availW*0.94, ch=availH*0.94;
+    const cid='sfclip'+(structFitClipN++);
+    return `<clipPath id="${cid}"><rect x="${(-cw/2).toFixed(1)}" y="${(-ch/2).toFixed(1)}" width="${cw.toFixed(1)}" height="${ch.toFixed(1)}"/></clipPath><g clip-path="url(#${cid})">${img}</g>`;
   }
   const b=BBOX[id];
   const cap=COMPOUNDS[id].kind==='text'?(maxScale||1.1)*2.2:(maxScale||1.1);
@@ -830,6 +835,11 @@ function edgePt(n,tx,ty){
   return [n.x+dx*Math.min(k,1), n.y+dy*Math.min(k,1)];
 }
 function textW(s){let w=0;for(const ch of s)w+=ch.charCodeAt(0)>255?10.5:6.2;return w;}
+function nameLines(name,maxW){
+  if(textW(name)<=maxW || !name.includes('(')) return [name];
+  const i=name.indexOf('(');
+  return [name.slice(0,i), name.slice(i)];
+}
 let SLOT_N=[], SLOT_E=[];
 function renderMap(){
   recomputeAutoReveal();
@@ -930,8 +940,10 @@ function renderMap(){
     g+=`<rect class="node-card" x="${-NW/2}" y="${-NH/2}" width="${NW}" height="${NH}" rx="13"/>`;
     if(known){
       g+=`<g transform="translate(0,-9)">${structFit(id,NW-18,NH-42,0.82)}</g>`;
-      const fs=textW(c.name)>NW-14?9.5:11.5;
-      g+=`<text class="node-name" y="${NH/2-11}" font-size="${fs}">${c.name}</text>`;
+      const lines=nameLines(c.name,NW-14);
+      const fs=lines.length>1?10:(textW(c.name)>NW-14?9.5:11.5);
+      const baseY=NH/2-11-(lines.length-1)*6;
+      g+=`<text class="node-name" y="${baseY}" font-size="${fs}">${lines.map((ln,i)=>`<tspan x="0" dy="${i===0?0:'1.15em'}">${ln}</tspan>`).join('')}</text>`;
     }else{
       g+=`<text class="qmark ${isSlot?'pulse':''}" y="11">?</text>`;
     }
