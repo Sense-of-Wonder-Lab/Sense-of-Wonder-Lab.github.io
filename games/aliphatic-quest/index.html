@@ -319,8 +319,12 @@ nav button.active{color:var(--blue);font-weight:700}
 <div id="fireworksOverlay"></div>
 <svg id="meas" style="position:fixed;left:-9999px;top:0;width:500px;height:400px;visibility:hidden" xmlns="http://www.w3.org/2000/svg"></svg>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="../shared/leaderboard.js"></script>
 <script>
 'use strict';
+LB.init('aliphatic');
 /* ================= データ(教材「有機化学学習の朋」準拠) ================= */
 const NW=150, NH=112;
 
@@ -1413,6 +1417,20 @@ function chalRank(kind,correct){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
   return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
 }
+function refreshLbBox(kind){
+  const box=document.getElementById('lbBox');
+  if(!box)return;
+  if(LB.isRegistered()){
+    box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
+    LB.fetchTop(kind,10).then(list=>{
+      const b=document.getElementById('lbBox');
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list);
+    });
+  }else{
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ニックネーム登録すると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">登録する</button>`;
+    document.getElementById('lbRegisterBtn').onclick=()=>LB.openRegisterModal(()=>refreshLbBox(kind));
+  }
+}
 function renderChallengeHome(){
   chalHeaderUpdate('挑戦するモードを選んでください');
   const list=(state.bestList&&state.bestList[chalKind])||[];
@@ -1426,10 +1444,12 @@ function renderChallengeHome(){
       <div style="font-size:13.5px;line-height:1.8;margin-top:10px">${CHAL_DESC[chalKind]}</div>
       <button class="bigbtn" id="chalStart">スタート!</button>
     </div>
-    ${list.length?`<div class="card-ui"><b>🏆 ベストTOP3</b>${list.map((b,i)=>`<div class="muted" style="margin-top:4px;font-size:13px">${i+1}位　正解 ${b.correct}問・タイム ${b.sec}秒・ランク ${b.rank}</div>`).join('')}</div>`:''}`;
+    ${list.length?`<div class="card-ui"><b>🏆 ベストTOP3</b>${list.map((b,i)=>`<div class="muted" style="margin-top:4px;font-size:13px">${i+1}位　正解 ${b.correct}問・タイム ${b.sec}秒・ランク ${b.rank}</div>`).join('')}</div>`:''}
+    <div class="card-ui" id="lbBox"></div>`;
   document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
   document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
   document.getElementById('chalStart').onclick=startChallenge;
+  refreshLbBox(chalKind);
 }
 function buildChalQueue(){
   const list=[];
@@ -1479,6 +1499,7 @@ function chalResult(reachedEnd){
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
   state.bestList[chal.kind]=list.slice(0,3);
   save();
+  if(LB.isRegistered())LB.submitScore(chal.kind,correct,sec,rank);
   chalHeaderUpdate('結果発表');
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`
@@ -1490,9 +1511,11 @@ function chalResult(reachedEnd){
       <div class="muted">${rank==='S'?'完璧!脂肪族マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'解説を読んで弱点特訓へ!':'マップモードで基礎から固めよう!'}</div>
       <button class="bigbtn" id="chalAgain">もう一度</button>
       <button class="bigbtn secondary" id="chalHome">トップへ</button>
-    </div>`;
+    </div>
+    <div class="card-ui" id="lbBox"></div>`;
   document.getElementById('chalAgain').onclick=startChallenge;
   document.getElementById('chalHome').onclick=renderChallengeHome;
+  refreshLbBox(chal.kind);
   chalPanel.scrollTop=0;
 }
 
