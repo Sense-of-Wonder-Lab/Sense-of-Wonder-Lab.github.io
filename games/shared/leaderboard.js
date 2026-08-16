@@ -4,7 +4,7 @@
      LB.init('inorganic');                            // ゲームごとに一度呼ぶ
      LB.onAuth(user => ...)                            // ログイン状態が変わるたびに呼ばれる(user は {uid,email,nickname} か null)
      LB.currentUser()                                  // 現在のユーザー情報 (同期)
-     LB.login() / LB.logout()
+     LB.logout()
      LB.openAccountModal()                             // ログイン/アカウント編集モーダル
      LB.submitScore(kind, correct, sec, rank)           // チャレンジ結果を送信(ログイン時のみ)
      LB.fetchTop(kind, 10).then(list=>...)              // 上位N件を取得
@@ -23,6 +23,7 @@ const LB = (function(){
     messagingSenderId: "120466477782",
     appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
   };
+  const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
   const TERMS_URL = '../shared/terms.html';
   const ONBOARD_FLAG = 'lbOnboardSeen';
   let db = null, auth = null, gameId = null;
@@ -37,7 +38,6 @@ const LB = (function(){
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
       auth = firebase.auth();
-      auth.getRedirectResult().catch(err=>console.warn('[LB] redirect sign-in failed', err));
       auth.onAuthStateChanged(fbUser=>{
         if(!fbUser){ user = null; authListeners.forEach(cb=>cb(null)); return; }
         db.ref('users/'+fbUser.uid).once('value').then(snap=>{
@@ -56,25 +56,40 @@ const LB = (function(){
   function onAuth(cb){ authListeners.push(cb); if(auth) cb(user); }
   function currentUser(){ return user; }
 
-  function isMobileUA(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   function friendlyAuthError(err){
-    if(err && err.code==='auth/operation-not-supported-in-this-environment'){
-      return 'この端末・ブラウザでは今のところログイン機能をご利用いただけません。プレイ自体はこのままお楽しみいただけます。';
-    }
-    if(err && err.code==='auth/unauthorized-domain') return 'このサイトのドメインがログインを許可されていません。';
     if(err && err.code==='auth/network-request-failed') return '通信エラーが発生しました。電波の良い場所でもう一度お試しください。';
     return 'ログインできませんでした。プレイ自体はこのままお楽しみいただけます。';
   }
-  function login(){
-    if(!auth) return Promise.reject('通信できませんでした');
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const go = ()=>isMobileUA() ? auth.signInWithRedirect(provider) : auth.signInWithPopup(provider).catch(err=>{
-      if(err && err.code!=='auth/popup-closed-by-user' && err.code!=='auth/user-cancelled'){
-        return auth.signInWithRedirect(provider);
-      }
-      throw err;
+
+  // Google Identity Services: ページとGoogleが直接やり取りする方式(Firebaseの中継iframeを使わない)
+  let gisLoadPromise = null;
+  function loadGIS(){
+    if(gisLoadPromise) return gisLoadPromise;
+    gisLoadPromise = new Promise((resolve,reject)=>{
+      if(window.google && google.accounts && google.accounts.id){ resolve(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true; s.defer = true;
+      s.onload = ()=>resolve();
+      s.onerror = ()=>reject(new Error('Googleログインの読み込みに失敗しました'));
+      document.head.appendChild(s);
     });
-    return go().catch(err=>{ throw new Error(friendlyAuthError(err)); });
+    return gisLoadPromise;
+  }
+  let gisInitialized = false;
+  function handleCredentialResponse(resp){
+    if(!auth || !resp || !resp.credential) return;
+    const credential = firebase.auth.GoogleAuthProvider.credential(resp.credential);
+    auth.signInWithCredential(credential).catch(err=>console.warn('[LB] signInWithCredential failed', err));
+  }
+  function renderGoogleButton(container, onError){
+    loadGIS().then(()=>{
+      if(!gisInitialized){
+        google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleCredentialResponse});
+        gisInitialized = true;
+      }
+      google.accounts.id.renderButton(container, {theme:'outline', size:'large', text:'signin_with', shape:'pill', width:260});
+    }).catch(err=>{ if(onError) onError(friendlyAuthError(err)); });
   }
   function logout(){ return auth ? auth.signOut() : Promise.resolve(); }
 
@@ -212,18 +227,13 @@ const LB = (function(){
       <h3>🏆 ログイン</h3>
       <p class="lb-note">Googleアカウントでログインすると、進捗が他の端末とも同期され、チャレンジのスコアを全国ランキングに送れます。プレイ自体はログインなしでも自由に楽しめます。</p>
       <div class="lb-err" id="lbErr"></div>
-      <div class="lb-btns">
-        <button id="lbCancel" class="lb-btn-secondary">あとで</button>
-        <button id="lbGoogle" class="lb-btn-google">Googleでログイン</button>
-      </div>
+      <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
+      <div class="lb-btns"><button id="lbCancel" class="lb-btn-secondary" style="width:100%">あとで</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
       wrap.querySelector('#lbCancel').onclick = close;
-      wrap.querySelector('#lbGoogle').onclick = ()=>{
-        login().then(close).catch(err=>{
-          wrap.querySelector('#lbErr').textContent = 'ログインに失敗しました: '+(err && err.message ? err.message : err);
-        });
-      };
+      onAuth(u=>{ if(u) close(); });
+      renderGoogleButton(wrap.querySelector('#gsiBox'), msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
     });
   }
 
@@ -275,23 +285,18 @@ const LB = (function(){
       <h3>ようこそ!</h3>
       <p class="lb-note">Googleでログインすると、進捗がスマホ・タブレットなど複数端末で共有され、チャレンジのスコアを全国ランキングに送れます。あとからでも登録できます。</p>
       <div class="lb-err" id="lbErr"></div>
-      <div class="lb-btns">
-        <button id="lbSkip" class="lb-btn-secondary">お試しでプレイ</button>
-        <button id="lbGoogle" class="lb-btn-google">Googleで登録</button>
-      </div>
+      <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
+      <div class="lb-btns"><button id="lbSkip" class="lb-btn-secondary" style="width:100%">お試しでプレイ</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
       wrap.querySelector('#lbSkip').onclick = close;
-      wrap.querySelector('#lbGoogle').onclick = ()=>{
-        login().then(close).catch(err=>{
-          wrap.querySelector('#lbErr').textContent = 'ログインに失敗しました: '+(err && err.message ? err.message : err);
-        });
-      };
+      onAuth(u=>{ if(u) close(); });
+      renderGoogleButton(wrap.querySelector('#gsiBox'), msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
     });
   }
 
   return {
-    init, onAuth, currentUser, login, logout, updateNickname, deleteAccount,
+    init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
     openAccountModal, ensureStyle
