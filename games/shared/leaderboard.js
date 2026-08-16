@@ -37,6 +37,7 @@ const LB = (function(){
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
       auth = firebase.auth();
+      auth.getRedirectResult().catch(err=>console.warn('[LB] redirect sign-in failed', err));
       auth.onAuthStateChanged(fbUser=>{
         if(!fbUser){ user = null; authListeners.forEach(cb=>cb(null)); return; }
         db.ref('users/'+fbUser.uid).once('value').then(snap=>{
@@ -55,11 +56,13 @@ const LB = (function(){
   function onAuth(cb){ authListeners.push(cb); if(auth) cb(user); }
   function currentUser(){ return user; }
 
+  function isMobileUA(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   function login(){
     if(!auth) return Promise.reject('通信できませんでした');
     const provider = new firebase.auth.GoogleAuthProvider();
+    if(isMobileUA()) return auth.signInWithRedirect(provider);
     return auth.signInWithPopup(provider).catch(err=>{
-      if(err && (err.code==='auth/popup-blocked' || err.code==='auth/cancelled-popup-request')){
+      if(err && err.code!=='auth/popup-closed-by-user' && err.code!=='auth/user-cancelled'){
         return auth.signInWithRedirect(provider);
       }
       throw err;
