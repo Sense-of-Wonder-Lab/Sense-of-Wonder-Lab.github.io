@@ -43,10 +43,11 @@ const LB = (function(){
         db.ref('users/'+fbUser.uid).once('value').then(snap=>{
           const data = snap.val();
           const nickname = (data && data.nickname) || (fbUser.displayName||'').slice(0,12) || 'ゲスト';
+          const avatar = (data && data.avatar) || null;
           if(!data){
             db.ref('users/'+fbUser.uid).set({email:fbUser.email||'', nickname, ts:firebase.database.ServerValue.TIMESTAMP});
           }
-          user = {uid:fbUser.uid, email:fbUser.email||'', nickname};
+          user = {uid:fbUser.uid, email:fbUser.email||'', nickname, avatar};
           authListeners.forEach(cb=>cb(user));
         });
       });
@@ -97,6 +98,32 @@ const LB = (function(){
     nick = (nick||'').trim().slice(0,12);
     if(!nick || !user) return Promise.reject('ニックネームを入力してください');
     return db.ref('users/'+user.uid+'/nickname').set(nick).then(()=>{ user.nickname = nick; });
+  }
+
+  function updateAvatar(dataUrl){
+    if(!user) return Promise.reject('未ログインです');
+    return db.ref('users/'+user.uid+'/avatar').set(dataUrl).then(()=>{ user.avatar = dataUrl; });
+  }
+  function resizeImageToDataUrl(file, size){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onerror = ()=>reject(new Error('画像の読み込みに失敗しました'));
+      reader.onload = e=>{
+        const img = new Image();
+        img.onerror = ()=>reject(new Error('画像の読み込みに失敗しました'));
+        img.onload = ()=>{
+          const canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width-side)/2, sy = (img.height-side)/2;
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   function deleteAccount(){
@@ -202,8 +229,11 @@ const LB = (function(){
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
       .lb-account-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-      .lb-account-avatar{width:40px;height:40px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+      .lb-account-avatar-wrap{position:relative;cursor:pointer;flex:none}
+      .lb-account-avatar{width:44px;height:44px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;object-fit:cover}
+      .lb-avatar-edit{position:absolute;right:-2px;bottom:-2px;background:#fff;border:1.5px solid #e2e8f0;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center}
       .lb-account-email{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lb-field-label{font-size:11.5px;color:#64748b;font-weight:700;margin-bottom:4px}
       .lb-terms-link{font-size:12px;color:#2563eb;display:block;margin-top:12px;text-align:center}
       .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center}
     `;
@@ -228,7 +258,7 @@ const LB = (function(){
       <p class="lb-note">Googleアカウントでログインすると、進捗が他の端末とも同期され、チャレンジのスコアを全国ランキングに送れます。プレイ自体はログインなしでも自由に楽しめます。</p>
       <div class="lb-err" id="lbErr"></div>
       <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
-      <div class="lb-btns"><button id="lbCancel" class="lb-btn-secondary" style="width:100%">あとで</button></div>
+      <div class="lb-btns" style="justify-content:center"><button id="lbCancel" class="lb-btn-secondary" style="width:260px">あとで</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
       wrap.querySelector('#lbCancel').onclick = close;
@@ -239,11 +269,18 @@ const LB = (function(){
 
   function openAccountPanel(){
     openModal(`
-      <h3>アカウント</h3>
+      <h3>アカウント管理</h3>
       <div class="lb-account-row">
-        <div class="lb-account-avatar">${escapeHtml((user.nickname||'?')[0])}</div>
+        <label class="lb-account-avatar-wrap">
+          ${user.avatar
+            ? `<img class="lb-account-avatar" src="${user.avatar}">`
+            : `<div class="lb-account-avatar">${escapeHtml((user.nickname||'?')[0])}</div>`}
+          <span class="lb-avatar-edit">✎</span>
+          <input type="file" accept="image/*" id="lbAvatarInput" style="display:none">
+        </label>
         <div><div class="lb-account-email">${escapeHtml(user.email)}</div></div>
       </div>
+      <div class="lb-field-label">ユーザーネーム(ランキング登録名)</div>
       <input id="lbNick" placeholder="ニックネーム(12文字以内)" maxlength="12" value="${escapeHtml(user.nickname)}">
       <div class="lb-err" id="lbErr"></div>
       <div class="lb-btns">
@@ -261,6 +298,12 @@ const LB = (function(){
       wrap.querySelector('#lbSave').onclick = ()=>{
         updateNickname(wrap.querySelector('#lbNick').value).then(close)
           .catch(msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
+      };
+      wrap.querySelector('#lbAvatarInput').onchange = e=>{
+        const f = e.target.files[0];
+        if(!f) return;
+        resizeImageToDataUrl(f,120).then(updateAvatar).then(()=>{ close(); openAccountPanel(); })
+          .catch(err=>{ wrap.querySelector('#lbErr').textContent = err && err.message ? err.message : String(err); });
       };
       wrap.querySelector('#lbLogout').onclick = ()=>{ logout().then(close); };
       wrap.querySelector('#lbDelete').onclick = ()=>{
@@ -286,7 +329,7 @@ const LB = (function(){
       <p class="lb-note">Googleでログインすると、進捗がスマホ・タブレットなど複数端末で共有され、チャレンジのスコアを全国ランキングに送れます。あとからでも登録できます。</p>
       <div class="lb-err" id="lbErr"></div>
       <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
-      <div class="lb-btns"><button id="lbSkip" class="lb-btn-secondary" style="width:100%">お試しでプレイ</button></div>
+      <div class="lb-btns" style="justify-content:center"><button id="lbSkip" class="lb-btn-secondary" style="width:260px">お試しでプレイ</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
       wrap.querySelector('#lbSkip').onclick = close;
