@@ -57,16 +57,23 @@ const LB = (function(){
   function currentUser(){ return user; }
 
   function isMobileUA(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+  function friendlyAuthError(err){
+    if(err && err.code==='auth/operation-not-supported-in-this-environment'){
+      return 'このブラウザではCookie/サイトデータがブロックされているため、ログインできません。ブラウザの設定で「すべてのCookieをブロック」等がオンになっていないか確認してください。';
+    }
+    if(err && err.code==='auth/unauthorized-domain') return 'このサイトのドメインがログインを許可されていません。';
+    return (err && err.message) ? err.message : String(err);
+  }
   function login(){
     if(!auth) return Promise.reject('通信できませんでした');
     const provider = new firebase.auth.GoogleAuthProvider();
-    if(isMobileUA()) return auth.signInWithRedirect(provider);
-    return auth.signInWithPopup(provider).catch(err=>{
+    const go = ()=>isMobileUA() ? auth.signInWithRedirect(provider) : auth.signInWithPopup(provider).catch(err=>{
       if(err && err.code!=='auth/popup-closed-by-user' && err.code!=='auth/user-cancelled'){
         return auth.signInWithRedirect(provider);
       }
       throw err;
     });
+    return go().catch(err=>{ throw new Error(friendlyAuthError(err)); });
   }
   function logout(){ return auth ? auth.signOut() : Promise.resolve(); }
 
