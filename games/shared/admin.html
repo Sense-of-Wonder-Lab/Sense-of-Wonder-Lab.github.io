@@ -24,6 +24,8 @@
   .tag-active{background:#dcfce7;color:#15803d}
   .tag-idle{background:#f1f5f9;color:#94a3b8}
   .tw{overflow-x:auto}
+  .msgbtn,.msgbtn-custom{border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;width:28px;height:28px;font-size:13px;margin-right:3px;cursor:pointer}
+  .msgbtn:hover,.msgbtn-custom:hover{background:#eff6ff}
 </style>
 </head>
 <body>
@@ -38,7 +40,7 @@
 <div class="card" id="dataCard" style="display:none">
   <div class="stat-row" id="stats"></div>
   <div class="tw"><table id="tbl"><thead><tr>
-    <th></th><th>ニックネーム</th><th>メール</th><th>登録日</th><th>最終アクセス</th><th>プレイ日数</th><th>直近のゲーム</th>
+    <th></th><th>ニックネーム</th><th>メール</th><th>登録日</th><th>最終アクセス</th><th>プレイ日数</th><th>直近のゲーム</th><th>メッセージ</th>
   </tr></thead><tbody id="tbody"></tbody></table></div>
 </div>
 
@@ -134,9 +136,33 @@ function render(users){
       <td>${fmtDate(r.lastActive)}</td>
       <td>${r.days}日</td>
       <td>${escapeHtml(r.lastGame)}</td>
+      <td>
+        <button class="msgbtn" data-uid="${r.uid}" data-text="いいね!👍" title="いいね!">👍</button>
+        <button class="msgbtn" data-uid="${r.uid}" data-text="頑張ってるね!💪" title="頑張ってるね!">💪</button>
+        <button class="msgbtn-custom" data-uid="${r.uid}" title="メッセージを送る">✏️</button>
+      </td>
     </tr>`;
   }).join('');
 }
+
+function sendMessage(uid, text){
+  return db.ref('users/'+uid+'/messages').push({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false});
+}
+document.getElementById('tbody').addEventListener('click', e=>{
+  const b = e.target.closest('.msgbtn');
+  if(b){
+    sendMessage(b.dataset.uid, b.dataset.text).then(()=>{
+      const orig = b.textContent; b.textContent = '✓';
+      setTimeout(()=>{ b.textContent = orig; }, 1200);
+    }).catch(err=>alert('送信に失敗しました: '+err.message));
+    return;
+  }
+  const c = e.target.closest('.msgbtn-custom');
+  if(c){
+    const text = prompt('送るメッセージを入力してください');
+    if(text) sendMessage(c.dataset.uid, text).catch(err=>alert('送信に失敗しました: '+err.message));
+  }
+});
 </script>
 </body>
 </html>

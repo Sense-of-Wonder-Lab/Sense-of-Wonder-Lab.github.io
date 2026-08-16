@@ -49,6 +49,7 @@ const LB = (function(){
           }
           user = {uid:fbUser.uid, email:fbUser.email||'', nickname, avatar};
           recordActivity(fbUser.uid);
+          checkMessages(fbUser.uid);
           authListeners.forEach(cb=>cb(user));
         });
       });
@@ -64,6 +65,27 @@ const LB = (function(){
     db.ref('users/'+uid+'/lastActive').set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{});
     db.ref('users/'+uid+'/lastGame').set(gameId).catch(()=>{});
     db.ref('users/'+uid+'/activityDays/'+day).set(true).catch(()=>{});
+  }
+
+  function checkMessages(uid){
+    if(!db) return;
+    db.ref('users/'+uid+'/messages').once('value').then(snap=>{
+      const val = snap.val();
+      if(!val) return;
+      const updates = {};
+      Object.entries(val).forEach(([mid,m])=>{
+        if(!m.read){ showToast(m.text); updates[mid+'/read'] = true; }
+      });
+      if(Object.keys(updates).length) db.ref('users/'+uid+'/messages').update(updates).catch(()=>{});
+    }).catch(()=>{});
+  }
+  function showToast(text){
+    ensureStyle();
+    const t = document.createElement('div');
+    t.className = 'lb-toast';
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(()=>{ t.style.opacity = '0'; setTimeout(()=>t.remove(), 300); }, 4500);
   }
 
   function friendlyAuthError(err){
@@ -245,6 +267,7 @@ const LB = (function(){
       .lb-field-label{font-size:11.5px;color:#64748b;font-weight:700;margin-bottom:4px}
       .lb-terms-link{font-size:12px;color:#2563eb;display:block;margin-top:12px;text-align:center}
       .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center}
+      .lb-toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:88vw;text-align:center;transition:opacity .3s}
     `;
     document.head.appendChild(st);
   }
