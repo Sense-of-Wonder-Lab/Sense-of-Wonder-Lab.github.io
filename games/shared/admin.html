@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>管理画面 | Sense of Wonder Lab</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:#1e293b;margin:0;background:#f8fafc;padding:24px 16px 60px}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:#64748b;margin-bottom:20px}
+  .card{background:#fff;border-radius:14px;padding:18px;max-width:900px;margin:0 auto 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  #gsiBox{display:flex;justify-content:center;padding:20px 0}
+  #err{color:#dc2626;font-size:13px;text-align:center}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #f1f5f9;white-space:nowrap}
+  th{color:#64748b;font-weight:700;font-size:11.5px}
+  .avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px;background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+  .stat-row{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .stat{background:#f8fafc;border-radius:10px;padding:10px 16px}
+  .stat b{display:block;font-size:20px}
+  .stat span{font-size:11.5px;color:#64748b}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px}
+  .tag-active{background:#dcfce7;color:#15803d}
+  .tag-idle{background:#f1f5f9;color:#94a3b8}
+  .tw{overflow-x:auto}
+</style>
+</head>
+<body>
+<h1>👤 会員管理</h1>
+<div class="sub">Sense of Wonder Lab のログインユーザー一覧・利用状況</div>
+
+<div class="card" id="loginCard">
+  <div id="gsiBox"></div>
+  <div id="err"></div>
+</div>
+
+<div class="card" id="dataCard" style="display:none">
+  <div class="stat-row" id="stats"></div>
+  <div class="tw"><table id="tbl"><thead><tr>
+    <th></th><th>ニックネーム</th><th>メール</th><th>登録日</th><th>最終アクセス</th><th>プレイ日数</th><th>直近のゲーム</th>
+  </tr></thead><tbody id="tbody"></tbody></table></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+'use strict';
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBVmC7sIj4mRwgLyNmqJN5CQg6y_XMHiC0",
+  authDomain: "sense-of-wonder-lab.firebaseapp.com",
+  databaseURL: "https://sense-of-wonder-lab-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sense-of-wonder-lab",
+  storageBucket: "sense-of-wonder-lab.firebasestorage.app",
+  messagingSenderId: "120466477782",
+  appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
+};
+const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
+const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト'};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db = firebase.database();
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(ts){
+  if(!ts) return '-';
+  const d = new Date(ts);
+  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function handleCredentialResponse(resp){
+  const credential = firebase.auth.GoogleAuthProvider.credential(resp.credential);
+  auth.signInWithCredential(credential).catch(err=>{
+    document.getElementById('err').textContent = 'ログインに失敗しました: '+err.message;
+  });
+}
+
+let gisReady = false;
+function initGIS(){
+  if(gisReady || !window.google || !google.accounts) return;
+  gisReady = true;
+  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleCredentialResponse});
+  google.accounts.id.renderButton(document.getElementById('gsiBox'), {theme:'outline', size:'large', text:'signin_with', shape:'pill', width:260});
+}
+const gisPoll = setInterval(()=>{ if(window.google && google.accounts){ initGIS(); clearInterval(gisPoll); } }, 200);
+
+auth.onAuthStateChanged(fbUser=>{
+  if(!fbUser){
+    document.getElementById('loginCard').style.display='';
+    document.getElementById('dataCard').style.display='none';
+    return;
+  }
+  document.getElementById('err').textContent = '';
+  db.ref('users').once('value').then(snap=>{
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('dataCard').style.display='';
+    render(snap.val()||{});
+  }).catch(err=>{
+    document.getElementById('err').textContent = '閲覧権限がありません('+escapeHtml(fbUser.email)+')。管理者アカウントでログインしてください。';
+    auth.signOut();
+  });
+});
+
+function render(users){
+  const rows = Object.entries(users).map(([uid,u])=>({
+    uid, nickname:u.nickname||'-', email:u.email||'-', ts:u.ts||0, lastActive:u.lastActive||0,
+    days:u.activityDays?Object.keys(u.activityDays).length:0, lastGame:u.lastGame?(GAME_NAMES[u.lastGame]||u.lastGame):'-',
+    avatar:u.avatar||null
+  }));
+  rows.sort((a,b)=>b.lastActive-a.lastActive);
+
+  const now = Date.now();
+  const activeToday = rows.filter(r=>now-r.lastActive < 24*3600*1000).length;
+  const active7d = rows.filter(r=>now-r.lastActive < 7*24*3600*1000).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${rows.length}</b><span>総登録者数</span></div>
+    <div class="stat"><b>${activeToday}</b><span>本日アクセス</span></div>
+    <div class="stat"><b>${active7d}</b><span>直近7日アクセス</span></div>
+  `;
+
+  document.getElementById('tbody').innerHTML = rows.map(r=>{
+    const isActive = now-r.lastActive < 7*24*3600*1000;
+    const av = r.avatar ? `<img class="avatar" src="${r.avatar}">` : `<span class="avatar">${escapeHtml(r.nickname[0]||'?')}</span>`;
+    return `<tr>
+      <td>${av}</td>
+      <td>${escapeHtml(r.nickname)} ${isActive?'<span class="tag tag-active">active</span>':'<span class="tag tag-idle">idle</span>'}</td>
+      <td>${escapeHtml(r.email)}</td>
+      <td>${fmtDate(r.ts)}</td>
+      <td>${fmtDate(r.lastActive)}</td>
+      <td>${r.days}日</td>
+      <td>${escapeHtml(r.lastGame)}</td>
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

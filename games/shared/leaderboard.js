@@ -48,6 +48,7 @@ const LB = (function(){
             db.ref('users/'+fbUser.uid).set({email:fbUser.email||'', nickname, ts:firebase.database.ServerValue.TIMESTAMP});
           }
           user = {uid:fbUser.uid, email:fbUser.email||'', nickname, avatar};
+          recordActivity(fbUser.uid);
           authListeners.forEach(cb=>cb(user));
         });
       });
@@ -56,6 +57,14 @@ const LB = (function(){
 
   function onAuth(cb){ authListeners.push(cb); if(auth) cb(user); }
   function currentUser(){ return user; }
+
+  function recordActivity(uid){
+    if(!db || !gameId) return;
+    const day = new Date().toISOString().slice(0,10);
+    db.ref('users/'+uid+'/lastActive').set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{});
+    db.ref('users/'+uid+'/lastGame').set(gameId).catch(()=>{});
+    db.ref('users/'+uid+'/activityDays/'+day).set(true).catch(()=>{});
+  }
 
   function friendlyAuthError(err){
     if(err && err.code==='auth/network-request-failed') return '通信エラーが発生しました。電波の良い場所でもう一度お試しください。';
