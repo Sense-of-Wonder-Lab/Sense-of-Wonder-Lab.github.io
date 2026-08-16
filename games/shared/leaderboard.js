@@ -59,10 +59,11 @@ const LB = (function(){
   function isMobileUA(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   function friendlyAuthError(err){
     if(err && err.code==='auth/operation-not-supported-in-this-environment'){
-      return 'このブラウザではCookie/サイトデータがブロックされているため、ログインできません。ブラウザの設定で「すべてのCookieをブロック」等がオンになっていないか確認してください。';
+      return 'この端末・ブラウザでは今のところログイン機能をご利用いただけません。プレイ自体はこのままお楽しみいただけます。';
     }
     if(err && err.code==='auth/unauthorized-domain') return 'このサイトのドメインがログインを許可されていません。';
-    return (err && err.message) ? err.message : String(err);
+    if(err && err.code==='auth/network-request-failed') return '通信エラーが発生しました。電波の良い場所でもう一度お試しください。';
+    return 'ログインできませんでした。プレイ自体はこのままお楽しみいただけます。';
   }
   function login(){
     if(!auth) return Promise.reject('通信できませんでした');
