@@ -187,7 +187,7 @@ const LB = (function(){
         snap.forEach(ch=>arr.push(Object.assign({uid:ch.key}, ch.val())));
         arr.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
         return arr.slice(0, n);
-      }).catch(()=>[]);
+      }).catch(err=>{ console.warn('[LB] fetchTop failed', err); return []; });
   }
 
   function escapeHtml(s){
