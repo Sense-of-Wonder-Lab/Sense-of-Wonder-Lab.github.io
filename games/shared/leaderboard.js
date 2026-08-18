@@ -224,8 +224,8 @@ const LB = (function(){
     if(!entries || !entries.length){
       return '<div class="lb-empty">まだ登録者がいません。最初の1人になろう!</div>';
     }
-    return '<table class="lb-table"><thead><tr>'
-      + '<th class="lb-c-rank">ランキング</th><th class="lb-c-user">ユーザー名</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
+    return '<div class="lb-tw"><table class="lb-table"><thead><tr>'
+      + '<th class="lb-c-rank">順位</th><th class="lb-c-user">ユーザー名</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
       + '</tr></thead><tbody>'
       + entries.map((e,i)=>
         `<tr class="${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}">`
@@ -235,14 +235,14 @@ const LB = (function(){
         + `<td class="lb-c-num">${e.sec}秒</td>`
         + `<td class="lb-c-num">${escapeHtml(e.rank||'-')}</td>`
         + `</tr>`
-      ).join('') + '</tbody></table>';
+      ).join('') + '</tbody></table></div>';
   }
 
   function renderSelfBestHTML(list){
     if(!list || !list.length){
       return '<div class="lb-empty">まだ記録がありません。</div>';
     }
-    return '<table class="lb-table lb-self-table"><thead><tr>'
+    return '<div class="lb-tw"><table class="lb-table lb-self-table"><thead><tr>'
       + '<th class="lb-c-rank">順位</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
       + '</tr></thead><tbody>'
       + list.map((b,i)=>
@@ -252,7 +252,7 @@ const LB = (function(){
         + `<td class="lb-c-num">${b.sec}秒</td>`
         + `<td class="lb-c-num">${escapeHtml(b.rank||'-')}</td>`
         + `</tr>`
-      ).join('') + '</tbody></table>';
+      ).join('') + '</tbody></table></div>';
   }
 
   /* ---------- 進捗データのクラウド同期 ---------- */
@@ -306,27 +306,28 @@ const LB = (function(){
       .lb-btn-secondary{background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 14px;font-size:13.5px}
       .lb-btn-danger{background:none;color:#dc2626;border:none;font-size:12px;padding:8px 0;text-decoration:underline}
       .lb-board{margin-top:4px}
-      .lb-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;margin-top:8px}
-      .lb-table th,.lb-table td{border:1px solid #e2e8f0;padding:9px 8px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .lb-table thead th{background:#f8fafc;color:#94a3b8;font-size:11px;font-weight:700;border-top:1px solid #e2e8f0}
-      .lb-c-rank{width:30%;text-align:left!important;font-weight:800;color:#64748b;font-size:12px}
-      .lb-c-user{width:26%;text-align:left!important}
-      .lb-c-num{width:auto;color:#64748b;font-size:12px}
-      .lb-self-table .lb-c-rank{width:34%}
-      .lb-row-me{background:#eff6ff}
-      .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffbeb 70%);font-weight:800}
-      .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fff 70%);font-weight:700}
-      .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fff 70%);font-weight:700}
-      .lb-row-1st td{color:#92400e}
-      .lb-row-1st .lb-c-rank{color:#b45309;text-shadow:0 0 6px rgba(251,191,36,.5)}
-      .lb-row-2nd td{color:#334155}
+      .lb-tw{overflow-x:auto;margin-top:8px;border-radius:10px;box-shadow:0 0 0 1.5px #cbd5e1}
+      .lb-table{width:100%;min-width:340px;border-collapse:separate;border-spacing:0;font-size:13px;background:#fff}
+      .lb-self-table{min-width:280px}
+      .lb-table th,.lb-table td{border-bottom:1.5px solid #cbd5e1;border-right:1.5px solid #e2e8f0;padding:10px 12px;text-align:right;white-space:nowrap}
+      .lb-table th:last-child,.lb-table td:last-child{border-right:none}
+      .lb-table thead th{background:#eef2f7;color:#475569;font-size:11.5px;font-weight:800;border-bottom:1.5px solid #cbd5e1}
+      .lb-table tbody tr:last-child td{border-bottom:none}
+      .lb-table tbody tr:nth-child(even){background:#fafbfc}
+      .lb-c-rank{min-width:76px;text-align:left!important;font-weight:800;color:#64748b;font-size:12.5px}
+      .lb-c-user{min-width:110px;text-align:left!important}
+      .lb-c-num{min-width:64px;color:#64748b;font-size:12.5px}
+      .lb-row-me td{background:#eff6ff}
+      .lb-row-1st td{background:linear-gradient(90deg,#fff3c4,#fffbeb 70%);font-weight:800;color:#92400e}
+      .lb-row-2nd td{background:linear-gradient(90deg,#eef1f5,#fff 70%);font-weight:700;color:#334155}
+      .lb-row-3rd td{background:linear-gradient(90deg,#fdece0,#fff 70%);font-weight:700;color:#7c3f19}
+      .lb-row-1st .lb-c-rank{color:#b45309}
       .lb-row-2nd .lb-c-rank{color:#475569}
-      .lb-row-3rd td{color:#7c3f19}
       .lb-row-3rd .lb-c-rank{color:#9a4a1f}
-      .lb-user-inner{display:flex;align-items:center;gap:6px;overflow:hidden}
-      .lb-avatar{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}
+      .lb-user-inner{display:flex;align-items:center;gap:8px}
+      .lb-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none}
       .lb-avatar-fallback{background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
-      .lb-uname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lb-uname{overflow:hidden;text-overflow:ellipsis}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
