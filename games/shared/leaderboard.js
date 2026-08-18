@@ -212,7 +212,8 @@ const LB = (function(){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function rankLabel(i){ return i===0 ? '👑' : i===1 ? '🥈' : i===2 ? '🥉' : String(i+1); }
+  function rankMedal(i){ return i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : '🔵'; }
+  function rankLabel(i){ return rankMedal(i)+' No.'+(i+1); }
   function rankClass(i){ return i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':''; }
   function avatarHtml(avatar, name){
     return avatar
@@ -300,7 +301,7 @@ const LB = (function(){
       .lb-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
       .lb-pill{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;background:#f8fafc;border:1px solid #e9edf2}
       .lb-pill-self{justify-content:center}
-      .lb-badge{flex:none;width:28px;height:28px;border-radius:50%;background:#e2e8f0;color:#64748b;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+      .lb-badge{flex:none;height:26px;padding:0 10px;border-radius:999px;background:#e2e8f0;color:#64748b;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
       .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffdf3);border-color:#f4cf6a}
       .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fbfcfd);border-color:#c7d0db}
       .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fef8f4);border-color:#e6b483}
