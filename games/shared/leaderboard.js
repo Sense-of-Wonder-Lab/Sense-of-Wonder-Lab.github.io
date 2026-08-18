@@ -212,7 +212,7 @@ const LB = (function(){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function rankLabel(i){ return i===0 ? '👑No.1👑' : i===1 ? '🥈2位' : i===2 ? '🥉3位' : (i+1)+'位'; }
+  function rankLabel(i){ return i===0 ? '👑' : i===1 ? '🥈' : i===2 ? '🥉' : String(i+1); }
   function rankClass(i){ return i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':''; }
   function avatarHtml(avatar, name){
     return avatar
@@ -224,35 +224,26 @@ const LB = (function(){
     if(!entries || !entries.length){
       return '<div class="lb-empty">まだ登録者がいません。最初の1人になろう!</div>';
     }
-    return '<div class="lb-tw"><table class="lb-table"><thead><tr>'
-      + '<th class="lb-c-rank">順位</th><th class="lb-c-user">ユーザー名</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
-      + '</tr></thead><tbody>'
-      + entries.map((e,i)=>
-        `<tr class="${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}">`
-        + `<td class="lb-c-rank">${rankLabel(i)}</td>`
-        + `<td class="lb-c-user"><span class="lb-user-inner">${avatarHtml(e.avatar, e.name)}<span class="lb-uname">${escapeHtml(e.name)}</span></span></td>`
-        + `<td class="lb-c-num">${e.correct}問</td>`
-        + `<td class="lb-c-num">${e.sec}秒</td>`
-        + `<td class="lb-c-num">${escapeHtml(e.rank||'-')}</td>`
-        + `</tr>`
-      ).join('') + '</tbody></table></div>';
+    return '<div class="lb-list">' + entries.map((e,i)=>
+      `<div class="lb-pill${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}">`
+      + `<span class="lb-badge">${rankLabel(i)}</span>`
+      + avatarHtml(e.avatar, e.name)
+      + `<span class="lb-pill-name">${escapeHtml(e.name)}</span>`
+      + `<span class="lb-pill-stats"><b>${e.correct}</b>問<i>・</i><b>${e.sec}</b>秒<i>・</i><b>${escapeHtml(e.rank||'-')}</b></span>`
+      + `</div>`
+    ).join('') + '</div>';
   }
 
   function renderSelfBestHTML(list){
     if(!list || !list.length){
       return '<div class="lb-empty">まだ記録がありません。</div>';
     }
-    return '<div class="lb-tw"><table class="lb-table lb-self-table"><thead><tr>'
-      + '<th class="lb-c-rank">順位</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
-      + '</tr></thead><tbody>'
-      + list.map((b,i)=>
-        `<tr class="${rankClass(i)}">`
-        + `<td class="lb-c-rank">${rankLabel(i)}</td>`
-        + `<td class="lb-c-num">${b.correct}問</td>`
-        + `<td class="lb-c-num">${b.sec}秒</td>`
-        + `<td class="lb-c-num">${escapeHtml(b.rank||'-')}</td>`
-        + `</tr>`
-      ).join('') + '</tbody></table></div>';
+    return '<div class="lb-list">' + list.map((b,i)=>
+      `<div class="lb-pill lb-pill-self${rankClass(i)}">`
+      + `<span class="lb-badge">${rankLabel(i)}</span>`
+      + `<span class="lb-pill-stats"><b>${b.correct}</b>問<i>・</i><b>${b.sec}</b>秒<i>・</i><b>${escapeHtml(b.rank||'-')}</b></span>`
+      + `</div>`
+    ).join('') + '</div>';
   }
 
   /* ---------- 進捗データのクラウド同期 ---------- */
@@ -306,28 +297,24 @@ const LB = (function(){
       .lb-btn-secondary{background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 14px;font-size:13.5px}
       .lb-btn-danger{background:none;color:#dc2626;border:none;font-size:12px;padding:8px 0;text-decoration:underline}
       .lb-board{margin-top:4px}
-      .lb-tw{overflow-x:auto;margin-top:8px;border-radius:10px;box-shadow:0 0 0 1.5px #cbd5e1}
-      .lb-table{width:100%;min-width:340px;border-collapse:separate;border-spacing:0;font-size:13px;background:#fff}
-      .lb-self-table{min-width:280px}
-      .lb-table th,.lb-table td{border-bottom:1.5px solid #cbd5e1;border-right:1.5px solid #e2e8f0;padding:10px 12px;text-align:right;white-space:nowrap}
-      .lb-table th:last-child,.lb-table td:last-child{border-right:none}
-      .lb-table thead th{background:#eef2f7;color:#475569;font-size:11.5px;font-weight:800;border-bottom:1.5px solid #cbd5e1}
-      .lb-table tbody tr:last-child td{border-bottom:none}
-      .lb-table tbody tr:nth-child(even){background:#fafbfc}
-      .lb-c-rank{min-width:76px;text-align:left!important;font-weight:800;color:#64748b;font-size:12.5px}
-      .lb-c-user{min-width:110px;text-align:left!important}
-      .lb-c-num{min-width:64px;color:#64748b;font-size:12.5px}
-      .lb-row-me td{background:#eff6ff}
-      .lb-row-1st td{background:linear-gradient(90deg,#fff3c4,#fffbeb 70%);font-weight:800;color:#92400e}
-      .lb-row-2nd td{background:linear-gradient(90deg,#eef1f5,#fff 70%);font-weight:700;color:#334155}
-      .lb-row-3rd td{background:linear-gradient(90deg,#fdece0,#fff 70%);font-weight:700;color:#7c3f19}
-      .lb-row-1st .lb-c-rank{color:#b45309}
-      .lb-row-2nd .lb-c-rank{color:#475569}
-      .lb-row-3rd .lb-c-rank{color:#9a4a1f}
-      .lb-user-inner{display:flex;align-items:center;gap:8px}
-      .lb-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none}
-      .lb-avatar-fallback{background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
-      .lb-uname{overflow:hidden;text-overflow:ellipsis}
+      .lb-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+      .lb-pill{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;background:#f8fafc;border:1px solid #e9edf2}
+      .lb-pill-self{justify-content:center}
+      .lb-badge{flex:none;width:28px;height:28px;border-radius:50%;background:#e2e8f0;color:#64748b;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+      .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffdf3);border-color:#f4cf6a}
+      .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fbfcfd);border-color:#c7d0db}
+      .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fef8f4);border-color:#e6b483}
+      .lb-row-1st .lb-badge{background:#f5b93f;color:#5b3a00;font-size:15px}
+      .lb-row-2nd .lb-badge{background:#b9c3cf;color:#2c3644;font-size:15px}
+      .lb-row-3rd .lb-badge{background:#d9976a;color:#43220a;font-size:15px}
+      .lb-row-me{box-shadow:0 0 0 2px #60a5fa inset}
+      .lb-avatar{flex:none;width:32px;height:32px;border-radius:50%;object-fit:cover}
+      .lb-avatar-fallback{background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+      .lb-pill-name{flex:1;font-weight:800;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lb-pill-stats{flex:none;font-size:12px;color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap}
+      .lb-pill-stats b{font-size:13px;color:inherit;font-weight:800}
+      .lb-pill-stats i{font-style:normal;opacity:.5;margin:0 1px}
+      .lb-pill-self .lb-pill-stats{font-size:13px}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
@@ -347,13 +334,13 @@ const LB = (function(){
       html[data-theme="navy"] .lb-modal input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#eaf6ff}
       html[data-theme="navy"] .lb-btn-primary{background:linear-gradient(135deg,#2dd4ff,#7c5cff);color:#081018}
       html[data-theme="navy"] .lb-btn-secondary{background:rgba(255,255,255,.08);color:#9db6d6}
-      html[data-theme="navy"] .lb-tw{box-shadow:0 0 0 1.5px rgba(120,210,255,.3)}
-      html[data-theme="navy"] .lb-table{background:rgba(255,255,255,.03);color:#eaf6ff}
-      html[data-theme="navy"] .lb-table th,html[data-theme="navy"] .lb-table td{border-color:rgba(120,210,255,.18)}
-      html[data-theme="navy"] .lb-table thead th{background:rgba(255,255,255,.06);color:#9db6d6}
-      html[data-theme="navy"] .lb-table tbody tr:nth-child(even){background:rgba(255,255,255,.03)}
-      html[data-theme="navy"] .lb-row-me td{background:rgba(79,216,255,.14)!important}
-      html[data-theme="navy"] .lb-c-rank,html[data-theme="navy"] .lb-c-num{color:#9db6d6}
+      html[data-theme="navy"] .lb-pill{background:rgba(255,255,255,.05);border-color:rgba(120,210,255,.2);color:#eaf6ff}
+      html[data-theme="navy"] .lb-badge{background:rgba(255,255,255,.1);color:#9db6d6}
+      html[data-theme="navy"] .lb-pill-stats{color:#9db6d6}
+      html[data-theme="navy"] .lb-row-1st{background:linear-gradient(90deg,rgba(245,185,63,.25),rgba(255,255,255,.04));border-color:rgba(245,185,63,.5)}
+      html[data-theme="navy"] .lb-row-2nd{background:linear-gradient(90deg,rgba(185,195,207,.22),rgba(255,255,255,.04));border-color:rgba(185,195,207,.4)}
+      html[data-theme="navy"] .lb-row-3rd{background:linear-gradient(90deg,rgba(217,151,106,.22),rgba(255,255,255,.04));border-color:rgba(217,151,106,.45)}
+      html[data-theme="navy"] .lb-row-me{box-shadow:0 0 0 2px #4fd8ff inset}
       html[data-theme="navy"] .lb-empty{color:#7f97b3}
       html[data-theme="navy"] .lb-avatar-fallback{background:#2dd4ff;color:#081018}
       html[data-theme="navy"] .lb-account-avatar{background:#2dd4ff;color:#081018}
