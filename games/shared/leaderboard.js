@@ -166,13 +166,16 @@ const LB = (function(){
   }
 
   function submitScore(kind, correct, sec, rank){
-    if(!db || !user || !gameId) return Promise.resolve(false);
+    if(!db || !user || !gameId){ console.warn('[LB] submitScore skipped', {db:!!db, user, gameId}); return Promise.resolve(false); }
     const ref = db.ref('leaderboard/'+gameId+'/'+kind+'/'+user.uid);
     return ref.once('value').then(snap=>{
       const cur = snap.val();
-      if(cur && (cur.correct>correct || (cur.correct===correct && cur.sec<=sec))) return false;
+      if(cur && (cur.correct>correct || (cur.correct===correct && cur.sec<=sec))){
+        console.warn('[LB] submitScore: existing score is not worse, skipped', cur, {correct,sec});
+        return false;
+      }
       return ref.set({name:user.nickname, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>true);
-    }).catch(()=>false);
+    }).catch(err=>{ console.warn('[LB] submitScore failed', err); return false; });
   }
 
   function fetchTop(kind, n){
