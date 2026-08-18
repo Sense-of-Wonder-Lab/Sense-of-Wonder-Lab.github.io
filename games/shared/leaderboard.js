@@ -340,6 +340,26 @@ const LB = (function(){
       .lb-terms-link{font-size:12px;color:#2563eb;display:block;margin-top:12px;text-align:center}
       .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center}
       .lb-toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:88vw;text-align:center;transition:opacity .3s}
+      /* ---- 深海ラボ・ネイビーテーマ ---- */
+      html[data-theme="navy"] .lb-modal-wrap{background:rgba(2,6,14,.65)}
+      html[data-theme="navy"] .lb-modal{background:rgba(16,26,46,.96);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(120,210,255,.2);color:#eaf6ff}
+      html[data-theme="navy"] .lb-note,html[data-theme="navy"] .lb-cta,html[data-theme="navy"] .lb-loading{color:#9db6d6}
+      html[data-theme="navy"] .lb-modal input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#eaf6ff}
+      html[data-theme="navy"] .lb-btn-primary{background:linear-gradient(135deg,#2dd4ff,#7c5cff);color:#081018}
+      html[data-theme="navy"] .lb-btn-secondary{background:rgba(255,255,255,.08);color:#9db6d6}
+      html[data-theme="navy"] .lb-tw{box-shadow:0 0 0 1.5px rgba(120,210,255,.3)}
+      html[data-theme="navy"] .lb-table{background:rgba(255,255,255,.03);color:#eaf6ff}
+      html[data-theme="navy"] .lb-table th,html[data-theme="navy"] .lb-table td{border-color:rgba(120,210,255,.18)}
+      html[data-theme="navy"] .lb-table thead th{background:rgba(255,255,255,.06);color:#9db6d6}
+      html[data-theme="navy"] .lb-table tbody tr:nth-child(even){background:rgba(255,255,255,.03)}
+      html[data-theme="navy"] .lb-row-me td{background:rgba(79,216,255,.14)!important}
+      html[data-theme="navy"] .lb-c-rank,html[data-theme="navy"] .lb-c-num{color:#9db6d6}
+      html[data-theme="navy"] .lb-empty{color:#7f97b3}
+      html[data-theme="navy"] .lb-avatar-fallback{background:#2dd4ff;color:#081018}
+      html[data-theme="navy"] .lb-account-avatar{background:#2dd4ff;color:#081018}
+      html[data-theme="navy"] .lb-avatar-edit{background:rgba(16,26,46,.96);border-color:rgba(120,210,255,.3);color:#eaf6ff}
+      html[data-theme="navy"] .lb-account-email{color:#7f97b3}
+      html[data-theme="navy"] .lb-field-label{color:#9db6d6}
     `;
     document.head.appendChild(st);
   }

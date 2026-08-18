@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1e3a8a">
 <title>芳香族クエスト 〜反応系統図を完成させよう〜</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('swTheme')||'default');</script>
 <style>
 :root{
   --ink:#1e293b;
@@ -227,6 +228,72 @@ nav button.active{color:var(--blue);font-weight:700}
 #onboard h2{font-size:18px;margin-bottom:10px}
 .detail-rxns{margin-top:10px}
 .detail-rxns div{font-size:12.5px;padding:7px 4px;border-bottom:1px solid #f1f5f9;line-height:1.6}
+/* ---- 深海ラボ・ネイビーテーマ ---- */
+.themeBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;display:flex;align-items:center;justify-content:center}
+html[data-theme="navy"]{
+  --ink:#eaf6ff; --bg:#0a1220; --board:#0e1b30; --grid:#1c2c48;
+  --accent:#4fd8ff; --accent-deep:#2dd4ff; --blue:#4fd8ff; --green:#3ee8a5;
+  --red:#ff6f6f; --gray:#7f97b3; --card:#132038; --line:#3a577f;
+}
+html[data-theme="navy"] body{
+  background:
+    radial-gradient(900px 500px at 10% -10%,rgba(45,212,255,.14),transparent),
+    radial-gradient(700px 500px at 100% 15%,rgba(124,92,255,.12),transparent),
+    var(--bg);
+}
+html[data-theme="navy"] header{background:linear-gradient(135deg,#0c1830,#122542);border-bottom:1px solid rgba(120,210,255,.25)}
+html[data-theme="navy"] .questSelect{background:rgba(255,255,255,.08);border-color:rgba(120,210,255,.3)}
+html[data-theme="navy"] #btnReset{border-color:rgba(255,255,255,.3)}
+html[data-theme="navy"] .zoombtns button{background:rgba(19,32,56,.85);border-color:rgba(120,210,255,.3);color:var(--ink)}
+html[data-theme="navy"] .modebtns button,html[data-theme="navy"] .viewfx-toggle{background:rgba(19,32,56,.85);border-color:rgba(120,210,255,.25);color:#9db6d6}
+html[data-theme="navy"] .modebtns button.active,html[data-theme="navy"] .viewfx-toggle.on{background:rgba(79,216,255,.15);border-color:var(--accent);color:var(--accent)}
+html[data-theme="navy"] .edge-label-bg{fill:rgba(19,32,56,.92);stroke:rgba(120,210,255,.3)}
+html[data-theme="navy"] .edge-label{fill:#9db6d6}
+html[data-theme="navy"] .edge-q-circle{fill:rgba(19,32,56,.92)}
+html[data-theme="navy"] .node-start .node-card{fill:rgba(79,216,255,.15);stroke:#4fd8ff}
+html[data-theme="navy"] .node-locked .node-card{fill:rgba(255,255,255,.03);stroke:#3a577f}
+html[data-theme="navy"] .node-slot .node-card{fill:rgba(255,177,69,.12);stroke:#ffb145}
+html[data-theme="navy"] .node-slot .qmark{fill:#ffb145}
+html[data-theme="navy"] .qmark{fill:#3a577f}
+html[data-theme="navy"] .drophot .node-card{fill:rgba(79,216,255,.2)!important;stroke:#4fd8ff!important}
+html[data-theme="navy"] .drophot .edge-q-circle{fill:rgba(79,216,255,.2);stroke:#4fd8ff}
+html[data-theme="navy"] .slot-picked .node-card{fill:rgba(236,72,153,.18)!important;stroke:#ec4899!important}
+html[data-theme="navy"] #tray{background:rgba(19,32,56,.92);border-top:1px solid rgba(120,210,255,.2)}
+html[data-theme="navy"] .ttabs button{background:rgba(255,255,255,.06);color:#9db6d6}
+html[data-theme="navy"] .ttabs button.active{background:rgba(79,216,255,.15);color:var(--accent)}
+html[data-theme="navy"] .tscroll{background:rgba(10,18,32,.6)}
+html[data-theme="navy"] .tcard{background:rgba(255,255,255,.05);border-color:rgba(120,210,255,.25)}
+html[data-theme="navy"] .tcard.reag{background:rgba(124,92,255,.14);border-color:rgba(124,92,255,.4)}
+html[data-theme="navy"] .tcard .tname{color:var(--ink)}
+html[data-theme="navy"] .tcard .treag{color:#c8b8ff}
+html[data-theme="navy"] .card-ui{background:rgba(255,255,255,.05);border:1px solid rgba(120,210,255,.2);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);box-shadow:0 0 20px rgba(45,212,255,.08)}
+html[data-theme="navy"] .rxn{background:rgba(255,255,255,.04);border-color:rgba(120,210,255,.2)}
+html[data-theme="navy"] .cblock{background:rgba(255,255,255,.06);border-color:rgba(120,210,255,.25)}
+html[data-theme="navy"] .qblock{background:rgba(79,216,255,.12);border-color:var(--accent)}
+html[data-theme="navy"] .reagent-chip{background:rgba(124,92,255,.15);border-color:rgba(124,92,255,.4);color:#d6c8ff}
+html[data-theme="navy"] .choice{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .choice.correct{background:rgba(62,232,165,.15);border-color:var(--green)}
+html[data-theme="navy"] .choice.wrong{background:rgba(255,111,111,.15);border-color:var(--red)}
+html[data-theme="navy"] .eqbox{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
+html[data-theme="navy"] .explain.ok{background:rgba(62,232,165,.1);border-color:rgba(62,232,165,.4)}
+html[data-theme="navy"] .explain.ng{background:rgba(255,111,111,.1);border-color:rgba(255,111,111,.4)}
+html[data-theme="navy"] .explain .eq{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+html[data-theme="navy"] .scopebtns button,html[data-theme="navy"] .sortmini,html[data-theme="navy"] .deckbtn{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);color:var(--ink)}
+html[data-theme="navy"] .scopebtns button.sel,html[data-theme="navy"] .sortmini.sel{background:rgba(79,216,255,.15);border-color:var(--accent);color:var(--accent)}
+html[data-theme="navy"] .deckbtn.perfect{background:rgba(62,232,165,.12);border-color:var(--green)}
+html[data-theme="navy"] .bigbtn{background:linear-gradient(135deg,#2dd4ff,#7c5cff);color:#081018;box-shadow:0 0 20px rgba(45,212,255,.35)}
+html[data-theme="navy"] .bigbtn.secondary{background:rgba(255,255,255,.05);color:var(--accent);border-color:var(--accent)}
+html[data-theme="navy"] .bigbtn.amber{background:linear-gradient(135deg,#ffb145,#ff6f5f);color:#221206}
+html[data-theme="navy"] .bigbtn:disabled{background:rgba(255,255,255,.08);color:rgba(255,255,255,.3)}
+html[data-theme="navy"] .fixed-back{background:rgba(19,32,56,.92);border-color:var(--accent);color:var(--accent)}
+html[data-theme="navy"] .modal{background:rgba(2,6,14,.65)}
+html[data-theme="navy"] .sheet{background:rgba(16,26,46,.94);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(120,210,255,.2);color:var(--ink)}
+html[data-theme="navy"] .closex{background:rgba(255,255,255,.1);color:var(--ink)}
+html[data-theme="navy"] .modebadge{background:rgba(79,216,255,.15);border-color:rgba(79,216,255,.4);color:var(--accent)}
+html[data-theme="navy"] nav{background:rgba(10,17,30,.94);border-top:1px solid rgba(120,210,255,.2);backdrop-filter:blur(14px)}
+html[data-theme="navy"] nav button{color:#7f97b3}
+html[data-theme="navy"] #onboard .ob{background:rgba(16,26,46,.96);color:var(--ink)}
+html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rgba(120,210,255,.3)}
 </style>
 </head>
 <body>
@@ -248,6 +315,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
   <button id="btnReset">リセット</button>
+  <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
   <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
 </header>
 
@@ -323,11 +391,16 @@ nav button.active{color:var(--blue);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=7"></script>
+<script src="../shared/leaderboard.js?v=9"></script>
 <script>
 'use strict';
 LB.init('aromatic');
 document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+document.getElementById('themeBtn').onclick=()=>{
+  const next = document.documentElement.getAttribute('data-theme')==='navy' ? 'default' : 'navy';
+  localStorage.setItem('swTheme', next);
+  document.documentElement.setAttribute('data-theme', next);
+};
 LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(教材「有機化学学習の朋」準拠) ================= */
 const NW=150, NH=112;
