@@ -125,10 +125,20 @@ const LB = (function(){
   }
   function logout(){ return auth ? auth.signOut() : Promise.resolve(); }
 
+  const GAME_IDS = ['inorganic','aromatic','aliphatic'];
+  const CHAL_KINDS = ['score','time'];
   function updateNickname(nick){
     nick = (nick||'').trim().slice(0,12);
     if(!nick || !user) return Promise.reject('ニックネームを入力してください');
-    return db.ref('users/'+user.uid+'/nickname').set(nick).then(()=>{ user.nickname = nick; });
+    return db.ref('users/'+user.uid+'/nickname').set(nick).then(()=>{
+      user.nickname = nick;
+      const jobs = [];
+      GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
+        const ref = db.ref('leaderboard/'+gid+'/'+kind+'/'+user.uid);
+        jobs.push(ref.once('value').then(snap=>snap.exists()?ref.child('name').set(nick):null).catch(()=>null));
+      }));
+      return Promise.all(jobs);
+    });
   }
 
   function updateAvatar(dataUrl){
@@ -201,9 +211,9 @@ const LB = (function(){
     const rankLabel = i => i===0 ? '👑No.1👑' : i===1 ? '🥈2位' : i===2 ? '🥉3位' : (i+1)+'位';
     const rankClass = i => i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':'';
     return '<div class="lb-board">'
-      + '<div class="lb-row lb-head"><span class="lb-rank"></span><span class="lb-name">ユーザー名</span><span class="lb-correct">正解数</span><span class="lb-sec">タイム</span></div>'
+      + '<div class="lb-row lb-head"><span class="lb-rank">ランキング</span><span class="lb-name">ユーザー名</span><span class="lb-correct">正解数</span><span class="lb-sec">タイム</span><span class="lb-rk">ランク</span></div>'
       + entries.map((e,i)=>
-      `<div class="lb-row${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}"><span class="lb-rank">${rankLabel(i)}</span><span class="lb-name">${escapeHtml(e.name)}</span><span class="lb-correct">${e.correct}問</span><span class="lb-sec">${e.sec}秒</span></div>`
+      `<div class="lb-row${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}"><span class="lb-rank">${rankLabel(i)}</span><span class="lb-name">${escapeHtml(e.name)}</span><span class="lb-correct">${e.correct}問</span><span class="lb-sec">${e.sec}秒</span><span class="lb-rk">${escapeHtml(e.rank||'-')}</span></div>`
     ).join('') + '</div>';
   }
 
@@ -272,8 +282,12 @@ const LB = (function(){
       .lb-row-3rd .lb-rank{color:#9a4a1f}
       .lb-row-3rd .lb-name{color:#7c3f19}
       .lb-name{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .lb-correct{width:52px;color:#64748b;font-size:12px;flex:none;text-align:right}
-      .lb-sec{width:52px;color:#64748b;font-size:12px;flex:none;text-align:right}
+      .lb-correct{width:48px;color:#64748b;font-size:12px;flex:none;text-align:right}
+      .lb-sec{width:48px;color:#64748b;font-size:12px;flex:none;text-align:right}
+      .lb-rk{width:36px;color:#64748b;font-size:12px;font-weight:800;flex:none;text-align:right}
+      .lb-row-1st .lb-rk{color:#b45309}
+      .lb-row-2nd .lb-rk{color:#475569}
+      .lb-row-3rd .lb-rk{color:#9a4a1f}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
