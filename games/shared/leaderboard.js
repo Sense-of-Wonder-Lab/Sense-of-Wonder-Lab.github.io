@@ -240,8 +240,10 @@ const LB = (function(){
       return '<div class="lb-empty">まだ記録がありません。</div>';
     }
     return '<div class="lb-list">' + list.map((b,i)=>
-      `<div class="lb-pill lb-pill-self${rankClass(i)}">`
+      `<div class="lb-pill${rankClass(i)}">`
       + `<span class="lb-badge">${rankLabel(i)}</span>`
+      + `<span class="lb-avatar lb-avatar-fallback">🧪</span>`
+      + `<span class="lb-pill-name">自己ベスト</span>`
       + `<span class="lb-pill-stats"><b>${b.correct}</b>問<i>・</i><b>${b.sec}</b>秒<i>・</i><b>${escapeHtml(b.rank||'-')}</b></span>`
       + `</div>`
     ).join('') + '</div>';
@@ -299,23 +301,21 @@ const LB = (function(){
       .lb-btn-danger{background:none;color:#dc2626;border:none;font-size:12px;padding:8px 0;text-decoration:underline}
       .lb-board{margin-top:4px}
       .lb-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-      .lb-pill{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;background:#f8fafc;border:1px solid #e9edf2}
-      .lb-pill-self{justify-content:center}
-      .lb-badge{flex:none;height:26px;padding:0 10px;border-radius:999px;background:#e2e8f0;color:#64748b;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+      .lb-pill{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:999px;background:#f8fafc;border:1px solid #e9edf2}
+      .lb-badge{flex:none;min-width:52px;color:#64748b;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
       .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffdf3);border-color:#f4cf6a}
       .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fbfcfd);border-color:#c7d0db}
       .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fef8f4);border-color:#e6b483}
-      .lb-row-1st .lb-badge{background:#f5b93f;color:#5b3a00;font-size:15px}
-      .lb-row-2nd .lb-badge{background:#b9c3cf;color:#2c3644;font-size:15px}
-      .lb-row-3rd .lb-badge{background:#d9976a;color:#43220a;font-size:15px}
+      .lb-row-1st .lb-badge{color:#92400e;font-size:13px}
+      .lb-row-2nd .lb-badge{color:#334155;font-size:13px}
+      .lb-row-3rd .lb-badge{color:#7c3f19;font-size:13px}
       .lb-row-me{box-shadow:0 0 0 2px #60a5fa inset}
       .lb-avatar{flex:none;width:32px;height:32px;border-radius:50%;object-fit:cover}
       .lb-avatar-fallback{background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
-      .lb-pill-name{flex:1;font-weight:800;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lb-pill-name{flex:0 1 auto;min-width:0;max-width:42%;font-weight:800;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .lb-pill-stats{flex:none;font-size:12px;color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap}
       .lb-pill-stats b{font-size:13px;color:inherit;font-weight:800}
       .lb-pill-stats i{font-style:normal;opacity:.5;margin:0 1px}
-      .lb-pill-self .lb-pill-stats{font-size:13px}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
@@ -336,7 +336,10 @@ const LB = (function(){
       html[data-theme="navy"] .lb-btn-primary{background:linear-gradient(135deg,#2dd4ff,#7c5cff);color:#081018}
       html[data-theme="navy"] .lb-btn-secondary{background:rgba(255,255,255,.08);color:#9db6d6}
       html[data-theme="navy"] .lb-pill{background:rgba(255,255,255,.05);border-color:rgba(120,210,255,.2);color:#eaf6ff}
-      html[data-theme="navy"] .lb-badge{background:rgba(255,255,255,.1);color:#9db6d6}
+      html[data-theme="navy"] .lb-badge{color:#9db6d6}
+      html[data-theme="navy"] .lb-row-1st .lb-badge{color:#f5c15f}
+      html[data-theme="navy"] .lb-row-2nd .lb-badge{color:#c7d0db}
+      html[data-theme="navy"] .lb-row-3rd .lb-badge{color:#e6b483}
       html[data-theme="navy"] .lb-pill-stats{color:#9db6d6}
       html[data-theme="navy"] .lb-row-1st{background:linear-gradient(90deg,rgba(245,185,63,.25),rgba(255,255,255,.04));border-color:rgba(245,185,63,.5)}
       html[data-theme="navy"] .lb-row-2nd{background:linear-gradient(90deg,rgba(185,195,207,.22),rgba(255,255,255,.04));border-color:rgba(185,195,207,.4)}
