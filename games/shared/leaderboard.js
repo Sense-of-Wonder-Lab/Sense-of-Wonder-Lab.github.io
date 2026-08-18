@@ -33,6 +33,7 @@ const LB = (function(){
 
   function init(gid){
     gameId = gid;
+    ensureStyle();
     try{
       if(!window.firebase){console.warn('[LB] Firebase SDK not loaded');return;}
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
@@ -222,6 +223,7 @@ const LB = (function(){
   }
 
   function renderBoardHTML(entries, myUid){
+    ensureStyle();
     if(!entries || !entries.length){
       return '<div class="lb-empty">まだ登録者がいません。最初の1人になろう!</div>';
     }
@@ -236,6 +238,7 @@ const LB = (function(){
   }
 
   function renderSelfBestHTML(list){
+    ensureStyle();
     if(!list || !list.length){
       return '<div class="lb-empty">まだ記録がありません。</div>';
     }
