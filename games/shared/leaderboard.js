@@ -198,8 +198,12 @@ const LB = (function(){
     if(!entries || !entries.length){
       return '<div class="lb-empty">まだ登録者がいません。最初の1人になろう!</div>';
     }
-    return '<div class="lb-board">' + entries.map((e,i)=>
-      `<div class="lb-row${e.uid && e.uid===myUid?' lb-row-me':''}"><span class="lb-rank">${i+1}</span><span class="lb-name">${escapeHtml(e.name)}</span><span class="lb-score">正解${e.correct}問・${e.sec}秒</span></div>`
+    const rankLabel = i => i===0 ? '👑No.1👑' : i===1 ? '🥈2位' : i===2 ? '🥉3位' : (i+1)+'位';
+    const rankClass = i => i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':'';
+    return '<div class="lb-board">'
+      + '<div class="lb-row lb-head"><span class="lb-rank"></span><span class="lb-name">ユーザー名</span><span class="lb-correct">正解数</span><span class="lb-sec">タイム</span></div>'
+      + entries.map((e,i)=>
+      `<div class="lb-row${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}"><span class="lb-rank">${rankLabel(i)}</span><span class="lb-name">${escapeHtml(e.name)}</span><span class="lb-correct">${e.correct}問</span><span class="lb-sec">${e.sec}秒</span></div>`
     ).join('') + '</div>';
   }
 
@@ -254,11 +258,22 @@ const LB = (function(){
       .lb-btn-secondary{background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 14px;font-size:13.5px}
       .lb-btn-danger{background:none;color:#dc2626;border:none;font-size:12px;padding:8px 0;text-decoration:underline}
       .lb-board{margin-top:4px}
-      .lb-row{display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid #f1f5f9;font-size:13px}
+      .lb-row{display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #f1f5f9;font-size:13px}
+      .lb-head{color:#94a3b8;font-size:11px;font-weight:700;border-bottom:2px solid #e2e8f0}
       .lb-row-me{background:#eff6ff;border-radius:8px}
-      .lb-rank{width:22px;font-weight:800;color:#64748b;flex:none}
+      .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffbeb 70%);border-radius:8px;font-weight:800;box-shadow:inset 0 0 0 1px #fbbf24}
+      .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fff 70%);border-radius:8px;font-weight:700;box-shadow:inset 0 0 0 1px #cbd5e1}
+      .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fff 70%);border-radius:8px;font-weight:700;box-shadow:inset 0 0 0 1px #d9976a}
+      .lb-rank{width:64px;font-weight:800;color:#64748b;flex:none;font-size:12px}
+      .lb-row-1st .lb-rank{color:#b45309;font-size:12.5px;text-shadow:0 0 6px rgba(251,191,36,.5)}
+      .lb-row-1st .lb-name{color:#92400e}
+      .lb-row-2nd .lb-rank{color:#475569}
+      .lb-row-2nd .lb-name{color:#334155}
+      .lb-row-3rd .lb-rank{color:#9a4a1f}
+      .lb-row-3rd .lb-name{color:#7c3f19}
       .lb-name{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .lb-score{color:#64748b;font-size:12px;flex:none}
+      .lb-correct{width:52px;color:#64748b;font-size:12px;flex:none;text-align:right}
+      .lb-sec{width:52px;color:#64748b;font-size:12px;flex:none;text-align:right}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
