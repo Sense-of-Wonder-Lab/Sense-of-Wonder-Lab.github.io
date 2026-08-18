@@ -143,7 +143,15 @@ const LB = (function(){
 
   function updateAvatar(dataUrl){
     if(!user) return Promise.reject('未ログインです');
-    return db.ref('users/'+user.uid+'/avatar').set(dataUrl).then(()=>{ user.avatar = dataUrl; });
+    return db.ref('users/'+user.uid+'/avatar').set(dataUrl).then(()=>{
+      user.avatar = dataUrl;
+      const jobs = [];
+      GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
+        const ref = db.ref('leaderboard/'+gid+'/'+kind+'/'+user.uid);
+        jobs.push(ref.once('value').then(snap=>snap.exists()?ref.child('avatar').set(dataUrl):null).catch(()=>null));
+      }));
+      return Promise.all(jobs);
+    });
   }
   function resizeImageToDataUrl(file, size){
     return new Promise((resolve,reject)=>{
@@ -184,7 +192,7 @@ const LB = (function(){
         console.warn('[LB] submitScore: existing score is not worse, skipped', cur, {correct,sec});
         return false;
       }
-      return ref.set({name:user.nickname, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>true);
+      return ref.set({name:user.nickname, avatar:user.avatar||null, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>true);
     }).catch(err=>{ console.warn('[LB] submitScore failed', err); return false; });
   }
 
@@ -204,17 +212,47 @@ const LB = (function(){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  function rankLabel(i){ return i===0 ? '👑No.1👑' : i===1 ? '🥈2位' : i===2 ? '🥉3位' : (i+1)+'位'; }
+  function rankClass(i){ return i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':''; }
+  function avatarHtml(avatar, name){
+    return avatar
+      ? `<img class="lb-avatar" src="${avatar}">`
+      : `<span class="lb-avatar lb-avatar-fallback">${escapeHtml((name||'?')[0])}</span>`;
+  }
+
   function renderBoardHTML(entries, myUid){
     if(!entries || !entries.length){
       return '<div class="lb-empty">まだ登録者がいません。最初の1人になろう!</div>';
     }
-    const rankLabel = i => i===0 ? '👑No.1👑' : i===1 ? '🥈2位' : i===2 ? '🥉3位' : (i+1)+'位';
-    const rankClass = i => i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':'';
-    return '<div class="lb-board">'
-      + '<div class="lb-row lb-head"><span class="lb-rank">ランキング</span><span class="lb-name">ユーザー名</span><span class="lb-correct">正解数</span><span class="lb-sec">タイム</span><span class="lb-rk">ランク</span></div>'
+    return '<table class="lb-table"><thead><tr>'
+      + '<th class="lb-c-rank">ランキング</th><th class="lb-c-user">ユーザー名</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
+      + '</tr></thead><tbody>'
       + entries.map((e,i)=>
-      `<div class="lb-row${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}"><span class="lb-rank">${rankLabel(i)}</span><span class="lb-name">${escapeHtml(e.name)}</span><span class="lb-correct">${e.correct}問</span><span class="lb-sec">${e.sec}秒</span><span class="lb-rk">${escapeHtml(e.rank||'-')}</span></div>`
-    ).join('') + '</div>';
+        `<tr class="${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}">`
+        + `<td class="lb-c-rank">${rankLabel(i)}</td>`
+        + `<td class="lb-c-user"><span class="lb-user-inner">${avatarHtml(e.avatar, e.name)}<span class="lb-uname">${escapeHtml(e.name)}</span></span></td>`
+        + `<td class="lb-c-num">${e.correct}問</td>`
+        + `<td class="lb-c-num">${e.sec}秒</td>`
+        + `<td class="lb-c-num">${escapeHtml(e.rank||'-')}</td>`
+        + `</tr>`
+      ).join('') + '</tbody></table>';
+  }
+
+  function renderSelfBestHTML(list){
+    if(!list || !list.length){
+      return '<div class="lb-empty">まだ記録がありません。</div>';
+    }
+    return '<table class="lb-table lb-self-table"><thead><tr>'
+      + '<th class="lb-c-rank">順位</th><th class="lb-c-num">正解数</th><th class="lb-c-num">タイム</th><th class="lb-c-num">ランク</th>'
+      + '</tr></thead><tbody>'
+      + list.map((b,i)=>
+        `<tr class="${rankClass(i)}">`
+        + `<td class="lb-c-rank">${rankLabel(i)}</td>`
+        + `<td class="lb-c-num">${b.correct}問</td>`
+        + `<td class="lb-c-num">${b.sec}秒</td>`
+        + `<td class="lb-c-num">${escapeHtml(b.rank||'-')}</td>`
+        + `</tr>`
+      ).join('') + '</tbody></table>';
   }
 
   /* ---------- 進捗データのクラウド同期 ---------- */
@@ -268,26 +306,27 @@ const LB = (function(){
       .lb-btn-secondary{background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 14px;font-size:13.5px}
       .lb-btn-danger{background:none;color:#dc2626;border:none;font-size:12px;padding:8px 0;text-decoration:underline}
       .lb-board{margin-top:4px}
-      .lb-row{display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #f1f5f9;font-size:13px}
-      .lb-head{color:#94a3b8;font-size:11px;font-weight:700;border-bottom:2px solid #e2e8f0}
-      .lb-row-me{background:#eff6ff;border-radius:8px}
-      .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffbeb 70%);border-radius:8px;font-weight:800;box-shadow:inset 0 0 0 1px #fbbf24}
-      .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fff 70%);border-radius:8px;font-weight:700;box-shadow:inset 0 0 0 1px #cbd5e1}
-      .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fff 70%);border-radius:8px;font-weight:700;box-shadow:inset 0 0 0 1px #d9976a}
-      .lb-rank{width:64px;font-weight:800;color:#64748b;flex:none;font-size:12px}
-      .lb-row-1st .lb-rank{color:#b45309;font-size:12.5px;text-shadow:0 0 6px rgba(251,191,36,.5)}
-      .lb-row-1st .lb-name{color:#92400e}
-      .lb-row-2nd .lb-rank{color:#475569}
-      .lb-row-2nd .lb-name{color:#334155}
-      .lb-row-3rd .lb-rank{color:#9a4a1f}
-      .lb-row-3rd .lb-name{color:#7c3f19}
-      .lb-name{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .lb-correct{width:48px;color:#64748b;font-size:12px;flex:none;text-align:right}
-      .lb-sec{width:48px;color:#64748b;font-size:12px;flex:none;text-align:right}
-      .lb-rk{width:36px;color:#64748b;font-size:12px;font-weight:800;flex:none;text-align:right}
-      .lb-row-1st .lb-rk{color:#b45309}
-      .lb-row-2nd .lb-rk{color:#475569}
-      .lb-row-3rd .lb-rk{color:#9a4a1f}
+      .lb-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;margin-top:8px}
+      .lb-table th,.lb-table td{border:1px solid #e2e8f0;padding:9px 8px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .lb-table thead th{background:#f8fafc;color:#94a3b8;font-size:11px;font-weight:700;border-top:1px solid #e2e8f0}
+      .lb-c-rank{width:30%;text-align:left!important;font-weight:800;color:#64748b;font-size:12px}
+      .lb-c-user{width:26%;text-align:left!important}
+      .lb-c-num{width:auto;color:#64748b;font-size:12px}
+      .lb-self-table .lb-c-rank{width:34%}
+      .lb-row-me{background:#eff6ff}
+      .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffbeb 70%);font-weight:800}
+      .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fff 70%);font-weight:700}
+      .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fff 70%);font-weight:700}
+      .lb-row-1st td{color:#92400e}
+      .lb-row-1st .lb-c-rank{color:#b45309;text-shadow:0 0 6px rgba(251,191,36,.5)}
+      .lb-row-2nd td{color:#334155}
+      .lb-row-2nd .lb-c-rank{color:#475569}
+      .lb-row-3rd td{color:#7c3f19}
+      .lb-row-3rd .lb-c-rank{color:#9a4a1f}
+      .lb-user-inner{display:flex;align-items:center;gap:6px;overflow:hidden}
+      .lb-avatar{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}
+      .lb-avatar-fallback{background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+      .lb-uname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
@@ -404,7 +443,7 @@ const LB = (function(){
 
   return {
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
-    submitScore, fetchTop, renderBoardHTML,
+    submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
     openAccountModal, ensureStyle
   };
