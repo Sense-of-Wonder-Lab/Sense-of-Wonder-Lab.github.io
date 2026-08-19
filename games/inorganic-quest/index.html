@@ -4040,7 +4040,7 @@ function renderMemoQ(el,it,onDone,progressText){
       let advanced=false;
       const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok);};
       nb.onclick=advance;
-      if(state.answerAuto)setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
+      if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
     });
   });
 }
@@ -4074,6 +4074,8 @@ const infoModal=document.getElementById('infoModal');
 const infoSheet=document.getElementById('infoSheet');
 infoModal.addEventListener('click',e=>{if(e.target===infoModal)infoModal.classList.remove('open');});
 let catDrill=null;
+let memoAdvanceTimer=null;
+function memoClearAdvanceTimer(){ if(memoAdvanceTimer){clearTimeout(memoAdvanceTimer);memoAdvanceTimer=null;} }
 function catStats(cat){
   return state.catStats[cat]||null;
 }
@@ -4091,6 +4093,7 @@ function sortedCategories(){
   return arr.map(x=>x.c);
 }
 function renderHome(){
+  memoClearAdvanceTimer();
   let list='';
   for(const c of sortedCategories()){
     const s=catStats(c.name);
@@ -4133,6 +4136,7 @@ function renderHome(){
   });
 }
 function startCatDrill(cat,mode){
+  memoClearAdvanceTimer();
   const ip=state.inProgress[cat];
   if(ip&&!mode){
     homePanel.innerHTML=`<div class="card-ui" style="text-align:center">
@@ -4155,6 +4159,7 @@ function startCatDrill(cat,mode){
   nextCatQ();
 }
 function catResult(){
+  memoClearAdvanceTimer();
   const correct=catDrill.results.filter(x=>x.ok).length;
   const total=catDrill.results.length;
   const pct=Math.round(100*correct/total);
@@ -4188,11 +4193,13 @@ function nextCatQ(){
   const it=catDrill.its[catDrill.i];
   homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← 単元選択</button>';
   document.getElementById('catBack').onclick=()=>{
+    memoClearAdvanceTimer();
     state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results};
     save();
     catDrill=null; renderHome();
   };
   renderMemoQ(document.getElementById('cdq'),it,ok=>{
+    memoAdvanceTimer=null;
     catDrill.results.push({it,ok});
     if(ok)markMastered(it.id);
     else{state.weak[it.id]=2;save();updateWeakBadge();}

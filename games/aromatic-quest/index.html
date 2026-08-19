@@ -1678,6 +1678,8 @@ function nextDrillQ(){
 /* ================= 暗記モード ================= */
 const memoPanel=document.getElementById('memoPanel');
 let memoQuiz=null;
+let memoAdvanceTimer=null;
+function memoClearAdvanceTimer(){ if(memoAdvanceTimer){clearTimeout(memoAdvanceTimer);memoAdvanceTimer=null;} }
 function memoImgSrc(fname){return 'assets/memo/'+encodeURIComponent(fname);}
 function memoHeaderUpdate(sub){
   const t=document.getElementById('hdrTitle');
@@ -1749,7 +1751,7 @@ function renderMemoQ(el,item,onDone,progressText){
       let advanced=false;
       const advance=()=>{if(advanced)return;advanced=true;onDone(o.ok);};
       nb.onclick=advance;
-      if(state.answerAuto)setTimeout(advance,ANSWER_FX_DURATION+(o.ok?0:1000));
+      if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(o.ok?0:1000));
     });
   });
 }
@@ -1771,6 +1773,7 @@ function sortedMemoDecks(){
   return arr.map(x=>x.d);
 }
 function renderMemoHome(){
+  memoClearAdvanceTimer();
   memoHeaderUpdate('セットを選んでください');
   setMemoFxVisible(false);
   let list='';
@@ -1832,6 +1835,7 @@ function startMemoQuiz(deckId,mode){
     document.getElementById('chooseBack').onclick=()=>renderMemoHome();
     return;
   }
+  memoClearAdvanceTimer();
   const deck=MEMO_DECKS.find(d=>d.id===deckId);
   if(mode==='resume'){
     memoQuiz={deck,order:ip.order,i:ip.i,results:ip.results};
@@ -1853,11 +1857,13 @@ function nextMemoQ(){
   setMemoFxVisible(true);
   memoPanel.innerHTML='<div id="mq"></div><button class="fixed-back" id="memoBackBtn">↩ セット選択</button>';
   document.getElementById('memoBackBtn').onclick=()=>{
+    memoClearAdvanceTimer();
     state.memoInProgress[memoQuiz.deck.id]={order:memoQuiz.order,i:memoQuiz.i,results:memoQuiz.results};
     save();
     memoQuiz=null; renderMemoHome();
   };
   renderMemoQ(document.getElementById('mq'),item,ok=>{
+    memoAdvanceTimer=null;
     memoQuiz.results.push({item,ok});
     if(!ok){state.weak[key]=2;save();updateWeakBadge();}
     memoQuiz.i++; nextMemoQ();
@@ -1889,6 +1895,7 @@ function reviewRetry(item){
   });
 }
 function memoQuizResult(){
+  memoClearAdvanceTimer();
   const correct=memoQuiz.results.filter(x=>x.ok).length;
   const total=memoQuiz.results.length;
   const pct=Math.round(100*correct/total);
