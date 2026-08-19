@@ -393,11 +393,18 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=18"></script>
+<script src="../shared/leaderboard.js?v=19"></script>
 <script>
 'use strict';
 LB.init('aromatic');
 document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+LB.onAuth(u=>{
+  const btn = document.getElementById('accountBtn');
+  if(!btn) return;
+  if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
+  else if(u) btn.textContent = (u.nickname||'?')[0];
+  else btn.textContent = '👤';
+});
 document.getElementById('themeBtn').onclick=()=>{
   const next = document.documentElement.getAttribute('data-theme')==='navy' ? 'default' : 'navy';
   localStorage.setItem('swTheme', next);

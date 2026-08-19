@@ -161,11 +161,18 @@ nav button.active{color:var(--blue);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=18"></script>
+<script src="../shared/leaderboard.js?v=19"></script>
 <script>
 'use strict';
 LB.init('inorganic');
 document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+LB.onAuth(u=>{
+  const btn = document.getElementById('accountBtn');
+  if(!btn) return;
+  if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
+  else if(u) btn.textContent = (u.nickname||'?')[0];
+  else btn.textContent = '👤';
+});
 LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(MONOXER「無機」教材準拠) ================= */
 const DATA = {

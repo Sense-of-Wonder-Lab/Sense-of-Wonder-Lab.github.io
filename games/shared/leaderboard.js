@@ -351,7 +351,8 @@ const LB = (function(){
       .lb-account-email{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .lb-field-label{font-size:11.5px;color:#64748b;font-weight:700;margin-bottom:4px}
       .lb-terms-link{font-size:12px;color:#2563eb;display:block;margin-top:12px;text-align:center}
-      .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center}
+      .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
+      .accountBtn img{width:100%;height:100%;object-fit:cover;display:block}
       .lb-toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:88vw;text-align:center;transition:opacity .3s}
       /* ---- 深海ラボ・ネイビーテーマ ---- */
       html[data-theme="navy"] .lb-modal-wrap{background:rgba(2,6,14,.65)}
@@ -447,7 +448,7 @@ const LB = (function(){
         btn.disabled = true; btn.textContent = '保存中…';
         const tasks = [updateNickname(wrap.querySelector('#lbNick').value)];
         if(pendingAvatar) tasks.push(updateAvatar(pendingAvatar));
-        Promise.all(tasks).then(close).catch(err=>{
+        Promise.all(tasks).then(()=>{ authListeners.forEach(cb=>cb(user)); close(); }).catch(err=>{
           btn.disabled = false; btn.textContent = '保存';
           errBox.style.color = '';
           errBox.textContent = err && err.message ? err.message : String(err);
