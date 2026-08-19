@@ -229,11 +229,12 @@ const LB = (function(){
       : `<span class="lb-avatar lb-avatar-fallback">${escapeHtml((name||'?')[0])}</span>`;
   }
 
-  function renderBoardHTML(entries, myUid){
+  function renderBoardHTML(entries, myUid, kind){
     ensureStyle();
     if(!entries || !entries.length){
       return '<div class="lb-empty">まだ登録者がいません。最初の1人になろう!</div>';
     }
+    const showSec = kind!=='time';
     return '<div class="lb-list">' + entries.map((e,i)=>
       `<div class="lb-pill${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}">`
       + `<span class="lb-badge">${rankBadge(i)}</span>`
@@ -241,20 +242,21 @@ const LB = (function(){
       + `<span class="lb-pill-name">${escapeHtml(e.name)}</span>`
       + `<span class="lb-pill-stats">`
       +   `<span class="lb-stat"><b>${e.correct}</b><small>問</small></span>`
-      +   `<span class="lb-stat"><b>${e.sec}</b><small>秒</small></span>`
+      +   (showSec?`<span class="lb-stat"><b>${e.sec}</b><small>秒</small></span>`:'')
       +   `<span class="lb-grade">${escapeHtml(e.rank||'-')}</span>`
       + `</span>`
       + `</div>`
     ).join('') + '</div>';
   }
 
-  function renderSelfBestHTML(list){
+  function renderSelfBestHTML(list, kind){
     ensureStyle();
     if(!list || !list.length){
       return '<div class="lb-empty">まだ記録がありません。</div>';
     }
     const myName = (user && user.nickname) || '自己ベスト';
     const myAvatar = user && user.avatar;
+    const showSec = kind!=='time';
     return '<div class="lb-list">' + list.map((b,i)=>
       `<div class="lb-pill${rankClass(i)}">`
       + `<span class="lb-badge">${rankBadge(i)}</span>`
@@ -262,7 +264,7 @@ const LB = (function(){
       + `<span class="lb-pill-name">${escapeHtml(myName)}</span>`
       + `<span class="lb-pill-stats">`
       +   `<span class="lb-stat"><b>${b.correct}</b><small>問</small></span>`
-      +   `<span class="lb-stat"><b>${b.sec}</b><small>秒</small></span>`
+      +   (showSec?`<span class="lb-stat"><b>${b.sec}</b><small>秒</small></span>`:'')
       +   `<span class="lb-grade">${escapeHtml(b.rank||'-')}</span>`
       + `</span>`
       + `</div>`
