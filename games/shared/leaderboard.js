@@ -128,17 +128,25 @@ const LB = (function(){
 
   const GAME_IDS = ['inorganic','aromatic','aliphatic'];
   const CHAL_KINDS = ['score','time'];
+  function propagateField(field, value){
+    const jobs = [];
+    GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
+      const ref = db.ref('leaderboard/'+gid+'/'+kind+'/'+user.uid);
+      jobs.push(
+        ref.once('value').then(snap=>{
+          if(!snap.exists()){ console.warn('[LB] propagate '+field+' skip(no entry)', gid, kind); return null; }
+          return ref.child(field).set(value).then(()=>console.warn('[LB] propagate '+field+' ok', gid, kind));
+        }).catch(err=>console.warn('[LB] propagate '+field+' FAILED', gid, kind, err))
+      );
+    }));
+    return Promise.all(jobs);
+  }
   function updateNickname(nick){
     nick = (nick||'').trim().slice(0,12);
     if(!nick || !user) return Promise.reject('ニックネームを入力してください');
     return db.ref('users/'+user.uid+'/nickname').set(nick).then(()=>{
       user.nickname = nick;
-      const jobs = [];
-      GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
-        const ref = db.ref('leaderboard/'+gid+'/'+kind+'/'+user.uid);
-        jobs.push(ref.once('value').then(snap=>snap.exists()?ref.child('name').set(nick):null).catch(()=>null));
-      }));
-      return Promise.all(jobs);
+      return propagateField('name', nick);
     });
   }
 
@@ -146,12 +154,7 @@ const LB = (function(){
     if(!user) return Promise.reject('未ログインです');
     return db.ref('users/'+user.uid+'/avatar').set(dataUrl).then(()=>{
       user.avatar = dataUrl;
-      const jobs = [];
-      GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
-        const ref = db.ref('leaderboard/'+gid+'/'+kind+'/'+user.uid);
-        jobs.push(ref.once('value').then(snap=>snap.exists()?ref.child('avatar').set(dataUrl):null).catch(err=>console.warn('[LB] avatar propagate failed', gid, kind, err)));
-      }));
-      return Promise.all(jobs);
+      return propagateField('avatar', dataUrl);
     }).catch(err=>{ console.warn('[LB] updateAvatar failed', err); throw err; });
   }
   function resizeImageToDataUrl(file, size){
