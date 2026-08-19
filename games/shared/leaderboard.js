@@ -250,11 +250,13 @@ const LB = (function(){
     if(!list || !list.length){
       return '<div class="lb-empty">まだ記録がありません。</div>';
     }
+    const myName = (user && user.nickname) || '自己ベスト';
+    const myAvatar = user && user.avatar;
     return '<div class="lb-list">' + list.map((b,i)=>
       `<div class="lb-pill${rankClass(i)}">`
       + `<span class="lb-badge">${rankBadge(i)}</span>`
-      + `<span class="lb-avatar lb-avatar-fallback">🧪</span>`
-      + `<span class="lb-pill-name">自己ベスト</span>`
+      + avatarHtml(myAvatar, myName)
+      + `<span class="lb-pill-name">${escapeHtml(myName)}</span>`
       + `<span class="lb-pill-stats">`
       +   `<span class="lb-stat"><b>${b.correct}</b><small>問</small></span>`
       +   `<span class="lb-stat"><b>${b.sec}</b><small>秒</small></span>`

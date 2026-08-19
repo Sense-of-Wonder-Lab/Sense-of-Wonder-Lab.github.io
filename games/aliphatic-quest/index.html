@@ -323,7 +323,7 @@ nav button.active{color:var(--blue);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=16"></script>
+<script src="../shared/leaderboard.js?v=17"></script>
 <script>
 'use strict';
 LB.init('aliphatic');
@@ -1465,8 +1465,8 @@ function renderChallengeHome(){
       <div style="font-size:13.5px;line-height:1.8;margin-top:10px">${CHAL_DESC[chalKind]}</div>
       <button class="bigbtn" id="chalStart">スタート!</button>
     </div>
-    ${list.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(list)}</div>`:''}
-    <div class="card-ui" id="lbBox"></div>`;
+    <div class="card-ui" id="lbBox"></div>
+    ${list.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(list)}</div>`:''}`;
   document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
   document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
   document.getElementById('chalStart').onclick=startChallenge;
