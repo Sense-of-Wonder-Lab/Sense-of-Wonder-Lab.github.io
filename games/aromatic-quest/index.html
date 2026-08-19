@@ -252,6 +252,7 @@ html[data-theme="navy"] .edge-label{fill:#9db6d6}
 html[data-theme="navy"] .edge-q-circle{fill:rgba(19,32,56,.92)}
 html[data-theme="navy"] .node-start .node-card{fill:rgba(79,216,255,.15);stroke:#4fd8ff}
 html[data-theme="navy"] image[href*="assets/compounds/"]{filter:invert(1) hue-rotate(180deg)}
+html[data-theme="navy"] image.lb-inv-fix{filter:invert(1) hue-rotate(180deg)}
 html[data-theme="navy"] .node-locked .node-card{fill:rgba(255,255,255,.03);stroke:#3a577f}
 html[data-theme="navy"] .node-slot .node-card{fill:rgba(255,177,69,.12);stroke:#ffb145}
 html[data-theme="navy"] .node-slot .qmark{fill:#ffb145}
@@ -808,7 +809,10 @@ function fixOpaqueBgImages(root){
       const match=OPAQUE_BG_IMGS.find(f=>href.endsWith(f));
       if(!match||el.dataset.bgFixed) return;
       el.dataset.bgFixed='1';
-      makeTransparentDataUrl(href).then(url=>el.setAttribute('href',url));
+      makeTransparentDataUrl(href).then(url=>{
+        el.setAttribute('href',url);
+        el.classList.add('lb-inv-fix');
+      });
     });
   });
 }
