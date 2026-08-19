@@ -149,10 +149,10 @@ const LB = (function(){
       const jobs = [];
       GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
         const ref = db.ref('leaderboard/'+gid+'/'+kind+'/'+user.uid);
-        jobs.push(ref.once('value').then(snap=>snap.exists()?ref.child('avatar').set(dataUrl):null).catch(()=>null));
+        jobs.push(ref.once('value').then(snap=>snap.exists()?ref.child('avatar').set(dataUrl):null).catch(err=>console.warn('[LB] avatar propagate failed', gid, kind, err)));
       }));
       return Promise.all(jobs);
-    });
+    }).catch(err=>{ console.warn('[LB] updateAvatar failed', err); throw err; });
   }
   function resizeImageToDataUrl(file, size){
     return new Promise((resolve,reject)=>{
@@ -433,16 +433,34 @@ const LB = (function(){
         <button id="lbDelete" class="lb-btn-danger">アカウント削除</button>
       </div>
     `, (wrap, close)=>{
+      let pendingAvatar = null;
       wrap.querySelector('#lbCancel').onclick = close;
       wrap.querySelector('#lbSave').onclick = ()=>{
-        updateNickname(wrap.querySelector('#lbNick').value).then(close)
-          .catch(msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
+        const btn = wrap.querySelector('#lbSave');
+        const errBox = wrap.querySelector('#lbErr');
+        errBox.textContent = ''; errBox.style.color = '';
+        btn.disabled = true; btn.textContent = '保存中…';
+        const tasks = [updateNickname(wrap.querySelector('#lbNick').value)];
+        if(pendingAvatar) tasks.push(updateAvatar(pendingAvatar));
+        Promise.all(tasks).then(close).catch(err=>{
+          btn.disabled = false; btn.textContent = '保存';
+          errBox.style.color = '';
+          errBox.textContent = err && err.message ? err.message : String(err);
+        });
       };
       wrap.querySelector('#lbAvatarInput').onchange = e=>{
         const f = e.target.files[0];
         if(!f) return;
-        resizeImageToDataUrl(f,120).then(updateAvatar).then(()=>{ close(); openAccountPanel(); })
-          .catch(err=>{ wrap.querySelector('#lbErr').textContent = err && err.message ? err.message : String(err); });
+        resizeImageToDataUrl(f,120).then(dataUrl=>{
+          pendingAvatar = dataUrl;
+          const img = document.createElement('img');
+          img.className = 'lb-account-avatar';
+          img.src = dataUrl;
+          wrap.querySelector('.lb-account-avatar').replaceWith(img);
+          const errBox = wrap.querySelector('#lbErr');
+          errBox.textContent = '「保存」を押すと反映されます';
+          errBox.style.color = '#64748b';
+        }).catch(err=>{ wrap.querySelector('#lbErr').textContent = err && err.message ? err.message : String(err); });
       };
       wrap.querySelector('#lbLogout').onclick = ()=>{ logout().then(close); };
       wrap.querySelector('#lbDelete').onclick = ()=>{

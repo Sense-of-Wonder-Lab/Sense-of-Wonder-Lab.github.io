@@ -392,7 +392,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=15"></script>
+<script src="../shared/leaderboard.js?v=16"></script>
 <script>
 'use strict';
 LB.init('aromatic');
@@ -401,6 +401,7 @@ document.getElementById('themeBtn').onclick=()=>{
   const next = document.documentElement.getAttribute('data-theme')==='navy' ? 'default' : 'navy';
   localStorage.setItem('swTheme', next);
   document.documentElement.setAttribute('data-theme', next);
+  if(next==='navy') fixOpaqueBgImages(document);
 };
 LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(教材「有機化学学習の朋」準拠) ================= */
@@ -770,6 +771,51 @@ function compoundHTML(id,big){
   const w=big?130:106, h=big?92:76;
   return `<div class="cblock"><svg viewBox="${-w/2} ${-h/2} ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${structFit(id,w-8,h-6)}</svg><div class="cname">${COMPOUNDS[id].name}</div></div>`;
 }
+
+/* ネイビーテーマ用: 背景が不透明白のPNG/JPGは反転フィルターで黒塗りになるため、
+   白背景を透明化したデータURLに差し替える(遅延・キャッシュ付き) */
+const OPAQUE_BG_IMGS=['phenylacetate.png','salicylNa.png','maleicAnh.png','acetone.jpg'];
+const transparentImgCache={};
+function makeTransparentDataUrl(src){
+  if(transparentImgCache[src]) return transparentImgCache[src];
+  const p=new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      c.width=img.naturalWidth; c.height=img.naturalHeight;
+      const ctx=c.getContext('2d');
+      ctx.drawImage(img,0,0);
+      const id=ctx.getImageData(0,0,c.width,c.height);
+      const d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        if(d[i]>230&&d[i+1]>230&&d[i+2]>230) d[i+3]=0;
+      }
+      ctx.putImageData(id,0,0);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror=()=>resolve(src);
+    img.src=src;
+  });
+  transparentImgCache[src]=p;
+  return p;
+}
+function fixOpaqueBgImages(root){
+  if(document.documentElement.getAttribute('data-theme')!=='navy') return;
+  (root instanceof Element ? [root] : [document]).forEach(scope=>{
+    const els = scope.matches && scope.matches('image') ? [scope] : scope.querySelectorAll ? scope.querySelectorAll('image') : [];
+    els.forEach(el=>{
+      const href=el.getAttribute('href')||'';
+      const match=OPAQUE_BG_IMGS.find(f=>href.endsWith(f));
+      if(!match||el.dataset.bgFixed) return;
+      el.dataset.bgFixed='1';
+      makeTransparentDataUrl(href).then(url=>el.setAttribute('href',url));
+    });
+  });
+}
+new MutationObserver(muts=>{
+  if(document.documentElement.getAttribute('data-theme')!=='navy') return;
+  muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1) fixOpaqueBgImages(n); }));
+}).observe(document.body, {childList:true, subtree:true});
 
 /* ================= 状態 ================= */
 let state={comp:[],reag:[],weak:{},seen:false,bestList:{score:[],time:[]},mode:'normal',memoScores:{},memoInProgress:{}};
