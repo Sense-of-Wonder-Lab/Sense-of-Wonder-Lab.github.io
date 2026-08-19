@@ -214,7 +214,11 @@ const LB = (function(){
   }
 
   function rankMedal(i){ return i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : '🔵'; }
-  function rankLabel(i){ return rankMedal(i)+' No.'+(i+1); }
+  function rankBadge(i){
+    return i<3
+      ? `<span class="lb-medal">${rankMedal(i)}</span>`
+      : `<span class="lb-rankn">${i+1}</span>`;
+  }
   function rankClass(i){ return i===0?' lb-row-1st':i===1?' lb-row-2nd':i===2?' lb-row-3rd':''; }
   function avatarHtml(avatar, name){
     return avatar
@@ -229,10 +233,14 @@ const LB = (function(){
     }
     return '<div class="lb-list">' + entries.map((e,i)=>
       `<div class="lb-pill${rankClass(i)}${e.uid && e.uid===myUid?' lb-row-me':''}">`
-      + `<span class="lb-badge">${rankLabel(i)}</span>`
+      + `<span class="lb-badge">${rankBadge(i)}</span>`
       + avatarHtml(e.avatar, e.name)
       + `<span class="lb-pill-name">${escapeHtml(e.name)}</span>`
-      + `<span class="lb-pill-stats"><b>${e.correct}</b>問<i>・</i><b>${e.sec}</b>秒<i>・</i><b>${escapeHtml(e.rank||'-')}</b></span>`
+      + `<span class="lb-pill-stats">`
+      +   `<span class="lb-stat"><b>${e.correct}</b><small>問</small></span>`
+      +   `<span class="lb-stat"><b>${e.sec}</b><small>秒</small></span>`
+      +   `<span class="lb-grade">${escapeHtml(e.rank||'-')}</span>`
+      + `</span>`
       + `</div>`
     ).join('') + '</div>';
   }
@@ -244,10 +252,14 @@ const LB = (function(){
     }
     return '<div class="lb-list">' + list.map((b,i)=>
       `<div class="lb-pill${rankClass(i)}">`
-      + `<span class="lb-badge">${rankLabel(i)}</span>`
+      + `<span class="lb-badge">${rankBadge(i)}</span>`
       + `<span class="lb-avatar lb-avatar-fallback">🧪</span>`
       + `<span class="lb-pill-name">自己ベスト</span>`
-      + `<span class="lb-pill-stats"><b>${b.correct}</b>問<i>・</i><b>${b.sec}</b>秒<i>・</i><b>${escapeHtml(b.rank||'-')}</b></span>`
+      + `<span class="lb-pill-stats">`
+      +   `<span class="lb-stat"><b>${b.correct}</b><small>問</small></span>`
+      +   `<span class="lb-stat"><b>${b.sec}</b><small>秒</small></span>`
+      +   `<span class="lb-grade">${escapeHtml(b.rank||'-')}</span>`
+      + `</span>`
       + `</div>`
     ).join('') + '</div>';
   }
@@ -303,22 +315,27 @@ const LB = (function(){
       .lb-btn-secondary{background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 14px;font-size:13.5px}
       .lb-btn-danger{background:none;color:#dc2626;border:none;font-size:12px;padding:8px 0;text-decoration:underline}
       .lb-board{margin-top:4px}
-      .lb-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-      .lb-pill{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:999px;background:#f8fafc;border:1px solid #e9edf2}
-      .lb-badge{flex:none;min-width:52px;color:#64748b;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
-      .lb-row-1st{background:linear-gradient(90deg,#fff3c4,#fffdf3);border-color:#f4cf6a}
-      .lb-row-2nd{background:linear-gradient(90deg,#eef1f5,#fbfcfd);border-color:#c7d0db}
-      .lb-row-3rd{background:linear-gradient(90deg,#fdece0,#fef8f4);border-color:#e6b483}
-      .lb-row-1st .lb-badge{color:#92400e;font-size:13px}
-      .lb-row-2nd .lb-badge{color:#334155;font-size:13px}
-      .lb-row-3rd .lb-badge{color:#7c3f19;font-size:13px}
+      .lb-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+      .lb-pill{display:grid;grid-template-columns:36px 36px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;background:#f8fafc;border:1px solid #e9edf2;box-sizing:border-box}
+      .lb-badge{grid-column:1;color:#94a3b8;font-weight:800;font-size:13px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+      .lb-row-1st,.lb-row-2nd,.lb-row-3rd{border-left-width:4px;border-left-style:solid;padding-left:12px}
+      .lb-row-1st{border-left-color:#eab308;background:linear-gradient(90deg,rgba(234,179,8,.12),rgba(248,250,252,0) 70%)}
+      .lb-row-2nd{border-left-color:#94a3b8;background:linear-gradient(90deg,rgba(148,163,184,.14),rgba(248,250,252,0) 70%)}
+      .lb-row-3rd{border-left-color:#c2703d;background:linear-gradient(90deg,rgba(194,112,61,.12),rgba(248,250,252,0) 70%)}
+      .lb-row-1st .lb-badge{color:#92400e}
+      .lb-row-2nd .lb-badge{color:#334155}
+      .lb-row-3rd .lb-badge{color:#7c3f19}
       .lb-row-me{box-shadow:0 0 0 2px #60a5fa inset}
-      .lb-avatar{flex:none;width:32px;height:32px;border-radius:50%;object-fit:cover}
-      .lb-avatar-fallback{background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
-      .lb-pill-name{flex:0 1 auto;min-width:0;max-width:42%;font-weight:800;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .lb-pill-stats{flex:none;font-size:12px;color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap}
-      .lb-pill-stats b{font-size:13px;color:inherit;font-weight:800}
-      .lb-pill-stats i{font-style:normal;opacity:.5;margin:0 1px}
+      .lb-avatar{grid-column:2;width:36px;height:36px;border-radius:50%;object-fit:cover}
+      .lb-avatar-fallback{background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+      .lb-pill-name{grid-column:3;min-width:0;font-weight:700;font-size:14px;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lb-pill-stats{grid-column:4;display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+      .lb-stat{display:inline-flex;align-items:baseline;gap:2px}
+      .lb-stat b{font-size:16px;font-weight:800;color:#1e293b;font-variant-numeric:tabular-nums}
+      .lb-stat small{font-size:11px;font-weight:500;color:#94a3b8}
+      .lb-grade{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 6px;border-radius:7px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:800}
+      .lb-medal{font-size:20px;line-height:1}
+      .lb-rankn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:0 auto;border-radius:50%;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:800}
       .lb-empty{font-size:12.5px;color:#94a3b8;margin-top:6px}
       .lb-cta{font-size:12.5px;color:#64748b;margin:6px 0 10px;line-height:1.6}
       .lb-loading{font-size:12px;color:#94a3b8;margin-top:6px}
@@ -339,14 +356,18 @@ const LB = (function(){
       html[data-theme="navy"] .lb-btn-primary{background:linear-gradient(135deg,#2dd4ff,#7c5cff);color:#081018}
       html[data-theme="navy"] .lb-btn-secondary{background:rgba(255,255,255,.08);color:#9db6d6}
       html[data-theme="navy"] .lb-pill{background:rgba(255,255,255,.05);border-color:rgba(120,210,255,.2);color:#eaf6ff}
-      html[data-theme="navy"] .lb-badge{color:#9db6d6}
+      html[data-theme="navy"] .lb-badge{color:#7f97b3}
+      html[data-theme="navy"] .lb-pill-name{color:#eaf6ff}
+      html[data-theme="navy"] .lb-stat b{color:#eaf6ff}
+      html[data-theme="navy"] .lb-stat small{color:#7f97b3}
+      html[data-theme="navy"] .lb-grade{background:rgba(124,92,255,.22);color:#c9befe}
+      html[data-theme="navy"] .lb-rankn{background:rgba(45,212,255,.18);color:#7fe3ff}
       html[data-theme="navy"] .lb-row-1st .lb-badge{color:#f5c15f}
       html[data-theme="navy"] .lb-row-2nd .lb-badge{color:#c7d0db}
       html[data-theme="navy"] .lb-row-3rd .lb-badge{color:#e6b483}
-      html[data-theme="navy"] .lb-pill-stats{color:#9db6d6}
-      html[data-theme="navy"] .lb-row-1st{background:linear-gradient(90deg,rgba(245,185,63,.25),rgba(255,255,255,.04));border-color:rgba(245,185,63,.5)}
-      html[data-theme="navy"] .lb-row-2nd{background:linear-gradient(90deg,rgba(185,195,207,.22),rgba(255,255,255,.04));border-color:rgba(185,195,207,.4)}
-      html[data-theme="navy"] .lb-row-3rd{background:linear-gradient(90deg,rgba(217,151,106,.22),rgba(255,255,255,.04));border-color:rgba(217,151,106,.45)}
+      html[data-theme="navy"] .lb-row-1st{border-left-color:#f5c15f;background:linear-gradient(90deg,rgba(245,185,63,.18),rgba(255,255,255,.03) 70%)}
+      html[data-theme="navy"] .lb-row-2nd{border-left-color:#c7d0db;background:linear-gradient(90deg,rgba(185,195,207,.16),rgba(255,255,255,.03) 70%)}
+      html[data-theme="navy"] .lb-row-3rd{border-left-color:#e6b483;background:linear-gradient(90deg,rgba(217,151,106,.16),rgba(255,255,255,.03) 70%)}
       html[data-theme="navy"] .lb-row-me{box-shadow:0 0 0 2px #4fd8ff inset}
       html[data-theme="navy"] .lb-empty{color:#7f97b3}
       html[data-theme="navy"] .lb-avatar-fallback{background:#2dd4ff;color:#081018}
