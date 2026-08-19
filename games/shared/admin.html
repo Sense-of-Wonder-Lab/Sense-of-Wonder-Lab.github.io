@@ -26,6 +26,8 @@
   .tw{overflow-x:auto}
   .msgbtn,.msgbtn-custom{border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;width:28px;height:28px;font-size:13px;margin-right:3px;cursor:pointer}
   .msgbtn:hover,.msgbtn-custom:hover{background:#eff6ff}
+  .msgbtn-set{display:block;border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:700;margin-bottom:4px;cursor:pointer;white-space:nowrap}
+  .msgbtn-set:hover{background:#fef3c7}
 </style>
 </head>
 <body>
@@ -40,7 +42,7 @@
 <div class="card" id="dataCard" style="display:none">
   <div class="stat-row" id="stats"></div>
   <div class="tw"><table id="tbl"><thead><tr>
-    <th></th><th>ニックネーム</th><th>メール</th><th>登録日</th><th>最終アクセス</th><th>プレイ日数</th><th>直近のゲーム</th><th>メッセージ</th>
+    <th></th><th>ニックネーム</th><th>メール</th><th>登録日</th><th>最終アクセス</th><th>プレイ日数</th><th>直近のゲーム</th><th>メッセージ</th><th>100%達成セット</th>
   </tr></thead><tbody id="tbody"></tbody></table></div>
 </div>
 
@@ -61,6 +63,21 @@ const FIREBASE_CONFIG = {
 };
 const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
 const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト'};
+const DECK_NAMES = {
+  aroma: {d0:'No.1 芳香族炭化水素(構造式)', d1:'No.2 酸素を含む芳香族炭化水素(構造式)', d2:'No.3 窒素を含む芳香族炭化水素(構造式)', d3:'No.4 構造式マイナー', d4:'No.5 芳香族炭化水素(基礎)', d5:'No.6 酸素を含む芳香族(基礎)', d6:'No.7 酸素を含む芳香族(基礎その2)', d7:'No.8 窒素を含む芳香族(基礎)', d8:'No.9 反応の逆算', d9:'No.10 検出反応まとめ'},
+  aliphatic: {d0:'No.1 構造式(名称当て)', d1:'No.2 アルコール・エーテルの性質', d2:'No.3 アルコールの級数・価数', d3:'No.4 アルコールの酸化', d4:'No.5 アルデヒド・ケトン', d5:'No.6 カルボン酸・エステル', d6:'No.7 エステル化・けん化', d7:'No.8 検出反応まとめ'}
+};
+function get100Sets(u){
+  const out = [];
+  const d = u.data || {};
+  const aroma = d.aromaQuest2 && d.aromaQuest2.memoScores;
+  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id}); });
+  const aliph = d.aliphaQuest1 && d.aliphaQuest1.memoScores;
+  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id}); });
+  const inorg = d.inorganicQuest1 && d.inorganicQuest1.catStats;
+  if(inorg) Object.entries(inorg).forEach(([name,s])=>{ if(s && s.best===100) out.push({game:'無機化学', name}); });
+  return out;
+}
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
@@ -112,7 +129,7 @@ function render(users){
   const rows = Object.entries(users).map(([uid,u])=>({
     uid, nickname:u.nickname||'-', email:u.email||'-', ts:u.ts||0, lastActive:u.lastActive||0,
     days:u.activityDays?Object.keys(u.activityDays).length:0, lastGame:u.lastGame?(GAME_NAMES[u.lastGame]||u.lastGame):'-',
-    avatar:u.avatar||null
+    avatar:u.avatar||null, sets100:get100Sets(u)
   }));
   rows.sort((a,b)=>b.lastActive-a.lastActive);
 
@@ -141,6 +158,7 @@ function render(users){
         <button class="msgbtn" data-uid="${r.uid}" data-text="頑張ってるね!💪" title="頑張ってるね!">💪</button>
         <button class="msgbtn-custom" data-uid="${r.uid}" title="メッセージを送る">✏️</button>
       </td>
+      <td>${r.sets100.length?r.sets100.map(s=>`<button class="msgbtn-set" data-uid="${r.uid}" data-text="🎉「${escapeHtml(s.name)}」100%達成おめでとう!いいね!👍" title="いいねを送る">👍 ${escapeHtml(s.game)}:${escapeHtml(s.name)}</button>`).join(''):'<span style="color:#cbd5e1">-</span>'}</td>
     </tr>`;
   }).join('');
 }
@@ -149,6 +167,13 @@ function sendMessage(uid, text){
   return db.ref('users/'+uid+'/messages').push({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false});
 }
 document.getElementById('tbody').addEventListener('click', e=>{
+  const s = e.target.closest('.msgbtn-set');
+  if(s){
+    sendMessage(s.dataset.uid, s.dataset.text).then(()=>{
+      s.textContent = '✓ 送信済み'; s.disabled = true; s.style.opacity = '.5';
+    }).catch(err=>alert('送信に失敗しました: '+err.message));
+    return;
+  }
   const b = e.target.closest('.msgbtn');
   if(b){
     sendMessage(b.dataset.uid, b.dataset.text).then(()=>{
