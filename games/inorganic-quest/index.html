@@ -4242,7 +4242,7 @@ function renderChallengeHome(){
       <button class="bigbtn" id="chalStart">スタート!</button>
     </div>
     <div class="card-ui" id="lbBox"></div>
-    ${list.length?`<div class="card-ui"><b>${PODIUM_ICON} 自己ベストTOP3</b>${LB.renderSelfBestHTML(list,chalKind)}</div>`:''}`;
+    ${list.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(list,chalKind)}</div>`:''}`;
   document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
   document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
   document.getElementById('chalStart').onclick=startChallenge;
