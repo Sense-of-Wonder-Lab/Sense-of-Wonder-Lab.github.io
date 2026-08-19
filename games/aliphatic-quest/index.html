@@ -60,7 +60,6 @@ main{flex:1;position:relative;overflow:hidden}
 .viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
-#memoPanel{padding-top:84px}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
 #fireworksOverlay{position:fixed;inset:0;pointer-events:none;z-index:65;overflow:hidden}
 .fw-launch{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff8dc;box-shadow:0 0 5px 1px #fff8dc}
@@ -298,7 +297,7 @@ nav button.active{color:var(--blue);font-weight:700}
 <nav>
   <button data-view="map" class="active"><span class="ico">🗺️</span>マップ</button>
   <button data-view="memo"><span class="ico">🧠</span>暗記</button>
-  <button data-view="challenge"><span class="ico">⚡</span>チャレンジ</button>
+  <button data-view="challenge"><span class="ico">🏆</span>チャレンジ</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
 </nav>
 
@@ -310,7 +309,7 @@ nav button.active{color:var(--blue);font-weight:700}
   <p>① 下のトレイから<b>化合物カード</b>や<b>試薬カード</b>をタップして選ぶ<br>
      ② マップのオレンジの「?」を<b>タップして正しいものを選択</b>!<br>
      ③ 正解ならカードが固定され、系統図が育っていく。</p>
-  <p class="muted">試薬(矢印の?)と生成物(枠の?)の両方が揃うと反応完成。全部そろえて脂肪族の反応系統図を完成させよう。⚡チャレンジで実力試しも!</p>
+  <p class="muted">試薬(矢印の?)と生成物(枠の?)の両方が揃うと反応完成。全部そろえて脂肪族の反応系統図を完成させよう。🏆チャレンジで実力試しも!</p>
   <button class="bigbtn" onclick="closeOnboard()">はじめる</button>
 </div></div>
 
@@ -1431,7 +1430,7 @@ let chal=null, chalKind='score', chalTimerIv=null;
 function stopChalTimer(){if(chalTimerIv){clearInterval(chalTimerIv);chalTimerIv=null;}}
 function chalHeaderUpdate(sub){
   const t=document.getElementById('hdrTitle');
-  t.style.display=''; t.textContent='⚡ チャレンジモード';
+  t.style.display=''; t.textContent='🏆 チャレンジモード';
   document.getElementById('hdrSub').textContent=sub||'';
   document.getElementById('hdrProgressWrap').style.display='none';
   document.getElementById('btnReset').style.display='none';
@@ -1463,7 +1462,7 @@ function renderChallengeHome(){
   chalHeaderUpdate('挑戦するモードを選んでください');
   const list=(state.bestList&&state.bestList[chalKind])||[];
   chalPanel.innerHTML=`
-    <h2>⚡ チャレンジモード</h2>
+    <h2>🏆 チャレンジモード</h2>
     <div class="card-ui">
       <div class="scopebtns">
         <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
@@ -1932,7 +1931,7 @@ function showComplete(){
     全 ${REACTIONS.length} 反応を制覇しました!<br>
     完成した系統図は<b>そのまま復習教材</b>です。<br>
     化合物や矢印をタップして反応条件を確認しよう。<br><br>
-    <b>⚡チャレンジモード</b>でランクSを目指せ!</div>`;
+    <b>🏆チャレンジモード</b>でランクSを目指せ!</div>`;
   infoModal.classList.add('open');
 }
 

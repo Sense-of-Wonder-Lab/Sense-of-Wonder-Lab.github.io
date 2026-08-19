@@ -46,8 +46,8 @@ main{flex:1;position:relative;overflow:hidden}
 .bigbtn.amber{background:var(--accent-deep)}
 .bigbtn:disabled{background:#cbd5e1;color:#f1f5f9;border:none}
 .muted{color:#64748b;font-size:12px;line-height:1.6}
-nav{flex:none;display:flex;background:#fff;border-top:1px solid #e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;padding:8px 0 6px;border:none;background:none;font-size:11px;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav{flex:none;display:flex;justify-content:center;background:#fff;border-top:1px solid #e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:0 1 94px;padding:8px 0 6px;border:none;background:none;font-size:11px;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
 nav button .ico{font-size:20px;line-height:1}
 nav button.active{color:var(--blue);font-weight:700}
 .badge{position:absolute;top:2px;right:calc(50% - 24px);background:var(--red);color:#fff;border-radius:9px;font-size:10px;min-width:17px;height:17px;line-height:17px;padding:0 4px;font-weight:700}
@@ -149,8 +149,8 @@ nav button.active{color:var(--blue);font-weight:700}
 </main>
 
 <nav>
-  <button data-view="home" class="active"><span class="ico">📚</span>暗記</button>
-  <button data-view="challenge"><span class="ico">⚡</span>チャレンジ</button>
+  <button data-view="home" class="active"><span class="ico">🧠</span>暗記</button>
+  <button data-view="challenge"><span class="ico">🏆</span>チャレンジ</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
 </nav>
 
@@ -4103,7 +4103,7 @@ function renderHome(){
   }
   const arrow=catSort.dir==='asc'?'▲':'▼';
   homePanel.innerHTML=`
-    <h2>📚 暗記モード</h2>
+    <h2>🧠 暗記モード</h2>
     <div class="card-ui">
       <div style="font-size:13.5px;line-height:1.8">単元を選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
@@ -4230,7 +4230,7 @@ function refreshLbBox(kind){
 function renderChallengeHome(){
   const list=(state.bestList&&state.bestList[chalKind])||[];
   chalPanel.innerHTML=`
-    <h2>⚡ チャレンジモード</h2>
+    <h2>🏆 チャレンジモード</h2>
     <div class="card-ui">
       <div class="scopebtns">
         <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
@@ -4401,7 +4401,7 @@ function confirmDialog(message,onConfirm){
 }
 
 /* ================= ナビ・共通 ================= */
-const VIEW_TITLES={challenge:'⚡ チャレンジモード',weak:'🎯 弱点特訓'};
+const VIEW_TITLES={challenge:'🏆 チャレンジモード',weak:'🎯 弱点特訓'};
 function switchView(view){
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
