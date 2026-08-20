@@ -318,6 +318,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
   </div>
   <button id="btnReset">リセット</button>
   <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
+  <button class="notifBtn" id="notifBtn" title="お知らせ">🔔<span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></button>
   <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
 </header>
 
@@ -393,17 +394,24 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=20"></script>
+<script src="../shared/leaderboard.js?v=21"></script>
 <script>
 'use strict';
 LB.init('aromatic');
 document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+document.getElementById('notifBtn').onclick=()=>LB.openNotifications();
 LB.onAuth(u=>{
   const btn = document.getElementById('accountBtn');
   if(!btn) return;
   if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
   else if(u) btn.textContent = (u.nickname||'?')[0];
   else btn.textContent = '👤';
+});
+LB.onMessages(count=>{
+  const b = document.getElementById('notifBadge');
+  if(!b) return;
+  b.textContent = count>9?'9+':count;
+  b.style.display = count>0?'':'none';
 });
 document.getElementById('themeBtn').onclick=()=>{
   const next = document.documentElement.getAttribute('data-theme')==='navy' ? 'default' : 'navy';

@@ -32,7 +32,7 @@ header{
 header .title{font-weight:700;font-size:15px;letter-spacing:.02em;flex:1}
 header .sub{font-size:10px;opacity:.75}
 .questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
-#accountBtn{margin-left:auto}
+#notifBtn{margin-left:auto}
 .questSelect option{color:var(--ink)}
 .backrow{margin-bottom:10px}
 .backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
@@ -134,6 +134,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <option value="index.html" selected>無機化学クエスト</option>
   </select>
   <div class="title" id="hdrTitle" style="display:none"></div>
+  <button class="notifBtn" id="notifBtn" title="お知らせ">🔔<span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></button>
   <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
 </header>
 
@@ -162,17 +163,24 @@ nav button.active{color:var(--blue);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=20"></script>
+<script src="../shared/leaderboard.js?v=21"></script>
 <script>
 'use strict';
 LB.init('inorganic');
 document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+document.getElementById('notifBtn').onclick=()=>LB.openNotifications();
 LB.onAuth(u=>{
   const btn = document.getElementById('accountBtn');
   if(!btn) return;
   if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
   else if(u) btn.textContent = (u.nickname||'?')[0];
   else btn.textContent = '👤';
+});
+LB.onMessages(count=>{
+  const b = document.getElementById('notifBadge');
+  if(!b) return;
+  b.textContent = count>9?'9+':count;
+  b.style.display = count>0?'':'none';
 });
 LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
 /* ================= データ(MONOXER「無機」教材準拠) ================= */

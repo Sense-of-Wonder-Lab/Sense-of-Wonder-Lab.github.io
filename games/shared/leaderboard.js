@@ -30,6 +30,8 @@ const LB = (function(){
   let user = null; // {uid,email,nickname}
   const authListeners = [];
   const pushTimers = {};
+  let messages = []; // [{id,text,read,ts}]
+  const messageListeners = [];
 
   function init(gid){
     gameId = gid;
@@ -40,7 +42,7 @@ const LB = (function(){
       db = firebase.database();
       auth = firebase.auth();
       auth.onAuthStateChanged(fbUser=>{
-        if(!fbUser){ user = null; authListeners.forEach(cb=>cb(null)); return; }
+        if(!fbUser){ user = null; messages = []; notifyMessages(); authListeners.forEach(cb=>cb(null)); return; }
         db.ref('users/'+fbUser.uid).once('value').then(snap=>{
           const data = snap.val();
           const nickname = (data && data.nickname) || (fbUser.displayName||'').slice(0,12) || 'ゲスト';
@@ -71,14 +73,37 @@ const LB = (function(){
   function checkMessages(uid){
     if(!db) return;
     db.ref('users/'+uid+'/messages').once('value').then(snap=>{
-      const val = snap.val();
-      if(!val) return;
-      const updates = {};
-      Object.entries(val).forEach(([mid,m])=>{
-        if(!m.read){ showToast(m.text); updates[mid+'/read'] = true; }
-      });
-      if(Object.keys(updates).length) db.ref('users/'+uid+'/messages').update(updates).catch(()=>{});
+      const val = snap.val() || {};
+      messages = Object.entries(val).map(([id,m])=>Object.assign({id}, m)).sort((a,b)=>(b.ts||0)-(a.ts||0));
+      notifyMessages();
     }).catch(()=>{});
+  }
+  function unreadCount(){ return messages.filter(m=>!m.read).length; }
+  function notifyMessages(){ messageListeners.forEach(cb=>cb(unreadCount())); }
+  function onMessages(cb){ messageListeners.push(cb); cb(unreadCount()); }
+  function fmtMsgTime(ts){
+    if(!ts) return '';
+    const d = new Date(ts);
+    return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function openNotifications(){
+    openModal(`
+      <h3>🔔 お知らせ</h3>
+      <div class="lb-msg-list">
+        ${messages.length ? messages.map(m=>`<div class="lb-msg-item${m.read?'':' unread'}"><div class="lb-msg-text">${escapeHtml(m.text||'')}</div><div class="lb-msg-time">${fmtMsgTime(m.ts)}</div></div>`).join('') : '<div class="lb-empty">お知らせはまだありません。</div>'}
+      </div>
+      <div class="lb-btns" style="margin-top:12px"><button id="lbMsgClose" class="lb-btn-secondary" style="width:100%">閉じる</button></div>
+    `, (wrap, close)=>{
+      wrap.querySelector('#lbMsgClose').onclick = close;
+      if(user && db){
+        const updates = {};
+        messages.forEach(m=>{ if(!m.read){ updates[m.id+'/read'] = true; m.read = true; } });
+        if(Object.keys(updates).length){
+          db.ref('users/'+user.uid+'/messages').update(updates).catch(()=>{});
+          notifyMessages();
+        }
+      }
+    });
   }
   function showToast(text){
     ensureStyle();
@@ -356,6 +381,17 @@ const LB = (function(){
       .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
       .accountBtn img{width:100%;height:100%;object-fit:cover;display:block}
       .lb-toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:88vw;text-align:center;transition:opacity .3s}
+      .notifBtn{position:relative;flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center}
+      .lb-notif-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:9px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;padding:0 4px;box-shadow:0 0 0 2px rgba(30,58,138,.9)}
+      .lb-msg-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto}
+      .lb-msg-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px}
+      .lb-msg-item.unread{background:#fffbeb;border-color:#fde68a}
+      .lb-msg-text{font-size:13.5px;font-weight:700;line-height:1.5;color:#1e293b}
+      .lb-msg-time{font-size:11px;color:#94a3b8;margin-top:4px}
+      html[data-theme="navy"] .lb-msg-item{background:rgba(255,255,255,.05);border-color:rgba(120,210,255,.2)}
+      html[data-theme="navy"] .lb-msg-item.unread{background:rgba(245,185,63,.14);border-color:rgba(245,185,63,.4)}
+      html[data-theme="navy"] .lb-msg-text{color:#eaf6ff}
+      html[data-theme="navy"] .lb-msg-time{color:#7f97b3}
       /* ---- 深海ラボ・ネイビーテーマ ---- */
       html[data-theme="navy"] .lb-modal-wrap{background:rgba(2,6,14,.65)}
       html[data-theme="navy"] .lb-modal{background:rgba(16,26,46,.96);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(120,210,255,.2);color:#eaf6ff}
@@ -507,6 +543,6 @@ const LB = (function(){
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
-    openAccountModal, ensureStyle
+    openAccountModal, ensureStyle, onMessages, openNotifications
   };
 })();
