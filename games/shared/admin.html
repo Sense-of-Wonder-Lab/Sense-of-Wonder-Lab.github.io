@@ -71,11 +71,11 @@ function get100Sets(u){
   const out = [];
   const d = u.data || {};
   const aroma = d.aromaQuest2 && d.aromaQuest2.memoScores;
-  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id}); });
+  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id, gameKey:'aroma', deckId:id}); });
   const aliph = d.aliphaQuest1 && d.aliphaQuest1.memoScores;
-  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id}); });
+  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id, gameKey:'aliphatic', deckId:id}); });
   const inorg = d.inorganicQuest1 && d.inorganicQuest1.catStats;
-  if(inorg) Object.entries(inorg).forEach(([name,s])=>{ if(s && s.best===100) out.push({game:'無機化学', name}); });
+  if(inorg) Object.entries(inorg).forEach(([name,s])=>{ if(s && s.best===100) out.push({game:'無機化学', name, gameKey:'inorganic', deckId:name}); });
   return out;
 }
 
@@ -158,18 +158,22 @@ function render(users){
         <button class="msgbtn" data-uid="${r.uid}" data-text="頑張ってるね!💪" title="頑張ってるね!">💪</button>
         <button class="msgbtn-custom" data-uid="${r.uid}" title="メッセージを送る">✏️</button>
       </td>
-      <td>${r.sets100.length?r.sets100.map(s=>`<button class="msgbtn-set" data-uid="${r.uid}" data-text="🎉「${escapeHtml(s.name)}」100%達成おめでとう!いいね!👍" title="いいねを送る">👍 ${escapeHtml(s.game)}:${escapeHtml(s.name)}</button>`).join(''):'<span style="color:#cbd5e1">-</span>'}</td>
+      <td>${r.sets100.length?r.sets100.map(s=>`<button class="msgbtn-set" data-uid="${r.uid}" data-game="${escapeHtml(s.game)}" data-name="${escapeHtml(s.name)}" data-gamekey="${escapeHtml(s.gameKey)}" data-deckid="${escapeHtml(s.deckId)}" data-text="100%達成おめでとう!いいね!👍" title="いいねを送る">👍 ${escapeHtml(s.game)}:${escapeHtml(s.name)}</button>`).join(''):'<span style="color:#cbd5e1">-</span>'}</td>
     </tr>`;
   }).join('');
 }
 
-function sendMessage(uid, text){
-  return db.ref('users/'+uid+'/messages').push({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false});
+function sendMessage(uid, text, extra){
+  return db.ref('users/'+uid+'/messages').push(Object.assign({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false}, extra||{}));
 }
 document.getElementById('tbody').addEventListener('click', e=>{
   const s = e.target.closest('.msgbtn-set');
   if(s){
-    sendMessage(s.dataset.uid, s.dataset.text).then(()=>{
+    const extra = {game:s.dataset.game, setName:s.dataset.name};
+    Promise.all([
+      sendMessage(s.dataset.uid, s.dataset.text, extra),
+      db.ref('users/'+s.dataset.uid+'/likes/'+s.dataset.gamekey+'/'+s.dataset.deckid).set(true)
+    ]).then(()=>{
       s.textContent = '✓ 送信済み'; s.disabled = true; s.style.opacity = '.5';
     }).catch(err=>alert('送信に失敗しました: '+err.message));
     return;

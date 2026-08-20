@@ -248,8 +248,7 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="progress-bar"><div id="progFill" style="width:0%"></div></div>
   </div>
   <button id="btnReset">リセット</button>
-  <button class="notifBtn" id="notifBtn" title="お知らせ">🔔<span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></button>
-  <button class="accountBtn" id="accountBtn" title="アカウント">👤</button>
+  <span class="accountBtnWrap"><button class="accountBtn" id="accountBtn" title="アカウント">👤</button><span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></span>
 </header>
 
 <main>
@@ -324,18 +323,21 @@ nav button.active{color:var(--blue);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=21"></script>
+<script src="../shared/leaderboard.js?v=22"></script>
 <script>
 'use strict';
+let memoLikes={}, memoLikesLoaded=false;
 LB.init('aliphatic');
 document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
-document.getElementById('notifBtn').onclick=()=>LB.openNotifications();
 LB.onAuth(u=>{
   const btn = document.getElementById('accountBtn');
   if(!btn) return;
   if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
   else if(u) btn.textContent = (u.nickname||'?')[0];
   else btn.textContent = '👤';
+  memoLikesLoaded=false; memoLikes={};
+  const mp = document.getElementById('memoPanel');
+  if(mp && mp.querySelector('.decklist')) renderMemoHome();
 });
 LB.onMessages(count=>{
   const b = document.getElementById('notifBadge');
@@ -751,7 +753,7 @@ const IMG_MAP={
   dichloromethane:'dichloromethane.png', tetrachloromethane:'tetrachloromethane.png',
   vinylAcetate:'vinylAcetate.png', trichloromethane:'trichloromethane.png',
 };
-const IMG_FILL_OVERRIDE={diethylEther:1.35,methanol:1.35};
+const IMG_FILL_OVERRIDE={};
 let structFitClipN=0;
 function structFit(id,availW,availH,maxScale){
   if(IMG_MAP[id]){
@@ -1733,6 +1735,10 @@ function renderMemoHome(){
   memoClearAdvanceTimer();
   memoHeaderUpdate('セットを選んでください');
   setMemoFxVisible(false);
+  if(!memoLikesLoaded && LB.currentUser()){
+    memoLikesLoaded=true;
+    LB.fetchLikes('aliphatic').then(likes=>{ memoLikes=likes||{}; if(!memoQuiz) renderMemoHome(); });
+  }
   let list='';
   sortedMemoDecks().forEach(d=>{
     const sc=state.memoScores[d.id];
@@ -1741,7 +1747,7 @@ function renderMemoHome(){
     const ip=state.memoInProgress&&state.memoInProgress[d.id];
     list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-id="${d.id}">
       <span>${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.order.length})・`:''}${d.items.length}問</span></span>
-      ${sc?`<span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%</span></span>`:''}
+      ${sc?`<span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[d.id]?' 👍':''}</span></span>`:''}
       </button>`;
   });
   const arrow=memoSort.dir==='asc'?'▲':'▼';

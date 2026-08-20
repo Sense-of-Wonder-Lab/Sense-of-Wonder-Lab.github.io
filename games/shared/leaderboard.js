@@ -86,24 +86,25 @@ const LB = (function(){
     const d = new Date(ts);
     return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   }
-  function openNotifications(){
-    openModal(`
-      <h3>🔔 お知らせ</h3>
-      <div class="lb-msg-list">
-        ${messages.length ? messages.map(m=>`<div class="lb-msg-item${m.read?'':' unread'}"><div class="lb-msg-text">${escapeHtml(m.text||'')}</div><div class="lb-msg-time">${fmtMsgTime(m.ts)}</div></div>`).join('') : '<div class="lb-empty">お知らせはまだありません。</div>'}
-      </div>
-      <div class="lb-btns" style="margin-top:12px"><button id="lbMsgClose" class="lb-btn-secondary" style="width:100%">閉じる</button></div>
-    `, (wrap, close)=>{
-      wrap.querySelector('#lbMsgClose').onclick = close;
-      if(user && db){
-        const updates = {};
-        messages.forEach(m=>{ if(!m.read){ updates[m.id+'/read'] = true; m.read = true; } });
-        if(Object.keys(updates).length){
-          db.ref('users/'+user.uid+'/messages').update(updates).catch(()=>{});
-          notifyMessages();
-        }
-      }
-    });
+  function notifListHTML(){
+    if(!messages.length) return '<div class="lb-empty">お知らせはまだありません。</div>';
+    return '<div class="lb-msg-list">' + messages.map(m=>{
+      const tag = (m.game || m.setName) ? `<div class="lb-msg-tag">🏆 ${escapeHtml(m.game||'')}${m.game&&m.setName?'・':''}${escapeHtml(m.setName||'')}</div>` : '';
+      return `<div class="lb-msg-item${m.read?'':' unread'}">${tag}<div class="lb-msg-text">${escapeHtml(m.text||'')}</div><div class="lb-msg-time">${fmtMsgTime(m.ts)}</div></div>`;
+    }).join('') + '</div>';
+  }
+  function markAllMessagesRead(){
+    if(!user || !db) return;
+    const updates = {};
+    messages.forEach(m=>{ if(!m.read){ updates[m.id+'/read'] = true; m.read = true; } });
+    if(Object.keys(updates).length){
+      db.ref('users/'+user.uid+'/messages').update(updates).catch(()=>{});
+      notifyMessages();
+    }
+  }
+  function fetchLikes(gameKey){
+    if(!db || !user) return Promise.resolve({});
+    return db.ref('users/'+user.uid+'/likes/'+gameKey).once('value').then(s=>s.val()||{}).catch(()=>({}));
   }
   function showToast(text){
     ensureStyle();
@@ -381,15 +382,19 @@ const LB = (function(){
       .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
       .accountBtn img{width:100%;height:100%;object-fit:cover;display:block}
       .lb-toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:88vw;text-align:center;transition:opacity .3s}
-      .notifBtn{position:relative;flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center}
-      .lb-notif-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:9px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;padding:0 4px;box-shadow:0 0 0 2px rgba(30,58,138,.9)}
-      .lb-msg-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto}
+      .accountBtnWrap{position:relative;display:inline-flex;flex:none}
+      .lb-notif-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:9px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;padding:0 4px;box-shadow:0 0 0 2px rgba(30,58,138,.9);pointer-events:none}
+      .lb-notif-section{margin-top:4px;border-top:1px solid #e2e8f0;padding-top:12px}
+      .lb-msg-list{display:flex;flex-direction:column;gap:8px;max-height:40vh;overflow-y:auto;margin-top:6px}
       .lb-msg-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px}
       .lb-msg-item.unread{background:#fffbeb;border-color:#fde68a}
+      .lb-msg-tag{font-size:11px;font-weight:800;color:#2563eb;margin-bottom:4px}
       .lb-msg-text{font-size:13.5px;font-weight:700;line-height:1.5;color:#1e293b}
       .lb-msg-time{font-size:11px;color:#94a3b8;margin-top:4px}
+      html[data-theme="navy"] .lb-notif-section{border-color:rgba(255,255,255,.16)}
       html[data-theme="navy"] .lb-msg-item{background:rgba(255,255,255,.05);border-color:rgba(120,210,255,.2)}
       html[data-theme="navy"] .lb-msg-item.unread{background:rgba(245,185,63,.14);border-color:rgba(245,185,63,.4)}
+      html[data-theme="navy"] .lb-msg-tag{color:#4fd8ff}
       html[data-theme="navy"] .lb-msg-text{color:#eaf6ff}
       html[data-theme="navy"] .lb-msg-time{color:#7f97b3}
       /* ---- 深海ラボ・ネイビーテーマ ---- */
@@ -476,7 +481,12 @@ const LB = (function(){
         <span style="color:#cbd5e1">|</span>
         <button id="lbDelete" class="lb-btn-danger">アカウント削除</button>
       </div>
+      <div class="lb-notif-section">
+        <div class="lb-field-label" style="margin-top:14px">🔔 お知らせ</div>
+        ${notifListHTML()}
+      </div>
     `, (wrap, close)=>{
+      markAllMessagesRead();
       let pendingAvatar = null;
       wrap.querySelector('#lbCancel').onclick = close;
       wrap.querySelector('#lbSave').onclick = ()=>{
@@ -543,6 +553,6 @@ const LB = (function(){
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
-    openAccountModal, ensureStyle, onMessages, openNotifications
+    openAccountModal, ensureStyle, onMessages
   };
 })();
