@@ -28,6 +28,39 @@
   .msgbtn:hover,.msgbtn-custom:hover{background:#eff6ff}
   .msgbtn-set{display:block;border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:700;margin-bottom:4px;cursor:pointer;white-space:nowrap}
   .msgbtn-set:hover{background:#fef3c7}
+  .tag-risk{background:#fee2e2;color:#b91c1c}
+  .tag-new{background:#e0e7ff;color:#4338ca}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .toolbar input[type=search]{flex:1;min-width:160px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;background:#f8fafc}
+  .toolbar input[type=search]:focus{outline:2px solid #93c5fd;background:#fff}
+  .btn{border:1px solid #e2e8f0;background:#fff;color:#1e293b;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:#f1f5f9}
+  .btn-primary{background:#2563eb;border-color:#2563eb;color:#fff}
+  .btn-primary:hover{background:#1d4ed8}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:#334155}
+  th.sortable .arrow{opacity:.35;font-size:10px;margin-left:2px}
+  th.sortable.sorted .arrow{opacity:1}
+  #tbody tr{cursor:pointer}
+  #tbody tr:hover{background:#f8fafc}
+  #tbody td button{cursor:pointer}
+  .resultCount{font-size:12px;color:#94a3b8;margin:-6px 0 12px}
+  .modalBg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:50;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+  .modalBg.show{display:flex}
+  .modalBox{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .modalBox h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+  .modalBox .msub{font-size:12px;color:#64748b;margin-bottom:14px}
+  .modalClose{float:right;border:none;background:none;font-size:18px;cursor:pointer;color:#94a3b8}
+  .progGroup{margin-bottom:14px}
+  .progGroup h3{font-size:12.5px;color:#334155;margin:0 0 6px;font-weight:800}
+  .progRow{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0}
+  .progRow .pname{flex:1;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .progBar{width:90px;height:6px;background:#f1f5f9;border-radius:4px;overflow:hidden;flex:none}
+  .progBar i{display:block;height:100%;background:#22c55e;border-radius:4px}
+  .progPct{width:36px;text-align:right;font-weight:700;color:#334155;flex:none}
+  .modalMsgRow{display:flex;gap:6px;margin-top:16px;border-top:1px solid #f1f5f9;padding-top:14px}
+  .modalMsgRow input{flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:12.5px}
+  .noProg{color:#cbd5e1;font-size:12px}
 </style>
 </head>
 <body>
@@ -41,9 +74,25 @@
 
 <div class="card" id="dataCard" style="display:none">
   <div class="stat-row" id="stats"></div>
+  <div class="toolbar">
+    <input type="search" id="searchBox" placeholder="🔍 ニックネーム・メールで検索">
+    <button class="btn" id="broadcastBtn">📣 一斉メッセージ</button>
+    <button class="btn" id="csvBtn">⬇️ CSV出力</button>
+  </div>
+  <div class="resultCount" id="resultCount"></div>
   <div class="tw"><table id="tbl"><thead><tr>
-    <th></th><th>ニックネーム</th><th>メール</th><th>登録日</th><th>最終アクセス</th><th>プレイ日数</th><th>直近のゲーム</th><th>メッセージ</th><th>100%達成セット</th>
+    <th></th>
+    <th class="sortable" data-key="nickname">ニックネーム<span class="arrow">▾</span></th>
+    <th>メール</th>
+    <th class="sortable" data-key="ts">登録日<span class="arrow">▾</span></th>
+    <th class="sortable sorted" data-key="lastActive">最終アクセス<span class="arrow">▾</span></th>
+    <th class="sortable" data-key="days">プレイ日数<span class="arrow">▾</span></th>
+    <th>直近のゲーム</th><th>メッセージ</th><th>100%達成セット</th>
   </tr></thead><tbody id="tbody"></tbody></table></div>
+</div>
+
+<div class="modalBg" id="modalBg">
+  <div class="modalBox" id="modalBox"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -68,14 +117,17 @@ const DECK_NAMES = {
   aliphatic: {d0:'No.1 構造式(名称当て)', d1:'No.2 アルコール・エーテルの性質', d2:'No.3 アルコールの級数・価数', d3:'No.4 アルコールの酸化', d4:'No.5 アルデヒド・ケトン', d5:'No.6 カルボン酸・エステル', d6:'No.7 エステル化・けん化', d7:'No.8 検出反応まとめ'}
 };
 function get100Sets(u){
+  return getAllProgress(u).filter(p=>p.best===100).map(p=>({game:p.game, name:p.name, gameKey:p.gameKey, deckId:p.deckId}));
+}
+function getAllProgress(u){
   const out = [];
   const d = u.data || {};
   const aroma = d.aromaQuest2 && d.aromaQuest2.memoScores;
-  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id, gameKey:'aroma', deckId:id}); });
+  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id, gameKey:'aroma', deckId:id, best: (s&&s.best)||0}); });
   const aliph = d.aliphaQuest1 && d.aliphaQuest1.memoScores;
-  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ if(s && s.best===100) out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id, gameKey:'aliphatic', deckId:id}); });
+  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id, gameKey:'aliphatic', deckId:id, best: (s&&s.best)||0}); });
   const inorg = d.inorganicQuest1 && d.inorganicQuest1.catStats;
-  if(inorg) Object.entries(inorg).forEach(([name,s])=>{ if(s && s.best===100) out.push({game:'無機化学', name, gameKey:'inorganic', deckId:name}); });
+  if(inorg) Object.entries(inorg).forEach(([name,s])=>{ out.push({game:'無機化学', name, gameKey:'inorganic', deckId:name, best: (s&&s.best)||0}); });
   return out;
 }
 
@@ -108,6 +160,9 @@ function initGIS(){
 }
 const gisPoll = setInterval(()=>{ if(window.google && google.accounts){ initGIS(); clearInterval(gisPoll); } }, 200);
 
+let allUsers = {};
+let sortKey = 'lastActive', sortDir = -1;
+
 auth.onAuthStateChanged(fbUser=>{
   if(!fbUser){
     document.getElementById('loginCard').style.display='';
@@ -118,36 +173,73 @@ auth.onAuthStateChanged(fbUser=>{
   db.ref('users').once('value').then(snap=>{
     document.getElementById('loginCard').style.display='none';
     document.getElementById('dataCard').style.display='';
-    render(snap.val()||{});
+    allUsers = snap.val()||{};
+    render();
   }).catch(err=>{
     document.getElementById('err').textContent = '閲覧権限がありません('+escapeHtml(fbUser.email)+')。管理者アカウントでログインしてください。';
     auth.signOut();
   });
 });
 
-function render(users){
-  const rows = Object.entries(users).map(([uid,u])=>({
+function buildRows(){
+  return Object.entries(allUsers).map(([uid,u])=>({
     uid, nickname:u.nickname||'-', email:u.email||'-', ts:u.ts||0, lastActive:u.lastActive||0,
     days:u.activityDays?Object.keys(u.activityDays).length:0, lastGame:u.lastGame?(GAME_NAMES[u.lastGame]||u.lastGame):'-',
-    avatar:u.avatar||null, sets100:get100Sets(u)
+    avatar:u.avatar||null, sets100:get100Sets(u), progress:getAllProgress(u)
   }));
-  rows.sort((a,b)=>b.lastActive-a.lastActive);
+}
 
+function render(){
   const now = Date.now();
+  const q = (document.getElementById('searchBox').value||'').trim().toLowerCase();
+  let rows = buildRows();
+
+  const total = rows.length;
   const activeToday = rows.filter(r=>now-r.lastActive < 24*3600*1000).length;
   const active7d = rows.filter(r=>now-r.lastActive < 7*24*3600*1000).length;
+  const newThisWeek = rows.filter(r=>now-r.ts < 7*24*3600*1000).length;
+  const avgDays = total ? (rows.reduce((s,r)=>s+r.days,0)/total).toFixed(1) : '0';
+  const gameSet = {aromatic:new Set(), aliphatic:new Set(), inorganic:new Set()};
+  rows.forEach(r=>{ r.progress.forEach(p=>{ if(p.best>0){ const gk = p.gameKey==='aroma'?'aromatic':p.gameKey; if(gameSet[gk]) gameSet[gk].add(r.uid); } }); });
+
   document.getElementById('stats').innerHTML = `
-    <div class="stat"><b>${rows.length}</b><span>総登録者数</span></div>
+    <div class="stat"><b>${total}</b><span>総登録者数</span></div>
     <div class="stat"><b>${activeToday}</b><span>本日アクセス</span></div>
     <div class="stat"><b>${active7d}</b><span>直近7日アクセス</span></div>
+    <div class="stat"><b>${newThisWeek}</b><span>今週の新規登録</span></div>
+    <div class="stat"><b>${avgDays}</b><span>平均プレイ日数</span></div>
+    <div class="stat"><b>${gameSet.aromatic.size}</b><span>芳香族プレイ者</span></div>
+    <div class="stat"><b>${gameSet.aliphatic.size}</b><span>脂肪族プレイ者</span></div>
+    <div class="stat"><b>${gameSet.inorganic.size}</b><span>無機化学プレイ者</span></div>
   `;
 
+  if(q){
+    rows = rows.filter(r=> r.nickname.toLowerCase().includes(q) || r.email.toLowerCase().includes(q));
+  }
+
+  rows.sort((a,b)=>{
+    let av=a[sortKey], bv=b[sortKey];
+    if(typeof av==='string') return sortDir * av.localeCompare(bv, 'ja');
+    return sortDir * ((av||0)-(bv||0));
+  });
+
+  document.querySelectorAll('th.sortable').forEach(th=>{
+    th.classList.toggle('sorted', th.dataset.key===sortKey);
+    th.querySelector('.arrow').textContent = (th.dataset.key===sortKey ? (sortDir===1?'▴':'▾') : '▾');
+  });
+
+  document.getElementById('resultCount').textContent = q ? `${rows.length}件 / 全${total}件` : `全${total}件`;
+
   document.getElementById('tbody').innerHTML = rows.map(r=>{
-    const isActive = now-r.lastActive < 7*24*3600*1000;
+    const idleDays = (now-r.lastActive)/(24*3600*1000);
+    let tag = '<span class="tag tag-active">active</span>';
+    if(idleDays >= 30) tag = '<span class="tag tag-risk">要フォロー</span>';
+    else if(idleDays >= 7) tag = '<span class="tag tag-idle">idle</span>';
+    const newTag = (now-r.ts < 7*24*3600*1000) ? '<span class="tag tag-new">NEW</span>' : '';
     const av = r.avatar ? `<img class="avatar" src="${r.avatar}">` : `<span class="avatar">${escapeHtml(r.nickname[0]||'?')}</span>`;
-    return `<tr>
+    return `<tr data-uid="${r.uid}">
       <td>${av}</td>
-      <td>${escapeHtml(r.nickname)} ${isActive?'<span class="tag tag-active">active</span>':'<span class="tag tag-idle">idle</span>'}</td>
+      <td>${escapeHtml(r.nickname)} ${tag} ${newTag}</td>
       <td>${escapeHtml(r.email)}</td>
       <td>${fmtDate(r.ts)}</td>
       <td>${fmtDate(r.lastActive)}</td>
@@ -162,6 +254,83 @@ function render(users){
     </tr>`;
   }).join('');
 }
+
+function openUserModal(uid){
+  const u = allUsers[uid];
+  if(!u) return;
+  const r = buildRows().find(x=>x.uid===uid);
+  const av = r.avatar ? `<img class="avatar" src="${r.avatar}" style="width:32px;height:32px">` : `<span class="avatar" style="width:32px;height:32px;font-size:13px">${escapeHtml(r.nickname[0]||'?')}</span>`;
+  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[]};
+  r.progress.forEach(p=>{ if(groups[p.game]) groups[p.game].push(p); });
+  const groupHtml = Object.entries(groups).map(([game, list])=>{
+    if(!list.length) return `<div class="progGroup"><h3>${game}</h3><div class="noProg">まだプレイ記録がありません</div></div>`;
+    return `<div class="progGroup"><h3>${game} (${list.length}セット挑戦済み)</h3>${list.map(p=>`
+      <div class="progRow">
+        <span class="pname">${escapeHtml(p.name)}</span>
+        <span class="progBar"><i style="width:${p.best}%;background:${p.best===100?'#22c55e':p.best>=60?'#3b82f6':'#f59e0b'}"></i></span>
+        <span class="progPct">${p.best}%</span>
+      </div>`).join('')}</div>`;
+  }).join('');
+  document.getElementById('modalBox').innerHTML = `
+    <button class="modalClose" id="modalCloseBtn">✕</button>
+    <h2>${av} ${escapeHtml(r.nickname)}</h2>
+    <div class="msub">${escapeHtml(r.email)} ・ 登録 ${fmtDate(r.ts)} ・ 最終アクセス ${fmtDate(r.lastActive)} ・ ${r.days}日プレイ</div>
+    ${groupHtml}
+    <div class="modalMsgRow">
+      <input type="text" id="modalMsgInput" placeholder="メッセージを送る...">
+      <button class="btn btn-primary" id="modalMsgSend">送信</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('show');
+  document.getElementById('modalCloseBtn').onclick = closeUserModal;
+  document.getElementById('modalMsgSend').onclick = ()=>{
+    const inp = document.getElementById('modalMsgInput');
+    const text = inp.value.trim();
+    if(!text) return;
+    sendMessage(uid, text).then(()=>{ inp.value=''; inp.placeholder='✓ 送信しました'; }).catch(err=>alert('送信に失敗しました: '+err.message));
+  };
+}
+function closeUserModal(){ document.getElementById('modalBg').classList.remove('show'); }
+document.getElementById('modalBg').addEventListener('click', e=>{ if(e.target.id==='modalBg') closeUserModal(); });
+
+document.getElementById('searchBox').addEventListener('input', render);
+document.querySelectorAll('th.sortable').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    if(sortKey === th.dataset.key) sortDir *= -1;
+    else { sortKey = th.dataset.key; sortDir = (sortKey==='nickname')?1:-1; }
+    render();
+  });
+});
+
+document.getElementById('broadcastBtn').addEventListener('click', ()=>{
+  const rows = buildRows();
+  const q = (document.getElementById('searchBox').value||'').trim().toLowerCase();
+  const targets = q ? rows.filter(r=>r.nickname.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)) : rows;
+  if(!targets.length){ alert('送信対象がいません。'); return; }
+  const text = prompt(`表示中の${targets.length}人全員にメッセージを送ります。内容を入力してください:`);
+  if(!text) return;
+  if(!confirm(`「${text}」を${targets.length}人に送信します。よろしいですか?`)) return;
+  Promise.all(targets.map(r=>sendMessage(r.uid, text))).then(()=>{
+    alert(`${targets.length}人に送信しました。`);
+  }).catch(err=>alert('送信に失敗しました: '+err.message));
+});
+
+document.getElementById('csvBtn').addEventListener('click', ()=>{
+  const rows = buildRows();
+  const header = ['ニックネーム','メール','登録日','最終アクセス','プレイ日数','直近のゲーム','100%達成セット数'];
+  const lines = [header.join(',')];
+  rows.forEach(r=>{
+    const cells = [r.nickname, r.email, fmtDate(r.ts), fmtDate(r.lastActive), r.days, r.lastGame, r.sets100.length]
+      .map(v=>'"'+String(v).replace(/"/g,'""')+'"');
+    lines.push(cells.join(','));
+  });
+  const blob = new Blob(['﻿'+lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'members_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
 
 function sendMessage(uid, text, extra){
   return db.ref('users/'+uid+'/messages').push(Object.assign({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false}, extra||{}));
@@ -190,8 +359,12 @@ document.getElementById('tbody').addEventListener('click', e=>{
   if(c){
     const text = prompt('送るメッセージを入力してください');
     if(text) sendMessage(c.dataset.uid, text).catch(err=>alert('送信に失敗しました: '+err.message));
+    return;
   }
+  const tr = e.target.closest('tr[data-uid]');
+  if(tr) openUserModal(tr.dataset.uid);
 });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeUserModal(); });
 </script>
 </body>
 </html>
