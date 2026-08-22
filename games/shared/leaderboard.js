@@ -26,6 +26,21 @@ const LB = (function(){
   const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
   const TERMS_URL = '../shared/terms.html';
   const ONBOARD_FLAG = 'lbOnboardSeen';
+  // 同期処理がバグって毎回「更新あり」と誤判定すると location.reload() が延々と
+  // 繰り返され、ページが完全に固まる事故になり得る(実際に発生した)。
+  // 短時間に何度もリロードが起きた場合は同期をスキップして無限ループを断ち切る。
+  function reloadGuardOk(storageKey){
+    try{
+      const key = 'lbReloadGuard_'+storageKey;
+      const now = Date.now();
+      let rec; try{ rec = JSON.parse(sessionStorage.getItem(key)) || null; }catch(e){ rec = null; }
+      if(!rec || now - rec.ts > 15000) rec = {count:0, ts:now};
+      rec.count++;
+      sessionStorage.setItem(key, JSON.stringify(rec));
+      if(rec.count > 3){ console.error('[LB] reload loop detected for', storageKey, '- skipping sync this load'); return false; }
+      return true;
+    }catch(e){ return true; }
+  }
   let db = null, auth = null, gameId = null;
   let user = null; // {uid,email,nickname}
   const authListeners = [];
@@ -55,6 +70,17 @@ const LB = (function(){
   }
   function escapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_ESCAPE); }
   function unescapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_UNESCAPE); }
+
+  // オブジェクトのキー順序に依存しない比較用シリアライズ。
+  // mergeProgress はオブジェクトを Set 経由で組み直すため、中身が同じでも
+  // JSON.stringify の結果がキー順の違いで一致しなくなることがある。
+  // それをそのまま「変化あり」と誤判定すると、保存→再読込→再度「変化あり」…と
+  // 無限リロードになる(実際に発生した重大な事故)。比較は必ずこちらを使う。
+  function stableStringify(obj){
+    if(Array.isArray(obj)) return '['+obj.map(stableStringify).join(',')+']';
+    if(obj && typeof obj==='object') return '{'+Object.keys(obj).sort().map(k=>JSON.stringify(k)+':'+stableStringify(obj[k])).join(',')+'}';
+    return JSON.stringify(obj);
+  }
 
   // 2つの端末の進捗を「進んでいる方が勝つ」方式でマージする。
   // クラウド/ローカルのどちらか片方が古くても、進捗(正答率・マスター済み等)が
@@ -392,15 +418,15 @@ const LB = (function(){
         let local = null;
         try{ local = localRaw ? JSON.parse(localRaw) : null; }catch(e){}
         const merged = mergeProgress(local, cloud);
-        const mergedRaw = JSON.stringify(merged);
-        const needLocalUpdate = mergedRaw !== localRaw;
-        const needCloudUpdate = mergedRaw !== JSON.stringify(cloud);
+        const mergedStable = stableStringify(merged);
+        const needLocalUpdate = mergedStable !== stableStringify(local);
+        const needCloudUpdate = mergedStable !== stableStringify(cloud);
         if(needCloudUpdate){
           try{ db.ref('users/'+u.uid+'/data/'+storageKey).set(escapeFbKeys(merged)); }catch(e){}
         }
         if(needLocalUpdate){
-          localStorage.setItem(storageKey, mergedRaw);
-          location.reload();
+          localStorage.setItem(storageKey, JSON.stringify(merged));
+          if(reloadGuardOk(storageKey)) location.reload();
         }
       }).catch(err=>{ console.error('[LB] attachStateSync read failed, skipping sync to avoid overwriting data', err); });
     });
