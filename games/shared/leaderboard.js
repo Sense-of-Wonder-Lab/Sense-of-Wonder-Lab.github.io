@@ -42,7 +42,7 @@ const LB = (function(){
       db = firebase.database();
       auth = firebase.auth();
       auth.onAuthStateChanged(fbUser=>{
-        if(!fbUser){ user = null; messages = []; notifyMessages(); authListeners.forEach(cb=>cb(null)); return; }
+        if(!fbUser){ user = null; messages = []; notifyMessages(); notifyAuth(null); return; }
         db.ref('users/'+fbUser.uid).once('value').then(snap=>{
           const data = snap.val();
           const nickname = (data && data.nickname) || (fbUser.displayName||'').slice(0,12) || 'ゲスト';
@@ -53,13 +53,16 @@ const LB = (function(){
           user = {uid:fbUser.uid, email:fbUser.email||'', nickname, avatar};
           recordActivity(fbUser.uid);
           checkMessages(fbUser.uid);
-          authListeners.forEach(cb=>cb(user));
+          notifyAuth(user);
         });
       });
     }catch(e){console.warn('[LB] init failed', e);}
   }
 
-  function onAuth(cb){ authListeners.push(cb); if(auth) cb(user); }
+  function notifyAuth(u){
+    authListeners.forEach(cb=>{ try{ cb(u); }catch(e){ console.error('[LB] onAuth listener failed', e); } });
+  }
+  function onAuth(cb){ authListeners.push(cb); if(auth){ try{ cb(user); }catch(e){ console.error('[LB] onAuth listener failed', e); } } }
   function currentUser(){ return user; }
 
   function recordActivity(uid){
@@ -496,7 +499,7 @@ const LB = (function(){
         btn.disabled = true; btn.textContent = '保存中…';
         const tasks = [updateNickname(wrap.querySelector('#lbNick').value)];
         if(pendingAvatar) tasks.push(updateAvatar(pendingAvatar));
-        Promise.all(tasks).then(()=>{ authListeners.forEach(cb=>cb(user)); close(); }).catch(err=>{
+        Promise.all(tasks).then(()=>{ notifyAuth(user); close(); }).catch(err=>{
           btn.disabled = false; btn.textContent = '保存';
           errBox.style.color = '';
           errBox.textContent = err && err.message ? err.message : String(err);
@@ -553,6 +556,6 @@ const LB = (function(){
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
-    openAccountModal, ensureStyle, onMessages
+    openAccountModal, ensureStyle, onMessages, fetchLikes
   };
 })();
