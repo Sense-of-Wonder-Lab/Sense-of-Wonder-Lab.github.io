@@ -34,6 +34,28 @@ const LB = (function(){
   let messages = []; // [{id,text,read,ts}]
   const messageListeners = [];
 
+  // Firebase Realtime Database のキー名は . # $ [ ] / を含められない。
+  // ゲーム側のstateオブジェクトのキーには単元名などの生の文字列(例:「No.1 アルカリ金属」)が
+  // そのまま使われることがあるため、送信前に可逆エスケープし、受信後に復元する。
+  // (順序重要: エスケープ時は%を最初に、復元時は%25を最後に処理する)
+  const FB_KEY_ESCAPE = [['%','%25'],['.','%2E'],['#','%23'],['$','%24'],['[','%5B'],[']','%5D'],['/','%2F']];
+  const FB_KEY_UNESCAPE = [['%2E','.'],['%23','#'],['%24','$'],['%5B','['],['%5D',']'],['%2F','/'],['%25','%']];
+  function mapKeysDeep(obj, pairs){
+    if(Array.isArray(obj)) return obj.map(v=>mapKeysDeep(v, pairs));
+    if(obj && typeof obj==='object'){
+      const out = {};
+      Object.keys(obj).forEach(k=>{
+        let nk = k;
+        pairs.forEach(([from,to])=>{ nk = nk.split(from).join(to); });
+        out[nk] = mapKeysDeep(obj[k], pairs);
+      });
+      return out;
+    }
+    return obj;
+  }
+  function escapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_ESCAPE); }
+  function unescapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_UNESCAPE); }
+
   function init(gid){
     gameId = gid;
     ensureStyle();
@@ -308,7 +330,9 @@ const LB = (function(){
     delete pushTimers[key];
     if(obj===undefined || !user || !db) return;
     delete pendingPush[key];
-    db.ref('users/'+user.uid+'/data/'+key).set(obj).catch(()=>{});
+    try{
+      db.ref('users/'+user.uid+'/data/'+key).set(escapeFbKeys(obj)).catch(err=>console.error('[LB] pushState failed', key, err));
+    }catch(err){ console.error('[LB] pushState failed (sync)', key, err); }
   }
   function pushState(key, obj){
     if(!user || !db) return;
@@ -327,7 +351,7 @@ const LB = (function(){
   }
   function pullState(key){
     if(!user || !db) return Promise.resolve(null);
-    return db.ref('users/'+user.uid+'/data/'+key).once('value').then(s=>s.exists()?s.val():null).catch(()=>null);
+    return db.ref('users/'+user.uid+'/data/'+key).once('value').then(s=>s.exists()?unescapeFbKeys(s.val()):null).catch(()=>null);
   }
   // storageKey: localStorage キー名。getLocal(): 生JSON文字列を返す関数
   // 注意: クラウド側の読み取りが失敗した場合は s.exists() の結果ではなく
@@ -338,7 +362,7 @@ const LB = (function(){
       if(!u) return;
       db.ref('users/'+u.uid+'/data/'+storageKey).once('value').then(snap=>{
         const exists = snap.exists();
-        const cloud = exists ? snap.val() : null;
+        const cloud = exists ? unescapeFbKeys(snap.val()) : null;
         if(exists){
           const cloudRaw = JSON.stringify(cloud);
           if(cloudRaw !== getLocalRaw()){
@@ -348,7 +372,7 @@ const LB = (function(){
         }else{
           const local = getLocalRaw();
           if(local){
-            try{ db.ref('users/'+u.uid+'/data/'+storageKey).set(JSON.parse(local)); }catch(e){}
+            try{ db.ref('users/'+u.uid+'/data/'+storageKey).set(escapeFbKeys(JSON.parse(local))); }catch(e){}
           }
         }
       }).catch(err=>{ console.error('[LB] attachStateSync read failed, skipping sync to avoid overwriting data', err); });
