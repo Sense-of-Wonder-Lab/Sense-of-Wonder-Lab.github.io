@@ -125,6 +125,14 @@ const FIREBASE_CONFIG = {
 };
 const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
 const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト'};
+// leaderboard.js 側で、Firebase が禁止する文字(. # $ [ ] /)を含むキー(無機化学の単元名など)
+// を可逆エスケープして保存している。ここは別ファイルなのでロジックを複製して復元する。
+const FB_KEY_UNESCAPE = [['%2E','.'],['%23','#'],['%24','$'],['%5B','['],['%5D',']'],['%2F','/'],['%25','%']];
+function unescapeFbKey(k){
+  let out = String(k);
+  FB_KEY_UNESCAPE.forEach(([esc,ch])=>{ out = out.split(esc).join(ch); });
+  return out;
+}
 const DECK_NAMES = {
   aroma: {d0:'No.1 芳香族炭化水素(構造式)', d1:'No.2 酸素を含む芳香族炭化水素(構造式)', d2:'No.3 窒素を含む芳香族炭化水素(構造式)', d3:'No.4 構造式マイナー', d4:'No.5 芳香族炭化水素(基礎)', d5:'No.6 酸素を含む芳香族(基礎)', d6:'No.7 酸素を含む芳香族(基礎その2)', d7:'No.8 窒素を含む芳香族(基礎)', d8:'No.9 反応の逆算', d9:'No.10 検出反応まとめ'},
   aliphatic: {d0:'No.1 構造式(名称当て)', d1:'No.2 アルコール・エーテルの性質', d2:'No.3 アルコールの級数・価数', d3:'No.4 アルコールの酸化', d4:'No.5 アルデヒド・ケトン', d5:'No.6 カルボン酸・エステル', d6:'No.7 エステル化・けん化', d7:'No.8 検出反応まとめ'}
@@ -140,7 +148,10 @@ function getAllProgress(u){
   const aliph = d.aliphaQuest1 && d.aliphaQuest1.memoScores;
   if(aliph) Object.entries(aliph).forEach(([id,s])=>{ out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id, gameKey:'aliphatic', deckId:id, best: (s&&s.best)||0}); });
   const inorg = d.inorganicQuest1 && d.inorganicQuest1.catStats;
-  if(inorg) Object.entries(inorg).forEach(([name,s])=>{ out.push({game:'無機化学', name, gameKey:'inorganic', deckId:name, best: (s&&s.best)||0}); });
+  // catStats のキーはFirebase保存時にエスケープされている(例: "No%2E1 ..." )。
+  // 表示名は復元するが、deckId は Firebase 上の実際のキー(エスケープ済み)のまま保つ
+  // (likes の書き込み先パスにそのまま使うため。中身が変わるわけではない)。
+  if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: (s&&s.best)||0}); });
   return out;
 }
 

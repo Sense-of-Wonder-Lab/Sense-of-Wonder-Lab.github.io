@@ -178,7 +178,7 @@ const LB = (function(){
   }
   function fetchLikes(gameKey){
     if(!db || !user) return Promise.resolve({});
-    return db.ref('users/'+user.uid+'/likes/'+gameKey).once('value').then(s=>s.val()||{}).catch(()=>({}));
+    return db.ref('users/'+user.uid+'/likes/'+gameKey).once('value').then(s=>unescapeFbKeys(s.val()||{})).catch(()=>({}));
   }
   function showToast(text){
     ensureStyle();
