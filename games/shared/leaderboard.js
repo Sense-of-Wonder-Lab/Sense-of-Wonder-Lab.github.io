@@ -313,11 +313,16 @@ const LB = (function(){
     return db.ref('users/'+user.uid+'/data/'+key).once('value').then(s=>s.exists()?s.val():null).catch(()=>null);
   }
   // storageKey: localStorage キー名。getLocal(): 生JSON文字列を返す関数
+  // 注意: クラウド側の読み取りが失敗した場合は s.exists() の結果ではなく
+  // rejected Promise になるため、下の .then(cloud=>...) には来ない(=何もしない)。
+  // 読み取り失敗を「クラウドにデータがない」と誤認してローカルで上書きしないための安全策。
   function attachStateSync(storageKey, getLocalRaw){
     onAuth(u=>{
       if(!u) return;
-      pullState(storageKey).then(cloud=>{
-        if(cloud){
+      db.ref('users/'+u.uid+'/data/'+storageKey).once('value').then(snap=>{
+        const exists = snap.exists();
+        const cloud = exists ? snap.val() : null;
+        if(exists){
           const cloudRaw = JSON.stringify(cloud);
           if(cloudRaw !== getLocalRaw()){
             localStorage.setItem(storageKey, cloudRaw);
@@ -329,7 +334,7 @@ const LB = (function(){
             try{ db.ref('users/'+u.uid+'/data/'+storageKey).set(JSON.parse(local)); }catch(e){}
           }
         }
-      });
+      }).catch(err=>{ console.error('[LB] attachStateSync read failed, skipping sync to avoid overwriting data', err); });
     });
   }
 
