@@ -9,7 +9,11 @@
   body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:#1e293b;margin:0;background:#f8fafc;padding:24px 16px 60px}
   h1{font-size:19px;margin:0 0 4px}
   .sub{font-size:12.5px;color:#64748b;margin-bottom:20px}
-  .card{background:#fff;border-radius:14px;padding:18px;max-width:900px;margin:0 auto 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .loginWrap{max-width:900px;margin:0 auto}
+  .layout{display:flex;gap:16px;align-items:flex-start;max-width:1400px}
+  .leftCol{flex:1;min-width:0}
+  .rightCol{width:360px;flex:none;position:sticky;top:24px}
   #gsiBox{display:flex;justify-content:center;padding:20px 0}
   #err{color:#dc2626;font-size:13px;text-align:center}
   table{width:100%;border-collapse:collapse;font-size:13px}
@@ -43,56 +47,65 @@
   th.sortable.sorted .arrow{opacity:1}
   #tbody tr{cursor:pointer}
   #tbody tr:hover{background:#f8fafc}
+  #tbody tr.selected{background:#eff6ff}
   #tbody td button{cursor:pointer}
   .resultCount{font-size:12px;color:#94a3b8;margin:-6px 0 12px}
-  .modalBg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:50;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
-  .modalBg.show{display:flex}
-  .modalBox{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-  .modalBox h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
-  .modalBox .msub{font-size:12px;color:#64748b;margin-bottom:14px}
-  .modalClose{float:right;border:none;background:none;font-size:18px;cursor:pointer;color:#94a3b8}
+  .detailCard{min-height:200px}
+  .detailEmpty{color:#94a3b8;font-size:13px;text-align:center;padding:40px 10px}
+  .detailBox h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+  .detailBox .msub{font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7}
   .progGroup{margin-bottom:14px}
   .progGroup h3{font-size:12.5px;color:#334155;margin:0 0 6px;font-weight:800}
-  .progRow{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0}
+  .progRow{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0}
   .progRow .pname{flex:1;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .progBar{width:90px;height:6px;background:#f1f5f9;border-radius:4px;overflow:hidden;flex:none}
+  .progBar{width:70px;height:6px;background:#f1f5f9;border-radius:4px;overflow:hidden;flex:none}
   .progBar i{display:block;height:100%;background:#22c55e;border-radius:4px}
-  .progPct{width:36px;text-align:right;font-weight:700;color:#334155;flex:none}
-  .modalMsgRow{display:flex;gap:6px;margin-top:16px;border-top:1px solid #f1f5f9;padding-top:14px}
-  .modalMsgRow input{flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:12.5px}
+  .progPct{width:32px;text-align:right;font-weight:700;color:#334155;flex:none}
+  .progLike{flex:none;border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .progLike:hover{background:#fef3c7}
+  .progLike[disabled]{opacity:.5;cursor:default}
+  .detailMsgRow{display:flex;gap:6px;margin-top:16px;border-top:1px solid #f1f5f9;padding-top:14px}
+  .detailMsgRow input{flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:12.5px}
+  .detailQuick{display:flex;gap:6px;margin-top:8px}
   .noProg{color:#cbd5e1;font-size:12px}
+  .achieveBadge{display:inline-block;background:#fffbeb;color:#92400e;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
 <h1>👤 会員管理</h1>
 <div class="sub">Sense of Wonder Lab のログインユーザー一覧・利用状況</div>
 
-<div class="card" id="loginCard">
+<div class="card loginWrap" id="loginCard">
   <div id="gsiBox"></div>
   <div id="err"></div>
 </div>
 
-<div class="card" id="dataCard" style="display:none">
-  <div class="stat-row" id="stats"></div>
-  <div class="toolbar">
-    <input type="search" id="searchBox" placeholder="🔍 ニックネーム・メールで検索">
-    <button class="btn" id="broadcastBtn">📣 一斉メッセージ</button>
-    <button class="btn" id="csvBtn">⬇️ CSV出力</button>
+<div class="layout" id="dataCard" style="display:none">
+  <div class="leftCol">
+    <div class="card" style="margin-bottom:16px">
+      <div class="stat-row" id="stats"></div>
+      <div class="toolbar">
+        <input type="search" id="searchBox" placeholder="🔍 ニックネーム・メールで検索">
+        <button class="btn" id="broadcastBtn">📣 一斉メッセージ</button>
+        <button class="btn" id="csvBtn">⬇️ CSV出力</button>
+      </div>
+      <div class="resultCount" id="resultCount"></div>
+      <div class="tw"><table id="tbl"><thead><tr>
+        <th></th>
+        <th class="sortable" data-key="nickname">ニックネーム<span class="arrow">▾</span></th>
+        <th class="sortable" data-key="ts">登録日<span class="arrow">▾</span></th>
+        <th class="sortable sorted" data-key="lastActive">最終アクセス<span class="arrow">▾</span></th>
+        <th class="sortable" data-key="days">プレイ日数<span class="arrow">▾</span></th>
+        <th>直近のゲーム</th>
+        <th title="100%達成したセット数(クリックで詳細)">🎉達成</th>
+      </tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
   </div>
-  <div class="resultCount" id="resultCount"></div>
-  <div class="tw"><table id="tbl"><thead><tr>
-    <th></th>
-    <th class="sortable" data-key="nickname">ニックネーム<span class="arrow">▾</span></th>
-    <th>メール</th>
-    <th class="sortable" data-key="ts">登録日<span class="arrow">▾</span></th>
-    <th class="sortable sorted" data-key="lastActive">最終アクセス<span class="arrow">▾</span></th>
-    <th class="sortable" data-key="days">プレイ日数<span class="arrow">▾</span></th>
-    <th>直近のゲーム</th><th>メッセージ</th><th>100%達成セット</th>
-  </tr></thead><tbody id="tbody"></tbody></table></div>
-</div>
-
-<div class="modalBg" id="modalBg">
-  <div class="modalBox" id="modalBox"></div>
+  <div class="rightCol">
+    <div class="card detailCard" id="detailCard">
+      <div class="detailEmpty">👈 一覧から行をクリックすると<br>ここに詳細が表示されます</div>
+    </div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -138,10 +151,15 @@ const db = firebase.database();
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function fmtDate(ts){
+function fmtDateShort(ts){
   if(!ts) return '-';
   const d = new Date(ts);
-  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return (d.getMonth()+1)+'/'+d.getDate();
+}
+function fmtDateTime(ts){
+  if(!ts) return '-';
+  const d = new Date(ts);
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
 function handleCredentialResponse(resp){
@@ -162,6 +180,7 @@ const gisPoll = setInterval(()=>{ if(window.google && google.accounts){ initGIS(
 
 let allUsers = {};
 let sortKey = 'lastActive', sortDir = -1;
+let selectedUid = null;
 
 auth.onAuthStateChanged(fbUser=>{
   if(!fbUser){
@@ -237,61 +256,89 @@ function render(){
     else if(idleDays >= 7) tag = '<span class="tag tag-idle">idle</span>';
     const newTag = (now-r.ts < 7*24*3600*1000) ? '<span class="tag tag-new">NEW</span>' : '';
     const av = r.avatar ? `<img class="avatar" src="${r.avatar}">` : `<span class="avatar">${escapeHtml(r.nickname[0]||'?')}</span>`;
-    return `<tr data-uid="${r.uid}">
+    return `<tr data-uid="${r.uid}"${r.uid===selectedUid?' class="selected"':''}>
       <td>${av}</td>
       <td>${escapeHtml(r.nickname)} ${tag} ${newTag}</td>
-      <td>${escapeHtml(r.email)}</td>
-      <td>${fmtDate(r.ts)}</td>
-      <td>${fmtDate(r.lastActive)}</td>
+      <td>${fmtDateShort(r.ts)}</td>
+      <td>${fmtDateTime(r.lastActive)}</td>
       <td>${r.days}日</td>
       <td>${escapeHtml(r.lastGame)}</td>
-      <td>
-        <button class="msgbtn" data-uid="${r.uid}" data-text="いいね!👍" title="いいね!">👍</button>
-        <button class="msgbtn" data-uid="${r.uid}" data-text="頑張ってるね!💪" title="頑張ってるね!">💪</button>
-        <button class="msgbtn-custom" data-uid="${r.uid}" title="メッセージを送る">✏️</button>
-      </td>
-      <td>${r.sets100.length?r.sets100.map(s=>`<button class="msgbtn-set" data-uid="${r.uid}" data-game="${escapeHtml(s.game)}" data-name="${escapeHtml(s.name)}" data-gamekey="${escapeHtml(s.gameKey)}" data-deckid="${escapeHtml(s.deckId)}" data-text="100%達成おめでとう!いいね!👍" title="いいねを送る">👍 ${escapeHtml(s.game)}:${escapeHtml(s.name)}</button>`).join(''):'<span style="color:#cbd5e1">-</span>'}</td>
+      <td>${r.sets100.length?`<span class="achieveBadge">🎉 ${r.sets100.length}</span>`:'<span style="color:#cbd5e1">-</span>'}</td>
     </tr>`;
   }).join('');
+  if(selectedUid && allUsers[selectedUid]) renderDetail(selectedUid);
 }
 
-function openUserModal(uid){
+function selectUser(uid){
+  selectedUid = uid;
+  render();
+}
+function renderDetail(uid){
   const u = allUsers[uid];
   if(!u) return;
   const r = buildRows().find(x=>x.uid===uid);
   const av = r.avatar ? `<img class="avatar" src="${r.avatar}" style="width:32px;height:32px">` : `<span class="avatar" style="width:32px;height:32px;font-size:13px">${escapeHtml(r.nickname[0]||'?')}</span>`;
   const groups = {'芳香族':[], '脂肪族':[], '無機化学':[]};
   r.progress.forEach(p=>{ if(groups[p.game]) groups[p.game].push(p); });
+  const likes = u.likes || {};
   const groupHtml = Object.entries(groups).map(([game, list])=>{
     if(!list.length) return `<div class="progGroup"><h3>${game}</h3><div class="noProg">まだプレイ記録がありません</div></div>`;
-    return `<div class="progGroup"><h3>${game} (${list.length}セット挑戦済み)</h3>${list.map(p=>`
+    return `<div class="progGroup"><h3>${game} (${list.length}セット挑戦済み)</h3>${list.map(p=>{
+      const already = !!(likes[p.gameKey] && likes[p.gameKey][p.deckId]);
+      const likeBtn = p.best===100 ? `<button class="progLike" data-uid="${r.uid}" data-game="${escapeHtml(p.game)}" data-name="${escapeHtml(p.name)}" data-gamekey="${escapeHtml(p.gameKey)}" data-deckid="${escapeHtml(p.deckId)}" ${already?'disabled':''}>${already?'✓済':'👍'}</button>` : '';
+      return `
       <div class="progRow">
         <span class="pname">${escapeHtml(p.name)}</span>
         <span class="progBar"><i style="width:${p.best}%;background:${p.best===100?'#22c55e':p.best>=60?'#3b82f6':'#f59e0b'}"></i></span>
         <span class="progPct">${p.best}%</span>
-      </div>`).join('')}</div>`;
+        ${likeBtn}
+      </div>`;
+    }).join('')}</div>`;
   }).join('');
-  document.getElementById('modalBox').innerHTML = `
-    <button class="modalClose" id="modalCloseBtn">✕</button>
+  document.getElementById('detailCard').innerHTML = `
+    <div class="detailBox">
     <h2>${av} ${escapeHtml(r.nickname)}</h2>
-    <div class="msub">${escapeHtml(r.email)} ・ 登録 ${fmtDate(r.ts)} ・ 最終アクセス ${fmtDate(r.lastActive)} ・ ${r.days}日プレイ</div>
+    <div class="msub">${escapeHtml(r.email)}<br>登録 ${fmtDateShort(r.ts)} ・ 最終 ${fmtDateTime(r.lastActive)} ・ ${r.days}日プレイ</div>
+    <div class="detailQuick">
+      <button class="btn" data-uid="${r.uid}" data-text="いいね!👍" id="quickLike">👍 いいね</button>
+      <button class="btn" data-uid="${r.uid}" data-text="頑張ってるね!💪" id="quickCheer">💪 応援</button>
+    </div>
     ${groupHtml}
-    <div class="modalMsgRow">
-      <input type="text" id="modalMsgInput" placeholder="メッセージを送る...">
-      <button class="btn btn-primary" id="modalMsgSend">送信</button>
+    <div class="detailMsgRow">
+      <input type="text" id="detailMsgInput" placeholder="メッセージを送る...">
+      <button class="btn btn-primary" id="detailMsgSend">送信</button>
+    </div>
     </div>
   `;
-  document.getElementById('modalBg').classList.add('show');
-  document.getElementById('modalCloseBtn').onclick = closeUserModal;
-  document.getElementById('modalMsgSend').onclick = ()=>{
-    const inp = document.getElementById('modalMsgInput');
+  document.getElementById('quickLike').onclick = e=>sendQuick(e.target);
+  document.getElementById('quickCheer').onclick = e=>sendQuick(e.target);
+  document.getElementById('detailMsgSend').onclick = ()=>{
+    const inp = document.getElementById('detailMsgInput');
     const text = inp.value.trim();
     if(!text) return;
     sendMessage(uid, text).then(()=>{ inp.value=''; inp.placeholder='✓ 送信しました'; }).catch(err=>alert('送信に失敗しました: '+err.message));
   };
 }
-function closeUserModal(){ document.getElementById('modalBg').classList.remove('show'); }
-document.getElementById('modalBg').addEventListener('click', e=>{ if(e.target.id==='modalBg') closeUserModal(); });
+function sendQuick(btn){
+  sendMessage(btn.dataset.uid, btn.dataset.text).then(()=>{
+    const orig = btn.textContent; btn.textContent = '✓ 送信済み';
+    setTimeout(()=>{ btn.textContent = orig; }, 1200);
+  }).catch(err=>alert('送信に失敗しました: '+err.message));
+}
+document.getElementById('detailCard').addEventListener('click', e=>{
+  const p = e.target.closest('.progLike');
+  if(!p || p.disabled) return;
+  const extra = {game:p.dataset.game, setName:p.dataset.name};
+  Promise.all([
+    sendMessage(p.dataset.uid, '100%達成おめでとう!いいね!👍', extra),
+    db.ref('users/'+p.dataset.uid+'/likes/'+p.dataset.gamekey+'/'+p.dataset.deckid).set(true)
+  ]).then(()=>{
+    if(!allUsers[p.dataset.uid].likes) allUsers[p.dataset.uid].likes = {};
+    if(!allUsers[p.dataset.uid].likes[p.dataset.gamekey]) allUsers[p.dataset.uid].likes[p.dataset.gamekey] = {};
+    allUsers[p.dataset.uid].likes[p.dataset.gamekey][p.dataset.deckid] = true;
+    p.textContent = '✓済'; p.disabled = true;
+  }).catch(err=>alert('送信に失敗しました: '+err.message));
+});
 
 document.getElementById('searchBox').addEventListener('input', render);
 document.querySelectorAll('th.sortable').forEach(th=>{
@@ -320,7 +367,7 @@ document.getElementById('csvBtn').addEventListener('click', ()=>{
   const header = ['ニックネーム','メール','登録日','最終アクセス','プレイ日数','直近のゲーム','100%達成セット数'];
   const lines = [header.join(',')];
   rows.forEach(r=>{
-    const cells = [r.nickname, r.email, fmtDate(r.ts), fmtDate(r.lastActive), r.days, r.lastGame, r.sets100.length]
+    const cells = [r.nickname, r.email, fmtDateShort(r.ts), fmtDateTime(r.lastActive), r.days, r.lastGame, r.sets100.length]
       .map(v=>'"'+String(v).replace(/"/g,'""')+'"');
     lines.push(cells.join(','));
   });
@@ -336,35 +383,9 @@ function sendMessage(uid, text, extra){
   return db.ref('users/'+uid+'/messages').push(Object.assign({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false}, extra||{}));
 }
 document.getElementById('tbody').addEventListener('click', e=>{
-  const s = e.target.closest('.msgbtn-set');
-  if(s){
-    const extra = {game:s.dataset.game, setName:s.dataset.name};
-    Promise.all([
-      sendMessage(s.dataset.uid, s.dataset.text, extra),
-      db.ref('users/'+s.dataset.uid+'/likes/'+s.dataset.gamekey+'/'+s.dataset.deckid).set(true)
-    ]).then(()=>{
-      s.textContent = '✓ 送信済み'; s.disabled = true; s.style.opacity = '.5';
-    }).catch(err=>alert('送信に失敗しました: '+err.message));
-    return;
-  }
-  const b = e.target.closest('.msgbtn');
-  if(b){
-    sendMessage(b.dataset.uid, b.dataset.text).then(()=>{
-      const orig = b.textContent; b.textContent = '✓';
-      setTimeout(()=>{ b.textContent = orig; }, 1200);
-    }).catch(err=>alert('送信に失敗しました: '+err.message));
-    return;
-  }
-  const c = e.target.closest('.msgbtn-custom');
-  if(c){
-    const text = prompt('送るメッセージを入力してください');
-    if(text) sendMessage(c.dataset.uid, text).catch(err=>alert('送信に失敗しました: '+err.message));
-    return;
-  }
   const tr = e.target.closest('tr[data-uid]');
-  if(tr) openUserModal(tr.dataset.uid);
+  if(tr) selectUser(tr.dataset.uid);
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeUserModal(); });
 </script>
 </body>
 </html>
