@@ -56,6 +56,28 @@ const LB = (function(){
   function escapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_ESCAPE); }
   function unescapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_UNESCAPE); }
 
+  // 2つの端末の進捗を「進んでいる方が勝つ」方式でマージする。
+  // クラウド/ローカルのどちらか片方が古くても、進捗(正答率・マスター済み等)が
+  // 消えることがないようにするための安全策(単純な上書きだと後から同期した方が
+  // 先に進んでいた方を消してしまう事故が起きるため)。
+  function mergeProgress(a, b){
+    if(a===undefined || a===null) return b===undefined ? null : b;
+    if(b===undefined || b===null) return a;
+    if(Array.isArray(a) || Array.isArray(b)){
+      if(!Array.isArray(a) || !Array.isArray(b)) return a; // 型が食い違う場合は形の壊れていなさそうな方を優先できないので現状維持
+      return Array.from(new Set([...a, ...b]));
+    }
+    if(typeof a==='object' && typeof b==='object'){
+      if(typeof a.best==='number' && typeof b.best==='number'){
+        return a.best>=b.best ? a : b; // {correct,total,best} 形式のスコアレコードは best が高い方を採用
+      }
+      const out = {};
+      new Set([...Object.keys(a), ...Object.keys(b)]).forEach(k=>{ out[k] = mergeProgress(a[k], b[k]); });
+      return out;
+    }
+    return a; // プリミティブ値(設定系)はローカル側を優先
+  }
+
   function init(gid){
     gameId = gid;
     ensureStyle();
@@ -357,23 +379,28 @@ const LB = (function(){
   // 注意: クラウド側の読み取りが失敗した場合は s.exists() の結果ではなく
   // rejected Promise になるため、下の .then(cloud=>...) には来ない(=何もしない)。
   // 読み取り失敗を「クラウドにデータがない」と誤認してローカルで上書きしないための安全策。
+  // 単純な「違ったらクラウドで上書き」ではなく mergeProgress で合成する。
+  // 別端末での保存がまだサーバーに届いていないタイミングで同期が走っても、
+  // 進捗が巻き戻って消えることがないようにするため。
   function attachStateSync(storageKey, getLocalRaw){
     onAuth(u=>{
       if(!u) return;
       db.ref('users/'+u.uid+'/data/'+storageKey).once('value').then(snap=>{
         const exists = snap.exists();
         const cloud = exists ? unescapeFbKeys(snap.val()) : null;
-        if(exists){
-          const cloudRaw = JSON.stringify(cloud);
-          if(cloudRaw !== getLocalRaw()){
-            localStorage.setItem(storageKey, cloudRaw);
-            location.reload();
-          }
-        }else{
-          const local = getLocalRaw();
-          if(local){
-            try{ db.ref('users/'+u.uid+'/data/'+storageKey).set(escapeFbKeys(JSON.parse(local))); }catch(e){}
-          }
+        const localRaw = getLocalRaw();
+        let local = null;
+        try{ local = localRaw ? JSON.parse(localRaw) : null; }catch(e){}
+        const merged = mergeProgress(local, cloud);
+        const mergedRaw = JSON.stringify(merged);
+        const needLocalUpdate = mergedRaw !== localRaw;
+        const needCloudUpdate = mergedRaw !== JSON.stringify(cloud);
+        if(needCloudUpdate){
+          try{ db.ref('users/'+u.uid+'/data/'+storageKey).set(escapeFbKeys(merged)); }catch(e){}
+        }
+        if(needLocalUpdate){
+          localStorage.setItem(storageKey, mergedRaw);
+          location.reload();
         }
       }).catch(err=>{ console.error('[LB] attachStateSync read failed, skipping sync to avoid overwriting data', err); });
     });
