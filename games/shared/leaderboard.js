@@ -91,7 +91,16 @@ const LB = (function(){
     if(b===undefined || b===null) return a;
     if(Array.isArray(a) || Array.isArray(b)){
       if(!Array.isArray(a) || !Array.isArray(b)) return a; // 型が食い違う場合は形の壊れていなさそうな方を優先できないので現状維持
-      return Array.from(new Set([...a, ...b]));
+      // 中身(内容)で重複除去する。Set([...a,...b]) はオブジェクト要素を参照で比較するため
+      // 同じ内容でも別物とみなして毎回2倍に膨れ上がる事故が起きた(実際に発生、quota超過)。
+      const seen = new Set();
+      const out = [];
+      [...a, ...b].forEach(item=>{
+        const key = (item && typeof item==='object') ? stableStringify(item) : item;
+        if(!seen.has(key)){ seen.add(key); out.push(item); }
+      });
+      if(out.length > 500) out.length = 500; // 想定外の増殖バグに対する保険(通常この規模の配列は起こり得ない)
+      return out;
     }
     if(typeof a==='object' && typeof b==='object'){
       if(typeof a.best==='number' && typeof b.best==='number'){
