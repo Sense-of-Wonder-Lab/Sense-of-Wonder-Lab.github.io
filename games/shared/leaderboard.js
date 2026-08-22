@@ -30,6 +30,7 @@ const LB = (function(){
   let user = null; // {uid,email,nickname}
   const authListeners = [];
   const pushTimers = {};
+  const pendingPush = {}; // key -> 保存待ちのオブジェクト(ページ離脱時に即時送信するため保持)
   let messages = []; // [{id,text,read,ts}]
   const messageListeners = [];
 
@@ -301,12 +302,28 @@ const LB = (function(){
   }
 
   /* ---------- 進捗データのクラウド同期 ---------- */
+  function doPush(key){
+    const obj = pendingPush[key];
+    clearTimeout(pushTimers[key]);
+    delete pushTimers[key];
+    if(obj===undefined || !user || !db) return;
+    delete pendingPush[key];
+    db.ref('users/'+user.uid+'/data/'+key).set(obj).catch(()=>{});
+  }
   function pushState(key, obj){
     if(!user || !db) return;
+    pendingPush[key] = obj;
     clearTimeout(pushTimers[key]);
-    pushTimers[key] = setTimeout(()=>{
-      db.ref('users/'+user.uid+'/data/'+key).set(obj).catch(()=>{});
-    }, 1200);
+    pushTimers[key] = setTimeout(()=>doPush(key), 1200);
+  }
+  // タブが隠れる/閉じられる瞬間に、保留中の保存(デバウンス待ち)を即座に送る。
+  // これがないと、結果画面を出した直後にページを離れるモバイル操作で保存が飛ぶ。
+  function flushPendingPushes(){
+    Object.keys(pendingPush).forEach(doPush);
+  }
+  if(typeof document !== 'undefined'){
+    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushPendingPushes(); });
+    window.addEventListener('pagehide', flushPendingPushes);
   }
   function pullState(key){
     if(!user || !db) return Promise.resolve(null);
