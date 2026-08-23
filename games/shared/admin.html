@@ -320,8 +320,6 @@ function renderDetail(uid){
     <h2>${av} ${escapeHtml(r.nickname)}</h2>
     <div class="msub">${escapeHtml(r.email)}<br>登録 ${fmtDateShort(r.ts)} ・ 最終 ${fmtDateTime(r.lastActive)} ・ ${r.days}日プレイ</div>
     <div class="detailQuick">
-      <button class="btn" data-uid="${r.uid}" data-text="いいね!👍" id="quickLike">👍 いいね</button>
-      <button class="btn" data-uid="${r.uid}" data-text="頑張ってるね!💪" id="quickCheer">💪 応援</button>
       <button class="btn" id="rawDataBtn">🔍 生データ</button>
     </div>
     <pre id="rawDataBox" style="display:none;white-space:pre-wrap;word-break:break-all;font-size:11px;background:#111;color:#9f9;padding:8px;border-radius:6px;max-height:260px;overflow:auto"></pre>
@@ -332,8 +330,6 @@ function renderDetail(uid){
     </div>
     </div>
   `;
-  document.getElementById('quickLike').onclick = e=>sendQuick(e.target);
-  document.getElementById('quickCheer').onclick = e=>sendQuick(e.target);
   document.getElementById('rawDataBtn').onclick = ()=>{
     const box = document.getElementById('rawDataBox');
     if(box.style.display==='none'){
@@ -350,18 +346,14 @@ function renderDetail(uid){
     sendMessage(uid, text).then(()=>{ inp.value=''; inp.placeholder='✓ 送信しました'; }).catch(err=>alert('送信に失敗しました: '+err.message));
   };
 }
-function sendQuick(btn){
-  sendMessage(btn.dataset.uid, btn.dataset.text).then(()=>{
-    const orig = btn.textContent; btn.textContent = '✓ 送信済み';
-    setTimeout(()=>{ btn.textContent = orig; }, 1200);
-  }).catch(err=>alert('送信に失敗しました: '+err.message));
-}
 document.getElementById('detailCard').addEventListener('click', e=>{
   const p = e.target.closest('.progLike');
   if(!p || p.disabled) return;
+  const text = prompt(`「${p.dataset.name}」100%達成へのメッセージを入力してください:`, '100%達成おめでとう!いいね!👍');
+  if(!text) return;
   const extra = {game:p.dataset.game, setName:p.dataset.name};
   Promise.all([
-    sendMessage(p.dataset.uid, '100%達成おめでとう!いいね!👍', extra),
+    sendMessage(p.dataset.uid, text, extra),
     db.ref('users/'+p.dataset.uid+'/likes/'+p.dataset.gamekey+'/'+p.dataset.deckid).set(true)
   ]).then(()=>{
     if(!allUsers[p.dataset.uid].likes) allUsers[p.dataset.uid].likes = {};
