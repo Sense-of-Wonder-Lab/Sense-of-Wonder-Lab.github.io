@@ -103,8 +103,13 @@ const LB = (function(){
       return out;
     }
     if(typeof a==='object' && typeof b==='object'){
-      if(typeof a.best==='number' && typeof b.best==='number'){
-        return a.best>=b.best ? a : b; // {correct,total,best} 形式のスコアレコードは best が高い方を採用
+      if(typeof a.correct==='number' && typeof a.total==='number' && typeof b.correct==='number' && typeof b.total==='number'){
+        // {correct,total,best} 形式のスコアレコード。best が保存されていない古い記録
+        // (best集計が入る前の記録や、片方だけbest欠けの記録同士のマージでbestがnull落ちするケース)
+        // でも取りこぼさないよう、correct/totalから算出した値で補って比較する。
+        const scoreOf = s => typeof s.best==='number' ? s.best : Math.round(100*s.correct/s.total);
+        const winner = scoreOf(a)>=scoreOf(b) ? a : b;
+        return {correct: winner.correct, total: winner.total, best: Math.max(scoreOf(a), scoreOf(b))};
       }
       const out = {};
       new Set([...Object.keys(a), ...Object.keys(b)]).forEach(k=>{ out[k] = mergeProgress(a[k], b[k]); });

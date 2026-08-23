@@ -140,18 +140,27 @@ const DECK_NAMES = {
 function get100Sets(u){
   return getAllProgress(u).filter(p=>p.best===100).map(p=>({game:p.game, name:p.name, gameKey:p.gameKey, deckId:p.deckId}));
 }
+// s.best が未保存(古い記録や同期のタイミングで欠けたレコード)の場合、
+// ゲーム画面側(deckbtn の表示ロジック)と同じく、今回の正答率で代用する。
+// これを 0 扱いにすると、達成しているのに管理画面だけ未達成に見えるズレが起きる。
+function bestPctOf(s){
+  if(!s) return 0;
+  if(typeof s.best==='number') return s.best;
+  if(s.total) return Math.round(100*s.correct/s.total);
+  return 0;
+}
 function getAllProgress(u){
   const out = [];
   const d = u.data || {};
   const aroma = d.aromaQuest2 && d.aromaQuest2.memoScores;
-  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id, gameKey:'aroma', deckId:id, best: (s&&s.best)||0}); });
+  if(aroma) Object.entries(aroma).forEach(([id,s])=>{ out.push({game:'芳香族', name: DECK_NAMES.aroma[id]||id, gameKey:'aroma', deckId:id, best: bestPctOf(s)}); });
   const aliph = d.aliphaQuest1 && d.aliphaQuest1.memoScores;
-  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id, gameKey:'aliphatic', deckId:id, best: (s&&s.best)||0}); });
+  if(aliph) Object.entries(aliph).forEach(([id,s])=>{ out.push({game:'脂肪族', name: DECK_NAMES.aliphatic[id]||id, gameKey:'aliphatic', deckId:id, best: bestPctOf(s)}); });
   const inorg = d.inorganicQuest1 && d.inorganicQuest1.catStats;
   // catStats のキーはFirebase保存時にエスケープされている(例: "No%2E1 ..." )。
   // 表示名は復元するが、deckId は Firebase 上の実際のキー(エスケープ済み)のまま保つ
   // (likes の書き込み先パスにそのまま使うため。中身が変わるわけではない)。
-  if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: (s&&s.best)||0}); });
+  if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: bestPctOf(s)}); });
   return out;
 }
 
@@ -313,7 +322,9 @@ function renderDetail(uid){
     <div class="detailQuick">
       <button class="btn" data-uid="${r.uid}" data-text="いいね!👍" id="quickLike">👍 いいね</button>
       <button class="btn" data-uid="${r.uid}" data-text="頑張ってるね!💪" id="quickCheer">💪 応援</button>
+      <button class="btn" id="rawDataBtn">🔍 生データ</button>
     </div>
+    <pre id="rawDataBox" style="display:none;white-space:pre-wrap;word-break:break-all;font-size:11px;background:#111;color:#9f9;padding:8px;border-radius:6px;max-height:260px;overflow:auto"></pre>
     ${groupHtml}
     <div class="detailMsgRow">
       <input type="text" id="detailMsgInput" placeholder="メッセージを送る...">
@@ -323,6 +334,15 @@ function renderDetail(uid){
   `;
   document.getElementById('quickLike').onclick = e=>sendQuick(e.target);
   document.getElementById('quickCheer').onclick = e=>sendQuick(e.target);
+  document.getElementById('rawDataBtn').onclick = ()=>{
+    const box = document.getElementById('rawDataBox');
+    if(box.style.display==='none'){
+      box.textContent = JSON.stringify(u.data||{}, null, 2);
+      box.style.display = '';
+    } else {
+      box.style.display = 'none';
+    }
+  };
   document.getElementById('detailMsgSend').onclick = ()=>{
     const inp = document.getElementById('detailMsgInput');
     const text = inp.value.trim();
