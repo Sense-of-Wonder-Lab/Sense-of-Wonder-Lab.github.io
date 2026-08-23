@@ -132,12 +132,15 @@
       </select></span>
     </div>
     <div class="resultCount" id="qResultCount"></div>
+    <div class="resultCount" id="qPersonalHint" style="color:#2563eb"></div>
     <div class="tw"><table id="qTbl"><thead><tr>
       <th>ゲーム</th>
       <th>セット</th>
       <th>問題</th>
       <th>正解</th>
       <th>誤答選択肢</th>
+      <th title="全プレイヤー合計">全体正答率</th>
+      <th title="会員一覧で選択中のユーザーのみ">個人正答率</th>
     </tr></thead><tbody id="qTbody"></tbody></table></div>
   </div>
 </div>
@@ -326,6 +329,7 @@ function render(){
 function selectUser(uid){
   selectedUid = uid;
   render();
+  if(document.getElementById('questionsView').style.display !== 'none' && allQuestions) renderQuestions();
 }
 function renderDetail(uid){
   const u = allUsers[uid];
@@ -367,7 +371,7 @@ function renderDetail(uid){
   document.getElementById('rawDataBtn').onclick = ()=>{
     const box = document.getElementById('rawDataBox');
     if(box.style.display==='none'){
-      box.textContent = JSON.stringify(u.data||{}, null, 2);
+      box.textContent = JSON.stringify({data:u.data||{}, qStats:u.qStats||{}, likes:u.likes||{}}, null, 2);
       box.style.display = '';
     } else {
       box.style.display = 'none';
@@ -475,9 +479,9 @@ let allQuestions = null;
 function loadAllQuestions(){
   if(allQuestions) return Promise.resolve(allQuestions);
   const sources = [
-    {url:'../aromatic-quest/index.html', game:'芳香族', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
-    {url:'../aliphatic-quest/index.html', game:'脂肪族', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
-    {url:'../inorganic-quest/index.html', game:'無機化学', marker:'const DATA = ', open:'{', close:'}', kind:'flat'}
+    {url:'../aromatic-quest/index.html', game:'芳香族', gameKey:'aromatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
+    {url:'../aliphatic-quest/index.html', game:'脂肪族', gameKey:'aliphatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
+    {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'}
   ];
   return Promise.all(sources.map(s=>
     fetch(s.url).then(r=>r.text()).then(text=>{
@@ -489,12 +493,12 @@ function loadAllQuestions(){
       if(s.kind==='decks'){
         parsed.forEach(deck=>{
           (deck.items||[]).forEach(it=>{
-            out.push({game:s.game, set: deck.name, q: it.q, correct: it.a, wrongs: it.wrongs||[]});
+            out.push({game:s.game, gameKey:s.gameKey, id:it.id, set: deck.name, q: it.q, correct: it.a, wrongs: it.wrongs||[]});
           });
         });
       } else {
         (parsed.items||[]).forEach(it=>{
-          out.push({game:s.game, set: unescapeFbKey(it.cat), q: it.q, correct: it.correct, wrongs: it.wrongs||[]});
+          out.push({game:s.game, gameKey:s.gameKey, id:it.id, set: unescapeFbKey(it.cat), q: it.q, correct: it.correct, wrongs: it.wrongs||[]});
         });
       }
       return out;
@@ -504,6 +508,22 @@ function loadAllQuestions(){
     return allQuestions;
   });
 }
+let questionStats = null;
+function loadQuestionStats(){
+  return db.ref('questionStats').once('value').then(snap=>{
+    questionStats = snap.val()||{};
+    return questionStats;
+  }).catch(err=>{ console.error('[admin] questionStats取得失敗', err); questionStats={}; return questionStats; });
+}
+function pctOf(stat){
+  if(!stat || !stat.total) return null;
+  return Math.round(100*(stat.correct||0)/stat.total);
+}
+function fmtPct(stat){
+  const p = pctOf(stat);
+  if(p===null) return '<span class="noProg">-</span>';
+  return `${p}%<span class="qWrongs">(${stat.correct||0}/${stat.total})</span>`;
+}
 function renderQuestions(){
   const q = (document.getElementById('qSearchBox').value||'').trim().toLowerCase();
   const gameFilter = document.getElementById('qGameSelect').value;
@@ -511,14 +531,22 @@ function renderQuestions(){
   if(gameFilter) list = list.filter(x=>x.game===gameFilter);
   if(q) list = list.filter(x=> x.q.toLowerCase().includes(q) || String(x.correct).toLowerCase().includes(q));
   document.getElementById('qResultCount').textContent = `${list.length}問`;
-  document.getElementById('qTbody').innerHTML = list.map(x=>`
+  const selUser = selectedUid ? allUsers[selectedUid] : null;
+  document.getElementById('qPersonalHint').textContent = selUser ? `👤 ${selUser.nickname||'選択中のユーザー'} の正答率も表示中` : '';
+  document.getElementById('qTbody').innerHTML = list.map(x=>{
+    const gStat = questionStats && questionStats[x.gameKey] && questionStats[x.gameKey][x.id];
+    const uStat = selUser && selUser.qStats && selUser.qStats[x.gameKey] && selUser.qStats[x.gameKey][x.id];
+    return `
     <tr>
       <td>${escapeHtml(x.game)}</td>
       <td>${escapeHtml(x.set)}</td>
       <td class="qCell">${escapeHtml(x.q)}</td>
       <td class="qCorrect">${escapeHtml(String(x.correct))}</td>
       <td class="qWrongs">${x.wrongs.map(w=>escapeHtml(String(w))).join(' / ')}</td>
-    </tr>`).join('');
+      <td>${fmtPct(gStat)}</td>
+      <td>${selUser ? fmtPct(uStat) : '<span class="noProg">-</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 document.getElementById('tabUsers').addEventListener('click', ()=>{
   document.getElementById('tabUsers').classList.add('active');
@@ -531,7 +559,7 @@ document.getElementById('tabQuestions').addEventListener('click', ()=>{
   document.getElementById('tabUsers').classList.remove('active');
   document.getElementById('usersView').style.display = 'none';
   document.getElementById('questionsView').style.display = '';
-  loadAllQuestions().then(renderQuestions);
+  Promise.all([loadAllQuestions(), loadQuestionStats()]).then(renderQuestions);
 });
 document.getElementById('qSearchBox').addEventListener('input', renderQuestions);
 document.getElementById('qGameSelect').addEventListener('change', renderQuestions);

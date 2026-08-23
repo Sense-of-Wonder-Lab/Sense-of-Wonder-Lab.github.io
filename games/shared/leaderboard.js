@@ -70,6 +70,11 @@ const LB = (function(){
   }
   function escapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_ESCAPE); }
   function unescapeFbKeys(obj){ return mapKeysDeep(obj, FB_KEY_UNESCAPE); }
+  function escapeFbKeyStr(s){
+    let out = String(s);
+    FB_KEY_ESCAPE.forEach(([from,to])=>{ out = out.split(from).join(to); });
+    return out;
+  }
 
   // オブジェクトのキー順序に依存しない比較用シリアライズ。
   // mergeProgress はオブジェクトを Set 経由で組み直すため、中身が同じでも
@@ -193,6 +198,28 @@ const LB = (function(){
   function fetchLikes(gameKey){
     if(!db || !user) return Promise.resolve({});
     return db.ref('users/'+user.uid+'/likes/'+gameKey).once('value').then(s=>unescapeFbKeys(s.val()||{})).catch(()=>({}));
+  }
+  // 問題ごとの正答率カウンター。デッキ/カテゴリを1周解き終えた時点で一括送信する
+  // (1問答えるたびに送るのではない)。
+  // pushState/attachStateSync のマージ処理は一切経由せず、Firebase の increment() で
+  // サーバー側に直接加算する。これなら複数端末から同時に送っても正しく合算されるので、
+  // 自前マージロジックが二重カウントする事故(このセッションで何度か起きた)が起こり得ない。
+  // 書き込み先は users/{uid}/data/{storageKey} (進捗データ本体、mergeで上書きされ得る場所) とは
+  // 完全に別の場所(questionStats, users/{uid}/qStats)にしているのもそのため。
+  function recordQuizResults(gameKey, results){
+    if(!db || !user || !results || !results.length) return;
+    const escGame = escapeFbKeyStr(gameKey);
+    const updates = {};
+    results.forEach(r=>{
+      const escId = escapeFbKeyStr(r.id);
+      updates['questionStats/'+escGame+'/'+escId+'/total'] = firebase.database.ServerValue.increment(1);
+      updates['users/'+user.uid+'/qStats/'+escGame+'/'+escId+'/total'] = firebase.database.ServerValue.increment(1);
+      if(r.ok){
+        updates['questionStats/'+escGame+'/'+escId+'/correct'] = firebase.database.ServerValue.increment(1);
+        updates['users/'+user.uid+'/qStats/'+escGame+'/'+escId+'/correct'] = firebase.database.ServerValue.increment(1);
+      }
+    });
+    db.ref().update(updates).catch(err=>console.error('[LB] recordQuizResults failed', err));
   }
   function showToast(text){
     ensureStyle();
@@ -669,6 +696,6 @@ const LB = (function(){
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
-    openAccountModal, ensureStyle, onMessages, fetchLikes
+    openAccountModal, ensureStyle, onMessages, fetchLikes, recordQuizResults
   };
 })();
