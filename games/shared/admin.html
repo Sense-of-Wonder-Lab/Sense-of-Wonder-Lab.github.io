@@ -69,6 +69,13 @@
   .detailQuick{display:flex;gap:6px;margin-top:8px}
   .noProg{color:#cbd5e1;font-size:12px}
   .achieveBadge{display:inline-block;background:#fffbeb;color:#92400e;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700}
+  .tabbar{display:flex;gap:6px;margin-bottom:16px}
+  .tabbtn{border:1px solid #e2e8f0;background:#fff;color:#64748b;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer}
+  .tabbtn.active{background:#1e293b;border-color:#1e293b;color:#fff}
+  .qGameFilter select{border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;background:#f8fafc}
+  .qCell{white-space:normal;max-width:340px}
+  .qCorrect{white-space:normal;max-width:200px;color:#15803d;font-weight:700}
+  .qWrongs{white-space:normal;max-width:280px;color:#94a3b8;font-size:12px}
 </style>
 </head>
 <body>
@@ -80,31 +87,58 @@
   <div id="err"></div>
 </div>
 
-<div class="layout" id="dataCard" style="display:none">
-  <div class="leftCol">
-    <div class="card" style="margin-bottom:16px">
-      <div class="stat-row" id="stats"></div>
-      <div class="toolbar">
-        <input type="search" id="searchBox" placeholder="🔍 ニックネーム・メールで検索">
-        <button class="btn" id="broadcastBtn">📣 一斉メッセージ</button>
-        <button class="btn" id="csvBtn">⬇️ CSV出力</button>
+<div id="dataCard" style="display:none">
+  <div class="tabbar">
+    <button class="tabbtn active" id="tabUsers">👤 会員一覧</button>
+    <button class="tabbtn" id="tabQuestions">📋 全問題一覧</button>
+  </div>
+
+  <div class="layout" id="usersView">
+    <div class="leftCol">
+      <div class="card" style="margin-bottom:16px">
+        <div class="stat-row" id="stats"></div>
+        <div class="toolbar">
+          <input type="search" id="searchBox" placeholder="🔍 ニックネーム・メールで検索">
+          <button class="btn" id="broadcastBtn">📣 一斉メッセージ</button>
+          <button class="btn" id="csvBtn">⬇️ CSV出力</button>
+        </div>
+        <div class="resultCount" id="resultCount"></div>
+        <div class="tw"><table id="tbl"><thead><tr>
+          <th></th>
+          <th class="sortable" data-key="nickname">ニックネーム<span class="arrow">▾</span></th>
+          <th class="sortable" data-key="ts">登録日<span class="arrow">▾</span></th>
+          <th class="sortable sorted" data-key="lastActive">最終アクセス<span class="arrow">▾</span></th>
+          <th class="sortable" data-key="days">プレイ日数<span class="arrow">▾</span></th>
+          <th>直近のゲーム</th>
+          <th title="100%達成したセット数(クリックで詳細)">🎉達成</th>
+        </tr></thead><tbody id="tbody"></tbody></table></div>
       </div>
-      <div class="resultCount" id="resultCount"></div>
-      <div class="tw"><table id="tbl"><thead><tr>
-        <th></th>
-        <th class="sortable" data-key="nickname">ニックネーム<span class="arrow">▾</span></th>
-        <th class="sortable" data-key="ts">登録日<span class="arrow">▾</span></th>
-        <th class="sortable sorted" data-key="lastActive">最終アクセス<span class="arrow">▾</span></th>
-        <th class="sortable" data-key="days">プレイ日数<span class="arrow">▾</span></th>
-        <th>直近のゲーム</th>
-        <th title="100%達成したセット数(クリックで詳細)">🎉達成</th>
-      </tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+    <div class="rightCol">
+      <div class="card detailCard" id="detailCard">
+        <div class="detailEmpty">👈 一覧から行をクリックすると<br>ここに詳細が表示されます</div>
+      </div>
     </div>
   </div>
-  <div class="rightCol">
-    <div class="card detailCard" id="detailCard">
-      <div class="detailEmpty">👈 一覧から行をクリックすると<br>ここに詳細が表示されます</div>
+
+  <div class="card" id="questionsView" style="display:none">
+    <div class="toolbar">
+      <input type="search" id="qSearchBox" placeholder="🔍 問題文・正解で検索">
+      <span class="qGameFilter"><select id="qGameSelect">
+        <option value="">すべてのゲーム</option>
+        <option value="芳香族">芳香族</option>
+        <option value="脂肪族">脂肪族</option>
+        <option value="無機化学">無機化学</option>
+      </select></span>
     </div>
+    <div class="resultCount" id="qResultCount"></div>
+    <div class="tw"><table id="qTbl"><thead><tr>
+      <th>ゲーム</th>
+      <th>セット</th>
+      <th>問題</th>
+      <th>正解</th>
+      <th>誤答選択肢</th>
+    </tr></thead><tbody id="qTbody"></tbody></table></div>
   </div>
 </div>
 
@@ -409,6 +443,98 @@ document.getElementById('tbody').addEventListener('click', e=>{
   const tr = e.target.closest('tr[data-uid]');
   if(tr) selectUser(tr.dataset.uid);
 });
+
+/* ================= 全問題一覧 ================= */
+// 各ゲームのHTML内に埋め込まれた問題データ(const DATA / const MEMO_DECKS)を
+// fetchで取得し、その場でパースして一覧表示する。別途JSONファイル化はしていないので
+// (ゲーム側の読み込み方法を変えるのはリスクがあるため)、admin側だけで完結させている。
+function extractBalanced(text, startIdx, openCh, closeCh){
+  let depth = 0, inStr = false, strCh = null, esc = false;
+  for(let i=startIdx;i<text.length;i++){
+    const c = text[i];
+    if(inStr){
+      if(esc){ esc=false; continue; }
+      if(c==='\\'){ esc=true; continue; }
+      if(c===strCh) inStr=false;
+      continue;
+    }
+    if(c==='"'||c==="'"||c==='`'){ inStr=true; strCh=c; continue; }
+    if(c===openCh) depth++;
+    else if(c===closeCh){ depth--; if(depth===0) return text.slice(startIdx, i+1); }
+  }
+  return null;
+}
+function findAndExtract(text, marker, openCh, closeCh){
+  const idx = text.indexOf(marker);
+  if(idx===-1) return null;
+  const openIdx = text.indexOf(openCh, idx);
+  if(openIdx===-1) return null;
+  return extractBalanced(text, openIdx, openCh, closeCh);
+}
+let allQuestions = null;
+function loadAllQuestions(){
+  if(allQuestions) return Promise.resolve(allQuestions);
+  const sources = [
+    {url:'../aromatic-quest/index.html', game:'芳香族', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
+    {url:'../aliphatic-quest/index.html', game:'脂肪族', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
+    {url:'../inorganic-quest/index.html', game:'無機化学', marker:'const DATA = ', open:'{', close:'}', kind:'flat'}
+  ];
+  return Promise.all(sources.map(s=>
+    fetch(s.url).then(r=>r.text()).then(text=>{
+      const extracted = findAndExtract(text, s.marker, s.open, s.close);
+      if(!extracted) return [];
+      let parsed;
+      try{ parsed = JSON.parse(extracted); }catch(e){ console.error('[admin] 問題データのパースに失敗', s.url, e); return []; }
+      const out = [];
+      if(s.kind==='decks'){
+        parsed.forEach(deck=>{
+          (deck.items||[]).forEach(it=>{
+            out.push({game:s.game, set: deck.name, q: it.q, correct: it.a, wrongs: it.wrongs||[]});
+          });
+        });
+      } else {
+        (parsed.items||[]).forEach(it=>{
+          out.push({game:s.game, set: unescapeFbKey(it.cat), q: it.q, correct: it.correct, wrongs: it.wrongs||[]});
+        });
+      }
+      return out;
+    }).catch(err=>{ console.error('[admin] 問題データの取得に失敗', s.url, err); return []; })
+  )).then(lists=>{
+    allQuestions = lists.flat();
+    return allQuestions;
+  });
+}
+function renderQuestions(){
+  const q = (document.getElementById('qSearchBox').value||'').trim().toLowerCase();
+  const gameFilter = document.getElementById('qGameSelect').value;
+  let list = allQuestions||[];
+  if(gameFilter) list = list.filter(x=>x.game===gameFilter);
+  if(q) list = list.filter(x=> x.q.toLowerCase().includes(q) || String(x.correct).toLowerCase().includes(q));
+  document.getElementById('qResultCount').textContent = `${list.length}問`;
+  document.getElementById('qTbody').innerHTML = list.map(x=>`
+    <tr>
+      <td>${escapeHtml(x.game)}</td>
+      <td>${escapeHtml(x.set)}</td>
+      <td class="qCell">${escapeHtml(x.q)}</td>
+      <td class="qCorrect">${escapeHtml(String(x.correct))}</td>
+      <td class="qWrongs">${x.wrongs.map(w=>escapeHtml(String(w))).join(' / ')}</td>
+    </tr>`).join('');
+}
+document.getElementById('tabUsers').addEventListener('click', ()=>{
+  document.getElementById('tabUsers').classList.add('active');
+  document.getElementById('tabQuestions').classList.remove('active');
+  document.getElementById('usersView').style.display = '';
+  document.getElementById('questionsView').style.display = 'none';
+});
+document.getElementById('tabQuestions').addEventListener('click', ()=>{
+  document.getElementById('tabQuestions').classList.add('active');
+  document.getElementById('tabUsers').classList.remove('active');
+  document.getElementById('usersView').style.display = 'none';
+  document.getElementById('questionsView').style.display = '';
+  loadAllQuestions().then(renderQuestions);
+});
+document.getElementById('qSearchBox').addEventListener('input', renderQuestions);
+document.getElementById('qGameSelect').addEventListener('change', renderQuestions);
 </script>
 </body>
 </html>
