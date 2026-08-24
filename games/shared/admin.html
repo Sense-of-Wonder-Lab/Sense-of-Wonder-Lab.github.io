@@ -130,17 +130,20 @@
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
       </select></span>
+      <span class="qGameFilter"><select id="qSetSelect">
+        <option value="">すべてのセット</option>
+      </select></span>
     </div>
     <div class="resultCount" id="qResultCount"></div>
     <div class="resultCount" id="qPersonalHint" style="color:#2563eb"></div>
     <div class="tw"><table id="qTbl"><thead><tr>
-      <th>ゲーム</th>
-      <th>セット</th>
-      <th>問題</th>
-      <th>正解</th>
+      <th class="sortable" data-key="game">ゲーム<span class="arrow">▾</span></th>
+      <th class="sortable" data-key="set">セット<span class="arrow">▾</span></th>
+      <th class="sortable" data-key="q">問題<span class="arrow">▾</span></th>
+      <th class="sortable" data-key="correct">正解<span class="arrow">▾</span></th>
       <th>誤答選択肢</th>
-      <th title="全プレイヤー合計">全体正答率</th>
-      <th title="会員一覧で選択中のユーザーのみ">個人正答率</th>
+      <th class="sortable" data-key="gpct" title="全プレイヤー合計">全体正答率<span class="arrow">▾</span></th>
+      <th class="sortable" data-key="upct" title="会員一覧で選択中のユーザーのみ">個人正答率<span class="arrow">▾</span></th>
     </tr></thead><tbody id="qTbody"></tbody></table></div>
   </div>
 </div>
@@ -299,7 +302,7 @@ function render(){
     return sortDir * ((av||0)-(bv||0));
   });
 
-  document.querySelectorAll('th.sortable').forEach(th=>{
+  document.querySelectorAll('#tbl th.sortable').forEach(th=>{
     th.classList.toggle('sorted', th.dataset.key===sortKey);
     th.querySelector('.arrow').textContent = (th.dataset.key===sortKey ? (sortDir===1?'▴':'▾') : '▾');
   });
@@ -402,7 +405,7 @@ document.getElementById('detailCard').addEventListener('click', e=>{
 });
 
 document.getElementById('searchBox').addEventListener('input', render);
-document.querySelectorAll('th.sortable').forEach(th=>{
+document.querySelectorAll('#tbl th.sortable').forEach(th=>{
   th.addEventListener('click', ()=>{
     if(sortKey === th.dataset.key) sortDir *= -1;
     else { sortKey = th.dataset.key; sortDir = (sortKey==='nickname')?1:-1; }
@@ -524,29 +527,60 @@ function fmtPct(stat){
   if(p===null) return '<span class="noProg">-</span>';
   return `${p}%<span class="qWrongs">(${stat.correct||0}/${stat.total})</span>`;
 }
+let qSortKey = null, qSortDir = 1;
+function updateSetOptions(){
+  const gameFilter = document.getElementById('qGameSelect').value;
+  const sel = document.getElementById('qSetSelect');
+  const prev = sel.value;
+  const sets = [...new Set((allQuestions||[]).filter(x=>!gameFilter || x.game===gameFilter).map(x=>x.set))];
+  sel.innerHTML = '<option value="">すべてのセット</option>' + sets.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  sel.value = sets.includes(prev) ? prev : '';
+}
 function renderQuestions(){
   const q = (document.getElementById('qSearchBox').value||'').trim().toLowerCase();
   const gameFilter = document.getElementById('qGameSelect').value;
+  const setFilter = document.getElementById('qSetSelect').value;
   let list = allQuestions||[];
   if(gameFilter) list = list.filter(x=>x.game===gameFilter);
+  if(setFilter) list = list.filter(x=>x.set===setFilter);
   if(q) list = list.filter(x=> x.q.toLowerCase().includes(q) || String(x.correct).toLowerCase().includes(q));
   document.getElementById('qResultCount').textContent = `${list.length}問`;
   const selUser = selectedUid ? allUsers[selectedUid] : null;
   document.getElementById('qPersonalHint').textContent = selUser ? `👤 ${selUser.nickname||'選択中のユーザー'} の正答率も表示中` : '';
-  document.getElementById('qTbody').innerHTML = list.map(x=>{
+
+  list = list.map(x=>{
     const gStat = questionStats && questionStats[x.gameKey] && questionStats[x.gameKey][x.id];
     const uStat = selUser && selUser.qStats && selUser.qStats[x.gameKey] && selUser.qStats[x.gameKey][x.id];
-    return `
+    return Object.assign({}, x, {gpct: pctOf(gStat), upct: pctOf(uStat), gStat, uStat});
+  });
+
+  if(qSortKey){
+    list.sort((a,b)=>{
+      const av=a[qSortKey], bv=b[qSortKey];
+      // データなし(-)は正答率キーでは常に末尾に固定(昇順・降順どちらでも)
+      const aEmpty = av===null||av===undefined, bEmpty = bv===null||bv===undefined;
+      if(aEmpty && bEmpty) return 0;
+      if(aEmpty) return 1;
+      if(bEmpty) return -1;
+      if(typeof av==='string') return qSortDir * av.localeCompare(bv, 'ja');
+      return qSortDir * (av-bv);
+    });
+  }
+  document.querySelectorAll('#qTbl th.sortable').forEach(th=>{
+    th.classList.toggle('sorted', th.dataset.key===qSortKey);
+    th.querySelector('.arrow').textContent = (th.dataset.key===qSortKey ? (qSortDir===1?'▴':'▾') : '▾');
+  });
+
+  document.getElementById('qTbody').innerHTML = list.map(x=>`
     <tr>
       <td>${escapeHtml(x.game)}</td>
       <td>${escapeHtml(x.set)}</td>
       <td class="qCell">${escapeHtml(x.q)}</td>
       <td class="qCorrect">${escapeHtml(String(x.correct))}</td>
       <td class="qWrongs">${x.wrongs.map(w=>escapeHtml(String(w))).join(' / ')}</td>
-      <td>${fmtPct(gStat)}</td>
-      <td>${selUser ? fmtPct(uStat) : '<span class="noProg">-</span>'}</td>
-    </tr>`;
-  }).join('');
+      <td>${fmtPct(x.gStat)}</td>
+      <td>${selUser ? fmtPct(x.uStat) : '<span class="noProg">-</span>'}</td>
+    </tr>`).join('');
 }
 document.getElementById('tabUsers').addEventListener('click', ()=>{
   document.getElementById('tabUsers').classList.add('active');
@@ -559,10 +593,18 @@ document.getElementById('tabQuestions').addEventListener('click', ()=>{
   document.getElementById('tabUsers').classList.remove('active');
   document.getElementById('usersView').style.display = 'none';
   document.getElementById('questionsView').style.display = '';
-  Promise.all([loadAllQuestions(), loadQuestionStats()]).then(renderQuestions);
+  Promise.all([loadAllQuestions(), loadQuestionStats()]).then(()=>{ updateSetOptions(); renderQuestions(); });
+});
+document.getElementById('qGameSelect').addEventListener('change', ()=>{ updateSetOptions(); renderQuestions(); });
+document.getElementById('qSetSelect').addEventListener('change', renderQuestions);
+document.querySelectorAll('#qTbl th.sortable').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    if(qSortKey === th.dataset.key) qSortDir *= -1;
+    else { qSortKey = th.dataset.key; qSortDir = 1; }
+    renderQuestions();
+  });
 });
 document.getElementById('qSearchBox').addEventListener('input', renderQuestions);
-document.getElementById('qGameSelect').addEventListener('change', renderQuestions);
 </script>
 </body>
 </html>
