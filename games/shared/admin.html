@@ -76,6 +76,15 @@
   .qCell{white-space:normal;max-width:340px}
   .qCorrect{white-space:normal;max-width:200px;color:#15803d;font-weight:700}
   .qWrongs{white-space:normal;max-width:280px;color:#94a3b8;font-size:12px}
+  .setFilterBtn{border:none;background:none;color:#94a3b8;font-size:9px;cursor:pointer;margin-left:4px;padding:2px 4px;border-radius:4px}
+  .setFilterBtn:hover{background:#e2e8f0;color:#334155}
+  .setFilterBtn.active{color:#2563eb}
+  .setFilterPanel{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:8px;z-index:50;width:260px;font-weight:400;white-space:normal;text-transform:none}
+  .setFilterPanel .sfRow{display:flex;gap:6px;margin-bottom:6px}
+  .setFilterPanel .sfRow button{flex:1;border:1px solid #e2e8f0;background:#f8fafc;border-radius:6px;padding:4px 6px;font-size:11px;cursor:pointer;color:#334155}
+  .setFilterPanel .sfList{max-height:240px;overflow-y:auto}
+  .setFilterPanel label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:400;color:#1e293b;padding:3px 2px;cursor:pointer;white-space:normal}
+  .setFilterPanel label:hover{background:#f1f5f9;border-radius:4px}
 </style>
 </head>
 <body>
@@ -130,15 +139,14 @@
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
       </select></span>
-      <span class="qGameFilter"><select id="qSetSelect">
-        <option value="">すべてのセット</option>
-      </select></span>
     </div>
     <div class="resultCount" id="qResultCount"></div>
     <div class="resultCount" id="qPersonalHint" style="color:#2563eb"></div>
     <div class="tw"><table id="qTbl"><thead><tr>
       <th class="sortable" data-key="game">ゲーム<span class="arrow">▾</span></th>
-      <th class="sortable" data-key="set">セット<span class="arrow">▾</span></th>
+      <th class="sortable" data-key="set" style="position:relative">セット<span class="arrow">▾</span><button type="button" id="qSetFilterBtn" class="setFilterBtn">▼</button>
+        <div id="qSetFilterPanel" class="setFilterPanel" style="display:none"></div>
+      </th>
       <th class="sortable" data-key="q">問題<span class="arrow">▾</span></th>
       <th class="sortable" data-key="correct">正解<span class="arrow">▾</span></th>
       <th>誤答選択肢</th>
@@ -528,21 +536,57 @@ function fmtPct(stat){
   return `${p}%<span class="qWrongs">(${stat.correct||0}/${stat.total})</span>`;
 }
 let qSortKey = null, qSortDir = 1;
-function updateSetOptions(){
+let qSelectedSets = null; // null = 絞り込みなし(全セット表示)。Set(空含む)なら明示的な選択状態。
+function availableSets(){
   const gameFilter = document.getElementById('qGameSelect').value;
-  const sel = document.getElementById('qSetSelect');
-  const prev = sel.value;
-  const sets = [...new Set((allQuestions||[]).filter(x=>!gameFilter || x.game===gameFilter).map(x=>x.set))];
-  sel.innerHTML = '<option value="">すべてのセット</option>' + sets.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-  sel.value = sets.includes(prev) ? prev : '';
+  return [...new Set((allQuestions||[]).filter(x=>!gameFilter || x.game===gameFilter).map(x=>x.set))];
 }
+function renderSetFilterPanel(){
+  const sets = availableSets();
+  // ゲームを切り替えて選べなくなったセットは選択から外す
+  if(qSelectedSets) qSelectedSets = new Set([...qSelectedSets].filter(s=>sets.includes(s)));
+  const panel = document.getElementById('qSetFilterPanel');
+  panel.innerHTML = `
+    <div class="sfRow">
+      <button type="button" id="sfAll">すべて選択</button>
+      <button type="button" id="sfNone">すべて解除</button>
+    </div>
+    <div class="sfList">${sets.map(s=>`
+      <label><input type="checkbox" value="${escapeHtml(s)}" ${!qSelectedSets||qSelectedSets.has(s)?'checked':''}>${escapeHtml(s)}</label>
+    `).join('')}</div>`;
+  document.getElementById('qSetFilterBtn').classList.toggle('active', !!qSelectedSets);
+}
+document.getElementById('qSetFilterPanel').addEventListener('click', e=>{
+  e.stopPropagation();
+  if(e.target.id==='sfAll'){ qSelectedSets = null; renderSetFilterPanel(); renderQuestions(); return; }
+  if(e.target.id==='sfNone'){ qSelectedSets = new Set(); renderSetFilterPanel(); renderQuestions(); return; }
+  if(e.target.matches('input[type=checkbox]')){
+    const all = availableSets();
+    const checked = [...document.querySelectorAll('#qSetFilterPanel input[type=checkbox]:checked')].map(c=>c.value);
+    qSelectedSets = checked.length===all.length ? null : new Set(checked);
+    document.getElementById('qSetFilterBtn').classList.toggle('active', !!qSelectedSets);
+    renderQuestions();
+  }
+});
+document.getElementById('qSetFilterBtn').addEventListener('click', e=>{
+  e.stopPropagation();
+  const panel = document.getElementById('qSetFilterPanel');
+  const opening = panel.style.display==='none';
+  if(opening) renderSetFilterPanel();
+  panel.style.display = opening ? '' : 'none';
+});
+document.addEventListener('click', e=>{
+  const panel = document.getElementById('qSetFilterPanel');
+  if(panel.style.display!=='none' && !panel.contains(e.target) && e.target.id!=='qSetFilterBtn'){
+    panel.style.display = 'none';
+  }
+});
 function renderQuestions(){
   const q = (document.getElementById('qSearchBox').value||'').trim().toLowerCase();
   const gameFilter = document.getElementById('qGameSelect').value;
-  const setFilter = document.getElementById('qSetSelect').value;
   let list = allQuestions||[];
   if(gameFilter) list = list.filter(x=>x.game===gameFilter);
-  if(setFilter) list = list.filter(x=>x.set===setFilter);
+  if(qSelectedSets) list = list.filter(x=>qSelectedSets.has(x.set));
   if(q) list = list.filter(x=> x.q.toLowerCase().includes(q) || String(x.correct).toLowerCase().includes(q));
   document.getElementById('qResultCount').textContent = `${list.length}問`;
   const selUser = selectedUid ? allUsers[selectedUid] : null;
@@ -593,10 +637,9 @@ document.getElementById('tabQuestions').addEventListener('click', ()=>{
   document.getElementById('tabUsers').classList.remove('active');
   document.getElementById('usersView').style.display = 'none';
   document.getElementById('questionsView').style.display = '';
-  Promise.all([loadAllQuestions(), loadQuestionStats()]).then(()=>{ updateSetOptions(); renderQuestions(); });
+  Promise.all([loadAllQuestions(), loadQuestionStats()]).then(renderQuestions);
 });
-document.getElementById('qGameSelect').addEventListener('change', ()=>{ updateSetOptions(); renderQuestions(); });
-document.getElementById('qSetSelect').addEventListener('change', renderQuestions);
+document.getElementById('qGameSelect').addEventListener('change', ()=>{ qSelectedSets = null; renderQuestions(); });
 document.querySelectorAll('#qTbl th.sortable').forEach(th=>{
   th.addEventListener('click', ()=>{
     if(qSortKey === th.dataset.key) qSortDir *= -1;
