@@ -393,7 +393,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=33"></script>
+<script src="../shared/leaderboard.js?v=34"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -1914,12 +1914,14 @@ function memoQuizResult(){
   const total=memoQuiz.results.length;
   const pct=Math.round(100*correct/total);
   const prev=state.memoScores[memoQuiz.deck.id];
-  const best=Math.max(prev?prev.best||0:0,pct);
+  const prevBest=prev?prev.best||0:0;
+  const best=Math.max(prevBest,pct);
   state.memoScores[memoQuiz.deck.id]={correct,total,best};
   if(state.memoInProgress)delete state.memoInProgress[memoQuiz.deck.id];
   memoHeaderUpdate(`${memoQuiz.deck.name}　結果発表`);
   setMemoFxVisible(false);
   LB.recordQuizResults('aromatic', memoQuiz.results.map(x=>({id:x.item.id, ok:x.ok})));
+  if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'芳香族', setName:memoQuiz.deck.name});
   save();
   let review='';
   memoQuiz.results.forEach((x,i)=>{

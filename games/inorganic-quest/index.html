@@ -162,7 +162,7 @@ nav button.active{color:var(--blue);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=33"></script>
+<script src="../shared/leaderboard.js?v=34"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -4167,10 +4167,12 @@ function catResult(){
   const total=catDrill.results.length;
   const pct=Math.round(100*correct/total);
   const prev=state.catStats[catDrill.cat];
-  const best=Math.max(prev?prev.best:0,pct);
+  const prevBest=prev?prev.best:0;
+  const best=Math.max(prevBest,pct);
   state.catStats[catDrill.cat]={correct,total,best};
   delete state.inProgress[catDrill.cat];
   LB.recordQuizResults('inorganic', catDrill.results.map(x=>({id:x.it.id, ok:x.ok})));
+  if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'無機化学', setName:catDrill.cat});
   save();
   let review='';
   catDrill.results.forEach((x,i)=>{

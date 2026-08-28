@@ -337,8 +337,20 @@ const LB = (function(){
         console.warn('[LB] submitScore: existing score is not worse, skipped', cur, {correct,sec});
         return false;
       }
-      return ref.set({name:user.nickname, avatar:user.avatar||null, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>true);
+      return ref.set({name:user.nickname, avatar:user.avatar||null, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>{
+        notifyAdmin('newBest', {game:gameId, kind, correct, sec, rank});
+        return true;
+      });
     }).catch(err=>{ console.warn('[LB] submitScore failed', err); return false; });
+  }
+  // 管理画面向けの軽量通知。「毎回」ではなく生徒が節目(100%達成/自己ベスト更新)を
+  // 迎えた時だけ呼ぶ想定 -- 呼び出し側(各ゲーム側/submitScore)で「初めて100%になった時だけ」
+  // 「本当に自己ベストを更新した時だけ」の判定をしてから呼ぶこと。
+  function notifyAdmin(type, payload){
+    if(!db || !user) return;
+    db.ref('adminNotifications').push(Object.assign({
+      type, uid:user.uid, nickname:user.nickname||'?', ts:firebase.database.ServerValue.TIMESTAMP, read:false
+    }, payload||{})).catch(err=>console.error('[LB] notifyAdmin failed', err));
   }
 
   function fetchTop(kind, n){
@@ -696,6 +708,6 @@ const LB = (function(){
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
-    openAccountModal, ensureStyle, onMessages, fetchLikes, recordQuizResults
+    openAccountModal, ensureStyle, onMessages, fetchLikes, recordQuizResults, notifyAdmin
   };
 })();

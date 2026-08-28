@@ -85,10 +85,30 @@
   .setFilterPanel .sfList{max-height:240px;overflow-y:auto}
   .setFilterPanel label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:400;color:#1e293b;padding:3px 2px;cursor:pointer;white-space:normal}
   .setFilterPanel label:hover{background:#f1f5f9;border-radius:4px}
+  .notifBell{position:relative;border:1px solid #e2e8f0;background:#fff;border-radius:10px;width:38px;height:38px;font-size:17px;cursor:pointer}
+  .notifBell:hover{background:#f1f5f9}
+  .notifBell .lb-notif-badge{position:absolute;top:-4px;right:-4px}
+  .notifPanel{position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);width:340px;z-index:60}
+  .notifPanelHead{font-size:12.5px;font-weight:800;color:#334155;padding:12px 14px 6px}
+  .notifList{max-height:360px;overflow-y:auto;padding:0 6px 8px}
+  .notifItem{padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.6}
+  .notifItem.unread{background:#eff6ff}
+  .notifItem .nTitle{font-weight:700;color:#1e293b}
+  .notifItem .nMeta{color:#94a3b8;font-size:11px;margin-top:2px}
+  .notifEmpty{color:#94a3b8;font-size:12.5px;text-align:center;padding:24px 10px}
 </style>
 </head>
 <body>
-<h1>👤 会員管理</h1>
+<div style="display:flex;align-items:center;gap:10px">
+  <h1 style="margin:0">👤 会員管理</h1>
+  <span style="position:relative">
+    <button id="notifBell" class="notifBell">🔔<span id="notifBadgeCount" class="lb-notif-badge" style="display:none">0</span></button>
+    <div id="notifPanel" class="notifPanel" style="display:none">
+      <div class="notifPanelHead">生徒の達成通知</div>
+      <div id="notifList" class="notifList"></div>
+    </div>
+  </span>
+</div>
 <div class="sub">Sense of Wonder Lab のログインユーザー一覧・利用状況</div>
 
 <div class="card loginWrap" id="loginCard">
@@ -262,6 +282,7 @@ auth.onAuthStateChanged(fbUser=>{
     document.getElementById('dataCard').style.display='';
     allUsers = snap.val()||{};
     render();
+    attachNotifListener();
   }).catch(err=>{
     document.getElementById('err').textContent = '閲覧権限がありません('+escapeHtml(fbUser.email)+')。管理者アカウントでログインしてください。';
     auth.signOut();
@@ -648,6 +669,69 @@ document.querySelectorAll('#qTbl th.sortable').forEach(th=>{
   });
 });
 document.getElementById('qSearchBox').addEventListener('input', renderQuestions);
+
+/* ================= 達成通知(100%達成・自己ベスト更新) ================= */
+// 生徒側(leaderboard.js の notifyAdmin)が節目のタイミングだけ push してくる
+// adminNotifications を管理画面を開いている間だけ live 購読して、ベルのバッジと
+// 一覧に反映する。「毎回のプレイ」ではなく元から絞られたイベントなので .on('value') で
+// 全件そのまま持っておく程度のコストで十分。
+let notifItems = [];
+function fmtNotifTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function notifText(n){
+  const game = n.game || '';
+  if(n.type==='perfect'){
+    return `<span class="nTitle">🎉 ${escapeHtml(n.nickname)}</span> さんが「${escapeHtml(n.setName||'')}」(${escapeHtml(game)})を100%達成`;
+  }
+  if(n.type==='newBest'){
+    const gname = GAME_NAMES[game] || game;
+    return `<span class="nTitle">🏆 ${escapeHtml(n.nickname)}</span> さんが${escapeHtml(gname)}のランキングで自己ベスト更新(正解${n.correct}・${n.sec}秒・${escapeHtml(n.rank||'')})`;
+  }
+  return `<span class="nTitle">${escapeHtml(n.nickname)}</span> さんが達成`;
+}
+function renderNotifPanel(){
+  const badge = document.getElementById('notifBadgeCount');
+  const unreadCount = notifItems.filter(n=>!n.read).length;
+  badge.style.display = unreadCount>0 ? '' : 'none';
+  badge.textContent = unreadCount>9 ? '9+' : String(unreadCount);
+  const list = document.getElementById('notifList');
+  if(!notifItems.length){ list.innerHTML = '<div class="notifEmpty">まだ通知はありません</div>'; return; }
+  list.innerHTML = notifItems.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).map(n=>`
+    <div class="notifItem${n.read?'':' unread'}">
+      ${notifText(n)}
+      <div class="nMeta">${fmtNotifTime(n.ts)}</div>
+    </div>`).join('');
+}
+function attachNotifListener(){
+  db.ref('adminNotifications').orderByChild('ts').limitToLast(50).on('value', snap=>{
+    const val = snap.val()||{};
+    notifItems = Object.entries(val).map(([key,n])=>Object.assign({key}, n));
+    renderNotifPanel();
+  }, err=>console.error('[admin] notifications listen failed', err));
+}
+document.getElementById('notifBell').addEventListener('click', e=>{
+  e.stopPropagation();
+  const panel = document.getElementById('notifPanel');
+  const opening = panel.style.display==='none';
+  panel.style.display = opening ? '' : 'none';
+  if(opening){
+    const unread = notifItems.filter(n=>!n.read);
+    if(unread.length){
+      const updates = {};
+      unread.forEach(n=>{ updates['adminNotifications/'+n.key+'/read'] = true; });
+      db.ref().update(updates).catch(err=>console.error('[admin] mark-read failed', err));
+    }
+  }
+});
+document.addEventListener('click', e=>{
+  const panel = document.getElementById('notifPanel');
+  if(panel.style.display!=='none' && !panel.contains(e.target) && e.target.id!=='notifBell'){
+    panel.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
