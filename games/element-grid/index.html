@@ -2,7 +2,7 @@
 <title>元素グリッドEX</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:ital,wght@0,600;0,800;1,800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
   :root{
     --bg:#12181a;
@@ -17,16 +17,10 @@
     --danger:#ff6b6b;
     --good:#7be08a;
 
+    --c-metal:#ff9457;
     --c-nonmetal:#4fd8c4;
-    --c-noble:#6c90d6;
-    --c-alkali:#ff6b4a;
-    --c-alkearth:#f2a93b;
-    --c-metalloid:#9b7ede;
-    --c-halogen:#e85d9e;
-    --c-other:#8fa876;
-    --c-transition:#c98f63;
 
-    --font-display:'Big Shoulders Stencil', 'Zen Kaku Gothic New', sans-serif;
+    --font-display:'Big Shoulders', 'Zen Kaku Gothic New', sans-serif;
     --font-body:'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif;
     --font-mono:'JetBrains Mono', ui-monospace, monospace;
   }
@@ -169,8 +163,8 @@
     color:var(--accent);
     font-weight:700;
   }
-  .level-card.lv-mid .lc-best-val{ color:var(--c-metalloid); }
-  .level-card.lv-advanced .lc-best-val{ color:var(--c-halogen); }
+  .level-card.lv-mid .lc-best-val{ color:#9b7ede; }
+  .level-card.lv-advanced .lc-best-val{ color:#e85d9e; }
 
   .legend{
     margin-top:18px;
@@ -262,6 +256,7 @@
   }
   .target-symbol{
     font-family:var(--font-display);
+    font-style:italic; font-style:oblique 40deg;
     font-weight:800;
     font-size:34px;
     line-height:1;
@@ -292,6 +287,7 @@
       var(--bg-deep);
     overflow:hidden;
   }
+  #field.pre-start .tile{ opacity:0; }
 
   .countdown-overlay{
     position:absolute; inset:0;
@@ -324,6 +320,7 @@
     background:var(--panel);
     color:var(--ink);
     font-family:var(--font-display);
+    font-style:italic; font-style:oblique 40deg;
     font-weight:800;
     font-size:19px;
     display:flex; align-items:center; justify-content:center;
@@ -466,14 +463,8 @@
     </div>
 
     <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-alkali)"></span>アルカリ金属</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-alkearth)"></span>アルカリ土類金属</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-transition)"></span>遷移金属</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-other)"></span>その他の金属</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-metalloid)"></span>半金属</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-metal)"></span>金属</span>
       <span class="legend-item"><span class="legend-dot" style="background:var(--c-nonmetal)"></span>非金属</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-halogen)"></span>ハロゲン</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-noble)"></span>貴ガス</span>
     </div>
   </div>
 
@@ -534,30 +525,30 @@
 (function(){
   var ELEMENTS = [
     {s:'H',  n:'水素',       z:1,  cat:'nonmetal'},
-    {s:'He', n:'ヘリウム',    z:2,  cat:'noble'},
-    {s:'Li', n:'リチウム',    z:3,  cat:'alkali'},
-    {s:'Be', n:'ベリリウム',  z:4,  cat:'alkearth'},
-    {s:'B',  n:'ホウ素',     z:5,  cat:'metalloid'},
+    {s:'He', n:'ヘリウム',    z:2,  cat:'nonmetal'},
+    {s:'Li', n:'リチウム',    z:3,  cat:'metal'},
+    {s:'Be', n:'ベリリウム',  z:4,  cat:'metal'},
+    {s:'B',  n:'ホウ素',     z:5,  cat:'nonmetal'},
     {s:'C',  n:'炭素',       z:6,  cat:'nonmetal'},
     {s:'N',  n:'窒素',       z:7,  cat:'nonmetal'},
     {s:'O',  n:'酸素',       z:8,  cat:'nonmetal'},
-    {s:'F',  n:'フッ素',     z:9,  cat:'halogen'},
-    {s:'Ne', n:'ネオン',     z:10, cat:'noble'},
-    {s:'Na', n:'ナトリウム',  z:11, cat:'alkali'},
-    {s:'Mg', n:'マグネシウム',z:12, cat:'alkearth'},
-    {s:'Al', n:'アルミニウム',z:13, cat:'other'},
-    {s:'Si', n:'ケイ素',     z:14, cat:'metalloid'},
+    {s:'F',  n:'フッ素',     z:9,  cat:'nonmetal'},
+    {s:'Ne', n:'ネオン',     z:10, cat:'nonmetal'},
+    {s:'Na', n:'ナトリウム',  z:11, cat:'metal'},
+    {s:'Mg', n:'マグネシウム',z:12, cat:'metal'},
+    {s:'Al', n:'アルミニウム',z:13, cat:'metal'},
+    {s:'Si', n:'ケイ素',     z:14, cat:'nonmetal'},
     {s:'P',  n:'リン',       z:15, cat:'nonmetal'},
     {s:'S',  n:'硫黄',       z:16, cat:'nonmetal'},
-    {s:'Cl', n:'塩素',       z:17, cat:'halogen'},
-    {s:'Ar', n:'アルゴン',    z:18, cat:'noble'},
-    {s:'K',  n:'カリウム',    z:19, cat:'alkali'},
-    {s:'Ca', n:'カルシウム',  z:20, cat:'alkearth'},
-    {s:'Sc', n:'スカンジウム',z:21, cat:'transition'},
-    {s:'Ti', n:'チタン',     z:22, cat:'transition'},
-    {s:'V',  n:'バナジウム',  z:23, cat:'transition'},
-    {s:'Cr', n:'クロム',     z:24, cat:'transition'},
-    {s:'Mn', n:'マンガン',    z:25, cat:'transition'}
+    {s:'Cl', n:'塩素',       z:17, cat:'nonmetal'},
+    {s:'Ar', n:'アルゴン',    z:18, cat:'nonmetal'},
+    {s:'K',  n:'カリウム',    z:19, cat:'metal'},
+    {s:'Ca', n:'カルシウム',  z:20, cat:'metal'},
+    {s:'Sc', n:'スカンジウム',z:21, cat:'metal'},
+    {s:'Ti', n:'チタン',     z:22, cat:'metal'},
+    {s:'V',  n:'バナジウム',  z:23, cat:'metal'},
+    {s:'Cr', n:'クロム',     z:24, cat:'metal'},
+    {s:'Mn', n:'マンガン',    z:25, cat:'metal'}
   ];
 
   var LEVELS = {
@@ -567,9 +558,7 @@
   };
 
   var CAT_VAR = {
-    nonmetal:'--c-nonmetal', noble:'--c-noble', alkali:'--c-alkali',
-    alkearth:'--c-alkearth', metalloid:'--c-metalloid', halogen:'--c-halogen',
-    other:'--c-other', transition:'--c-transition'
+    metal:'--c-metal', nonmetal:'--c-nonmetal'
   };
 
   var $ = function(id){ return document.getElementById(id); };
@@ -629,7 +618,9 @@
     return a;
   }
 
-  // Fixed cols x rows grid layout sized to the level: every tile fills its own cell, centered, no overlap.
+  // Fixed cols x rows grid layout sized to the level: cells are always square
+  // (min of the width- and height-derived cell size), and the resulting grid
+  // is centered in the field so rows never stretch out with empty gaps.
   function layoutTiles(){
     if(!state) return;
     var rect = field.getBoundingClientRect();
@@ -639,15 +630,18 @@
 
     var pad = 10;
     var innerW = rect.width - pad*2, innerH = rect.height - pad*2;
-    var cellW = innerW / cols, cellH = innerH / rows;
-    var size = Math.max(30, Math.min(cellW, cellH) - 10);
+    var cell = Math.min(innerW / cols, innerH / rows);
+    var gridW = cell * cols, gridH = cell * rows;
+    var offX = pad + (innerW - gridW) / 2;
+    var offY = pad + (innerH - gridH) / 2;
+    var size = Math.max(30, cell - 10);
 
     state.tiles.forEach(function(tileObj, i){
       if(tileObj.done) return;
       var idx = state.cellAssign[i];
       var cx = idx % cols, cy = Math.floor(idx / cols);
-      var x = pad + cx*cellW + cellW/2;
-      var y = pad + cy*cellH + cellH/2;
+      var x = offX + cx*cell + cell/2;
+      var y = offY + cy*cell + cell/2;
       tileObj.el.style.left = x + 'px';
       tileObj.el.style.top = y + 'px';
       tileObj.el.style.width = size + 'px';
@@ -702,6 +696,7 @@
     playScreen.classList.add('active');
 
     state.locked = true;
+    field.classList.add('pre-start');
     layoutTiles();
     runCountdown();
   }
@@ -725,6 +720,7 @@
         setTimeout(function(){
           overlay.classList.remove('active');
           if(state !== st) return;
+          field.classList.remove('pre-start');
           st.locked = false;
           st.startTime = performance.now();
           tick();
