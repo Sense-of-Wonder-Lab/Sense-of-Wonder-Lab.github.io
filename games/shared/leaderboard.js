@@ -267,7 +267,7 @@ const LB = (function(){
   }
   function logout(){ return auth ? auth.signOut() : Promise.resolve(); }
 
-  const GAME_IDS = ['inorganic','aromatic','aliphatic'];
+  const GAME_IDS = ['inorganic','aromatic','aliphatic','chembasics'];
   const CHAL_KINDS = ['score','time'];
   function propagateField(field, value){
     const jobs = [];

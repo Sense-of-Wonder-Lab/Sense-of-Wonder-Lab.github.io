@@ -1,0 +1,2122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#8b5cf6">
+<title>化学基礎クエスト 〜暗記事項マスター〜</title>
+<style>
+:root{
+  --ink:#1e293b;
+  --bg:#fdf6ff;
+  --accent:#fb7185;
+  --accent-deep:#e11d48;
+  --blue:#8b5cf6;
+  --green:#16a34a;
+  --red:#dc2626;
+  --gray:#94a3b8;
+  --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  font-family:Century,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column;height:100dvh;
+}
+header{
+  background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:8px 12px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  flex:none;display:flex;align-items:center;gap:10px;
+}
+header .title{font-weight:700;font-size:15px;letter-spacing:.02em;flex:1}
+header .sub{font-size:10px;opacity:.75}
+.questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
+.accountBtnWrap{margin-left:auto}
+.questSelect option{color:var(--ink)}
+.backrow{margin-bottom:10px}
+.backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
+main{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:none;overflow-y:auto}
+.view.active{display:block}
+.panel{height:100%;padding:16px 14px calc(20px + env(safe-area-inset-bottom));max-width:620px;margin:0 auto}
+.panel h2{font-size:17px;margin:6px 0 12px}
+.card-ui{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:12px}
+.bigbtn{display:block;width:100%;padding:14px;border-radius:14px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;margin-top:10px}
+.bigbtn.secondary{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.bigbtn.amber{background:var(--accent-deep)}
+.bigbtn:disabled{background:#cbd5e1;color:#f1f5f9;border:none}
+.muted{color:#64748b;font-size:12px;line-height:1.6}
+nav{flex:none;display:flex;background:#fff;border-top:1px solid #e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:8px 0 6px;border:none;background:none;font-size:11px;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav button .ico{font-size:20px;line-height:1}
+nav button.active{color:var(--blue);font-weight:700}
+.badge{position:absolute;top:2px;right:calc(50% - 24px);background:var(--red);color:#fff;border-radius:9px;font-size:10px;min-width:17px;height:17px;line-height:17px;padding:0 4px;font-weight:700}
+/* 単元一覧(デッキ選択) */
+.decklist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.deckbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:12px 14px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:700;color:var(--ink)}
+.deckbtn:active{border-color:var(--accent)}
+.deckbtn.perfect{background:#f0fdf4;border-color:#86efac}
+.deckbtn-score{flex:none;text-align:right;font-size:19px;font-weight:800;color:var(--blue);white-space:nowrap}
+.deckbtn.perfect .deckbtn-score{color:var(--green)}
+.deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
+/* 正誤ポップアップ・自動送り */
+.viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
+.viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
+.viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
+#answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
+#answerFxPopup.show{display:flex}
+.afx-box{text-align:center;animation:afxpop .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes afxpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.afx-symbol{font-size:130px;font-weight:900;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.18)}
+.afx-symbol.ok{color:var(--green)}
+.afx-symbol.ng{color:var(--red)}
+.afx-sub{font-size:26px;margin-top:2px}
+.afx-confetti{font-size:30px;margin-top:4px;letter-spacing:6px}
+.fixed-next{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:592px;margin:0 auto;z-index:60;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.fixed-back{position:fixed;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:60;padding:8px 14px;border-radius:99px;border:2px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+/* 復習からもう一度 */
+.review-item.review-tap{cursor:pointer;display:flex;align-items:center;gap:6px}
+.review-item.review-tap:active{background:#f8fafc}
+.review-item.review-tap::after{content:'↻ もう一度';margin-left:auto;flex:none;font-size:11px;color:var(--blue);font-weight:700;white-space:nowrap}
+/* モーダル */
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;z-index:80}
+.modal.open{display:flex}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;padding:16px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media(min-width:640px){
+  .modal{align-items:center;padding:20px}
+  .sheet{border-radius:20px;max-height:86vh}
+}
+.sheet h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.closex{margin-left:auto;border:none;background:#f1f5f9;border-radius:99px;width:30px;height:30px;font-size:14px;color:#64748b;flex:none}
+/* quiz */
+.qprompt{font-size:15px;font-weight:700;margin-bottom:14px;line-height:1.6;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px}
+.choices{display:flex;flex-direction:column;gap:9px}
+.choice{border:2px solid #e2e8f0;border-radius:14px;background:#fff;padding:12px 14px;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.5;text-align:left}
+.choice:active{background:#f8fafc}
+.choice.correct{border-color:var(--green);background:#f0fdf4}
+.choice.wrong{border-color:var(--red);background:#fef2f2;animation:shake .3s}
+.choice.dim{opacity:.45}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.explain{margin-top:12px;border-radius:14px;padding:12px;font-size:13px;line-height:1.7;display:none}
+.explain.ok{display:block;background:#f0fdf4;border:1.5px solid #86efac}
+.explain.ng{display:block;background:#fef2f2;border:1.5px solid #fca5a5}
+.explain .rname{font-weight:800;font-size:13.5px;margin-bottom:3px}
+.explain .note{margin-top:4px}
+/* challenge/drill common */
+.chal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:#475569}
+.chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
+.chal-timer.urgent{color:var(--red)}
+.rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
+.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
+.review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
+.review-item .ok{color:var(--green);font-weight:700}
+.review-item .ng{color:var(--red);font-weight:700}
+.scopebtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.scopebtns button{flex:1;min-width:100px;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
+.scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.decklist-head{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.sortmini{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b}
+.sortmini.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <select class="questSelect" id="questSelect">
+    <option value="../aromatic-quest/index.html">芳香族クエスト</option>
+    <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
+    <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+    <option value="index.html" selected>化学基礎クエスト</option>
+  </select>
+  <div class="title" id="hdrTitle" style="display:none"></div>
+  <span class="accountBtnWrap"><button class="accountBtn" id="accountBtn" title="アカウント">👤</button><span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></span>
+</header>
+
+<main>
+  <div class="view active" id="view-home">
+    <div class="viewfx-toggles">
+      <button id="btnAnswerAuto" class="viewfx-toggle"></button>
+      <button id="btnAnswerFx" class="viewfx-toggle"></button>
+    </div>
+    <div class="panel" id="homePanel"></div>
+  </div>
+  <div class="view" id="view-challenge"><div class="panel" id="chalPanel"></div></div>
+  <div class="view" id="view-weak"><div class="panel" id="weakPanel"></div></div>
+</main>
+
+<nav>
+  <button data-view="home" class="active"><span class="ico">🧠</span>暗記</button>
+  <button data-view="challenge"><span class="ico"><svg viewBox="0 0 24 22" width="20" height="18" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pdGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe08a"/><stop offset="55%" stop-color="#f4b942"/><stop offset="100%" stop-color="#c8891f"/></linearGradient><linearGradient id="pdSilver" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f1f4f7"/><stop offset="55%" stop-color="#c3ccd6"/><stop offset="100%" stop-color="#8b96a3"/></linearGradient><linearGradient id="pdBronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e3a874"/><stop offset="55%" stop-color="#c2703d"/><stop offset="100%" stop-color="#8f4f28"/></linearGradient></defs><rect x="1" y="11" width="6" height="10" rx="1.2" fill="url(#pdSilver)"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="url(#pdGold)"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="url(#pdBronze)"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg></span>チャレンジ</button>
+  <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
+</nav>
+
+<div class="modal" id="infoModal"><div class="sheet" id="infoSheet"></div></div>
+<div id="answerFxPopup"></div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../shared/leaderboard.js?v=34"></script>
+<script>
+'use strict';
+let memoLikes={}, memoLikesLoaded=false;
+LB.init('chembasics');
+document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+LB.onAuth(u=>{
+  const btn = document.getElementById('accountBtn');
+  if(!btn) return;
+  if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
+  else if(u) btn.textContent = (u.nickname||'?')[0];
+  else btn.textContent = '👤';
+  memoLikesLoaded=false; memoLikes={};
+  const hp = document.getElementById('homePanel');
+  if(hp && hp.querySelector('.decklist')) renderHome();
+});
+LB.onMessages(count=>{
+  const b = document.getElementById('notifBadge');
+  if(!b) return;
+  b.textContent = count>9?'9+':count;
+  b.style.display = count>0?'':'none';
+});
+LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
+/* ================= データ(MONOXER「化学基礎」教材準拠) ================= */
+const DATA = {
+ "categories": [
+  {
+   "name": "No.1 元素記号 初級編",
+   "count": 20
+  },
+  {
+   "name": "No.2 元素記号 中級編",
+   "count": 40
+  },
+  {
+   "name": "No.3 イオン式 基本編(前半)",
+   "count": 15
+  },
+  {
+   "name": "No.3 イオン式 基本編(後半)",
+   "count": 14
+  },
+  {
+   "name": "No.4 イオン式 多原子イオン編",
+   "count": 12
+  },
+  {
+   "name": "No.5 結晶の性質",
+   "count": 13
+  }
+ ],
+ "items": [
+  {
+   "q": "「水素」の元素記号は?",
+   "correct": "H",
+   "wrongs": [
+    "Su",
+    "He",
+    "S",
+    "O"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q1"
+  },
+  {
+   "q": "「ヘリウム」の元素記号は?",
+   "correct": "He",
+   "wrongs": [
+    "H",
+    "Hr",
+    "Hl",
+    "Hm"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q2"
+  },
+  {
+   "q": "「リチウム」の元素記号は?",
+   "correct": "Li",
+   "wrongs": [
+    "Ri",
+    "L",
+    "R",
+    "Lt"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q3"
+  },
+  {
+   "q": "「ベリリウム」の元素記号は?",
+   "correct": "Be",
+   "wrongs": [
+    "B",
+    "Br",
+    "Ve",
+    "Vr"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q4"
+  },
+  {
+   "q": "「ホウ素」の元素記号は?",
+   "correct": "B",
+   "wrongs": [
+    "H",
+    "Ho",
+    "Bo",
+    "F"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q5"
+  },
+  {
+   "q": "「炭素」の元素記号は?",
+   "correct": "C",
+   "wrongs": [
+    "T",
+    "Ta",
+    "Ca",
+    "K"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q6"
+  },
+  {
+   "q": "「窒素」の元素記号は?",
+   "correct": "N",
+   "wrongs": [
+    "T",
+    "Ti",
+    "Ni",
+    "Ci"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q7"
+  },
+  {
+   "q": "「酸素」の元素記号は?",
+   "correct": "O",
+   "wrongs": [
+    "Sa",
+    "Sn",
+    "Ox",
+    "C"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q8"
+  },
+  {
+   "q": "「フッ素」の元素記号は?",
+   "correct": "F",
+   "wrongs": [
+    "Hu",
+    "Fu",
+    "B",
+    "H"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q9"
+  },
+  {
+   "q": "「ネオン」の元素記号は?",
+   "correct": "Ne",
+   "wrongs": [
+    "N",
+    "Na",
+    "No",
+    "He"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q10"
+  },
+  {
+   "q": "「ナトリウム」の元素記号は?",
+   "correct": "Na",
+   "wrongs": [
+    "Nt",
+    "Nr",
+    "N",
+    "Ne"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q11"
+  },
+  {
+   "q": "「マグネシウム」の元素記号は?",
+   "correct": "Mg",
+   "wrongs": [
+    "Ma",
+    "Mn",
+    "Au",
+    "Ag"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q12"
+  },
+  {
+   "q": "「アルミニウム」の元素記号は?",
+   "correct": "Al",
+   "wrongs": [
+    "Ar",
+    "Am",
+    "Au",
+    "Ag"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q13"
+  },
+  {
+   "q": "「ケイ素」の元素記号は?",
+   "correct": "Si",
+   "wrongs": [
+    "Ka",
+    "Ki",
+    "Ke",
+    "S"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q14"
+  },
+  {
+   "q": "「リン」の元素記号は?",
+   "correct": "P",
+   "wrongs": [
+    "Li",
+    "Ri",
+    "Ln",
+    "Pn"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q15"
+  },
+  {
+   "q": "「硫黄」の元素記号は?",
+   "correct": "S",
+   "wrongs": [
+    "Yo",
+    "Io",
+    "I",
+    "Si"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q16"
+  },
+  {
+   "q": "「塩素」の元素記号は?",
+   "correct": "Cl",
+   "wrongs": [
+    "En",
+    "E",
+    "Cr",
+    "Kl"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q17"
+  },
+  {
+   "q": "「アルゴン」の元素記号は?",
+   "correct": "Ar",
+   "wrongs": [
+    "Al",
+    "Ag",
+    "Au",
+    "Er"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q18"
+  },
+  {
+   "q": "「カリウム」の元素記号は?",
+   "correct": "K",
+   "wrongs": [
+    "C",
+    "Ka",
+    "Ca",
+    "Kr"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q19"
+  },
+  {
+   "q": "「カルシウム」の元素記号は?",
+   "correct": "Ca",
+   "wrongs": [
+    "Ka",
+    "K",
+    "C",
+    "Cr"
+   ],
+   "cat": "No.1 元素記号 初級編",
+   "id": "q20"
+  },
+  {
+   "q": "「水素」の元素記号は?",
+   "correct": "H",
+   "wrongs": [
+    "Su",
+    "He",
+    "S",
+    "O"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q21"
+  },
+  {
+   "q": "「ヘリウム」の元素記号は?",
+   "correct": "He",
+   "wrongs": [
+    "H",
+    "Hr",
+    "Hl",
+    "Hm"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q22"
+  },
+  {
+   "q": "「リチウム」の元素記号は?",
+   "correct": "Li",
+   "wrongs": [
+    "Ri",
+    "L",
+    "R",
+    "Lt"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q23"
+  },
+  {
+   "q": "「ベリリウム」の元素記号は?",
+   "correct": "Be",
+   "wrongs": [
+    "B",
+    "Br",
+    "Ve",
+    "Vr"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q24"
+  },
+  {
+   "q": "「ホウ素」の元素記号は?",
+   "correct": "B",
+   "wrongs": [
+    "H",
+    "Ho",
+    "Bo",
+    "F"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q25"
+  },
+  {
+   "q": "「炭素」の元素記号は?",
+   "correct": "C",
+   "wrongs": [
+    "T",
+    "Ta",
+    "Ca",
+    "K"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q26"
+  },
+  {
+   "q": "「窒素」の元素記号は?",
+   "correct": "N",
+   "wrongs": [
+    "T",
+    "Ti",
+    "Ni",
+    "Ci"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q27"
+  },
+  {
+   "q": "「酸素」の元素記号は?",
+   "correct": "O",
+   "wrongs": [
+    "Sa",
+    "Sn",
+    "Ox",
+    "C"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q28"
+  },
+  {
+   "q": "「フッ素」の元素記号は?",
+   "correct": "F",
+   "wrongs": [
+    "Hu",
+    "Fu",
+    "B",
+    "H"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q29"
+  },
+  {
+   "q": "「ネオン」の元素記号は?",
+   "correct": "Ne",
+   "wrongs": [
+    "N",
+    "Na",
+    "No",
+    "He"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q30"
+  },
+  {
+   "q": "「ナトリウム」の元素記号は?",
+   "correct": "Na",
+   "wrongs": [
+    "Nt",
+    "Nr",
+    "N",
+    "Ne"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q31"
+  },
+  {
+   "q": "「マグネシウム」の元素記号は?",
+   "correct": "Mg",
+   "wrongs": [
+    "Ma",
+    "Mn",
+    "Au",
+    "Ag"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q32"
+  },
+  {
+   "q": "「アルミニウム」の元素記号は?",
+   "correct": "Al",
+   "wrongs": [
+    "Ar",
+    "Am",
+    "Au",
+    "Ag"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q33"
+  },
+  {
+   "q": "「ケイ素」の元素記号は?",
+   "correct": "Si",
+   "wrongs": [
+    "Ka",
+    "Ki",
+    "Ke",
+    "S"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q34"
+  },
+  {
+   "q": "「リン」の元素記号は?",
+   "correct": "P",
+   "wrongs": [
+    "Li",
+    "Ri",
+    "Ln",
+    "Pn"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q35"
+  },
+  {
+   "q": "「硫黄」の元素記号は?",
+   "correct": "S",
+   "wrongs": [
+    "Yo",
+    "Io",
+    "I",
+    "Si"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q36"
+  },
+  {
+   "q": "「塩素」の元素記号は?",
+   "correct": "Cl",
+   "wrongs": [
+    "En",
+    "E",
+    "Cr",
+    "Kl"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q37"
+  },
+  {
+   "q": "「アルゴン」の元素記号は?",
+   "correct": "Ar",
+   "wrongs": [
+    "Al",
+    "Ag",
+    "Au",
+    "Er"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q38"
+  },
+  {
+   "q": "「カリウム」の元素記号は?",
+   "correct": "K",
+   "wrongs": [
+    "C",
+    "Ka",
+    "Ca",
+    "Kr"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q39"
+  },
+  {
+   "q": "「カルシウム」の元素記号は?",
+   "correct": "Ca",
+   "wrongs": [
+    "Ka",
+    "K",
+    "C",
+    "Cr"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q40"
+  },
+  {
+   "q": "「チタン」の元素記号は?",
+   "correct": "Ti",
+   "wrongs": [
+    "Ch",
+    "Ci",
+    "Th",
+    "T"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q41"
+  },
+  {
+   "q": "「バナジウム」の元素記号は?",
+   "correct": "V",
+   "wrongs": [
+    "B",
+    "Ba",
+    "Va",
+    "Bn"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q42"
+  },
+  {
+   "q": "「クロム」の元素記号は?",
+   "correct": "Cr",
+   "wrongs": [
+    "Kr",
+    "Kl",
+    "Cl",
+    "C"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q43"
+  },
+  {
+   "q": "「マンガン」の元素記号は?",
+   "correct": "Mn",
+   "wrongs": [
+    "Ma",
+    "Mg",
+    "Zn",
+    "Sn"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q44"
+  },
+  {
+   "q": "「鉄」の元素記号は?",
+   "correct": "Fe",
+   "wrongs": [
+    "Ir",
+    "St",
+    "Fa",
+    "Te"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q45"
+  },
+  {
+   "q": "「ニッケル」の元素記号は?",
+   "correct": "Ni",
+   "wrongs": [
+    "N",
+    "Nk",
+    "Nl",
+    "Cu"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q46"
+  },
+  {
+   "q": "「銅」の元素記号は?",
+   "correct": "Cu",
+   "wrongs": [
+    "Co",
+    "Zn",
+    "Do",
+    "Br"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q47"
+  },
+  {
+   "q": "「亜鉛」の元素記号は?",
+   "correct": "Zn",
+   "wrongs": [
+    "Zi",
+    "Z",
+    "A",
+    "Sn"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q48"
+  },
+  {
+   "q": "「ゲルマニウム」の元素記号は?",
+   "correct": "Ge",
+   "wrongs": [
+    "G",
+    "Gm",
+    "Gr",
+    "Gl"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q49"
+  },
+  {
+   "q": "「臭素」の元素記号は?",
+   "correct": "Br",
+   "wrongs": [
+    "Sh",
+    "Bl",
+    "B",
+    "I"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q50"
+  },
+  {
+   "q": "「クリプトン」の元素記号は?",
+   "correct": "Kr",
+   "wrongs": [
+    "Kl",
+    "K",
+    "Kp",
+    "Kt"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q51"
+  },
+  {
+   "q": "「ストロンチウム」の元素記号は?",
+   "correct": "Sr",
+   "wrongs": [
+    "St",
+    "Sl",
+    "S",
+    "Sn"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q52"
+  },
+  {
+   "q": "「銀」の元素記号は?",
+   "correct": "Ag",
+   "wrongs": [
+    "Gi",
+    "Si",
+    "Sl",
+    "Au"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q53"
+  },
+  {
+   "q": "「スズ」の元素記号は?",
+   "correct": "Sn",
+   "wrongs": [
+    "Su",
+    "Sz",
+    "Ti",
+    "Th"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q54"
+  },
+  {
+   "q": "「ヨウ素」の元素記号は?",
+   "correct": "I",
+   "wrongs": [
+    "Yo",
+    "Y",
+    "Io",
+    "Br"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q55"
+  },
+  {
+   "q": "「バリウム」の元素記号は?",
+   "correct": "Ba",
+   "wrongs": [
+    "V",
+    "B",
+    "Br",
+    "Va"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q56"
+  },
+  {
+   "q": "「金」の元素記号は?",
+   "correct": "Au",
+   "wrongs": [
+    "G",
+    "Go",
+    "Ag",
+    "Kn"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q57"
+  },
+  {
+   "q": "「水銀」の元素記号は?",
+   "correct": "Hg",
+   "wrongs": [
+    "H",
+    "Ha",
+    "Sg",
+    "Me"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q58"
+  },
+  {
+   "q": "「鉛」の元素記号は?",
+   "correct": "Pb",
+   "wrongs": [
+    "Na",
+    "Nm",
+    "Le",
+    "Pl"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q59"
+  },
+  {
+   "q": "「ニホニウム」の元素記号は?",
+   "correct": "Nh",
+   "wrongs": [
+    "N",
+    "Ni",
+    "Nn",
+    "Ne"
+   ],
+   "cat": "No.2 元素記号 中級編",
+   "id": "q60"
+  },
+  {
+   "q": "「水素イオン」のイオン式は?",
+   "correct": "H⁺",
+   "wrongs": [
+    "H₂⁺",
+    "H₂²⁺",
+    "H²⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q61"
+  },
+  {
+   "q": "「ヘリウムイオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "He",
+    "He⁺",
+    "He⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q62"
+  },
+  {
+   "q": "「リチウムイオン」のイオン式は?",
+   "correct": "Li⁺",
+   "wrongs": [
+    "Li³⁺",
+    "Ri⁺",
+    "Li²⁺",
+    "Ri²⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q63"
+  },
+  {
+   "q": "「ベリリウムイオン」のイオン式は?",
+   "correct": "Be²⁺",
+   "wrongs": [
+    "Be⁺",
+    "Ve⁺",
+    "Be³⁺",
+    "Ve²⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q64"
+  },
+  {
+   "q": "「炭素イオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "C²⁺",
+    "C⁴⁺",
+    "C⁴⁻",
+    "C²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q65"
+  },
+  {
+   "q": "「窒化物イオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "N⁺",
+    "N³⁺",
+    "N⁻",
+    "N²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q66"
+  },
+  {
+   "q": "「酸化物イオン」のイオン式は?",
+   "correct": "O²⁻",
+   "wrongs": [
+    "O⁺",
+    "O₂⁺",
+    "O₂²⁻",
+    "O₂⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q67"
+  },
+  {
+   "q": "「フッ化物イオン」のイオン式は?",
+   "correct": "F⁻",
+   "wrongs": [
+    "F⁺",
+    "F₂⁺",
+    "Hu²⁻",
+    "Hu⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q68"
+  },
+  {
+   "q": "「ネオンイオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "Ne⁺",
+    "Ne³⁺",
+    "Ne³⁻",
+    "N⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q69"
+  },
+  {
+   "q": "「ナトリウムイオン」のイオン式は?",
+   "correct": "Na⁺",
+   "wrongs": [
+    "N⁻",
+    "Na²⁺",
+    "N⁺",
+    "Na²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q70"
+  },
+  {
+   "q": "「マグネシウムイオン」のイオン式は?",
+   "correct": "Mg²⁺",
+   "wrongs": [
+    "Mg⁺",
+    "Mg³⁺",
+    "Mg²⁻",
+    "Mg⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q71"
+  },
+  {
+   "q": "「アルミニウムイオン」のイオン式は?",
+   "correct": "Al³⁺",
+   "wrongs": [
+    "Al⁺",
+    "Al²⁺",
+    "Ar²⁺",
+    "Ar³⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q72"
+  },
+  {
+   "q": "「ケイ素イオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "Si²⁺",
+    "Si⁴⁺",
+    "Si⁴⁻",
+    "Si²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q73"
+  },
+  {
+   "q": "「リンイオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "Li⁺",
+    "Li³⁻",
+    "P³⁻",
+    "P³⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q74"
+  },
+  {
+   "q": "「硫化物イオン」のイオン式は?",
+   "correct": "S²⁻",
+   "wrongs": [
+    "S⁺",
+    "S₂⁺",
+    "I²⁻",
+    "I⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(前半)",
+   "id": "q75"
+  },
+  {
+   "q": "「塩化物イオン」のイオン式は?",
+   "correct": "Cl⁻",
+   "wrongs": [
+    "Cl⁺",
+    "Kr⁺",
+    "Cr⁻",
+    "Kl⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q76"
+  },
+  {
+   "q": "「アルゴンイオン」のイオン式は?",
+   "correct": "単体でイオンにならない",
+   "wrongs": [
+    "Al⁺",
+    "Al³⁺",
+    "Ar²⁺",
+    "Ar³⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q77"
+  },
+  {
+   "q": "「カリウムイオン」のイオン式は?",
+   "correct": "K⁺",
+   "wrongs": [
+    "Ca⁺",
+    "Kr⁺",
+    "Ca²⁺",
+    "K²⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q78"
+  },
+  {
+   "q": "「カルシウムイオン」のイオン式は?",
+   "correct": "Ca²⁺",
+   "wrongs": [
+    "Ca⁺",
+    "Kr⁺",
+    "K⁺",
+    "K²⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q79"
+  },
+  {
+   "q": "「クロムイオン」のイオン式は?",
+   "correct": "Cr³⁺",
+   "wrongs": [
+    "Cr⁺",
+    "Kr⁺",
+    "Cr²⁺",
+    "K⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q80"
+  },
+  {
+   "q": "「マンガンイオン」のイオン式は?",
+   "correct": "Mn²⁺",
+   "wrongs": [
+    "Mn⁺",
+    "Mg⁺",
+    "Mg²⁺",
+    "Mg³⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q81"
+  },
+  {
+   "q": "「鉄(Ⅱ)イオン」のイオン式は?",
+   "correct": "Fe²⁺",
+   "wrongs": [
+    "Ir⁺",
+    "Fe⁺",
+    "Ir²⁺",
+    "Fe²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q82"
+  },
+  {
+   "q": "「ニッケル(Ⅱ)イオン」のイオン式は?",
+   "correct": "Ni²⁺",
+   "wrongs": [
+    "Ni⁺",
+    "Nk⁺",
+    "Nk²⁺",
+    "N²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q83"
+  },
+  {
+   "q": "「銅(Ⅱ)イオン」のイオン式は?",
+   "correct": "Cu²⁺",
+   "wrongs": [
+    "Cu⁺",
+    "Br⁺",
+    "Br⁻",
+    "Cu²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q84"
+  },
+  {
+   "q": "「亜鉛イオン」のイオン式は?",
+   "correct": "Zn²⁺",
+   "wrongs": [
+    "Sn²⁺",
+    "Zn⁺",
+    "Pb²⁺",
+    "Pb+"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q85"
+  },
+  {
+   "q": "「臭化物イオン」のイオン式は?",
+   "correct": "Br⁻",
+   "wrongs": [
+    "Br²⁺",
+    "Br²⁻",
+    "Su⁺",
+    "Sh⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q86"
+  },
+  {
+   "q": "「銀イオン」のイオン式は?",
+   "correct": "Ag⁺",
+   "wrongs": [
+    "Gi²⁺",
+    "Gi⁺",
+    "Ag²⁺",
+    "Gi³⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q87"
+  },
+  {
+   "q": "「ヨウ化物イオン」のイオン式は?",
+   "correct": "I⁻",
+   "wrongs": [
+    "I²⁺",
+    "I²⁻",
+    "Yo⁺",
+    "Yo⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q88"
+  },
+  {
+   "q": "「バリウムイオン」のイオン式は?",
+   "correct": "Ba²⁺",
+   "wrongs": [
+    "Ba⁺",
+    "V⁺",
+    "V²⁺",
+    "Va³⁺"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q89"
+  },
+  {
+   "q": "「アンモニウムイオン」のイオン式は?",
+   "correct": "NH₄⁺",
+   "wrongs": [
+    "NH₄⁻",
+    "NH₃⁻",
+    "NH₃⁺",
+    "NH₃"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q90"
+  },
+  {
+   "q": "「硫酸イオン」のイオン式は?",
+   "correct": "SO₄²⁻",
+   "wrongs": [
+    "SO₄⁻",
+    "S²⁻",
+    "SO₄²⁺",
+    "NO₃⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q91"
+  },
+  {
+   "q": "「硝酸イオン」のイオン式は?",
+   "correct": "NO₃⁻",
+   "wrongs": [
+    "SO₄⁻",
+    "S²⁻",
+    "SO₄²⁺",
+    "SO₄²⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q92"
+  },
+  {
+   "q": "「硝酸イオン」のイオン式は?",
+   "correct": "NO₃⁻",
+   "wrongs": [
+    "NO₄²⁻",
+    "CO₃²⁻",
+    "SO₄²⁻",
+    "NO₃²⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q93"
+  },
+  {
+   "q": "「炭酸イオン」のイオン式は?",
+   "correct": "CO₃²⁻",
+   "wrongs": [
+    "CO₄²⁻",
+    "HCO₃⁻",
+    "PO₄³⁻",
+    "CO₃⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q94"
+  },
+  {
+   "q": "「水酸化物イオン」のイオン式は?",
+   "correct": "OH⁻",
+   "wrongs": [
+    "NO₃⁻",
+    "O²⁻",
+    "SO₄²⁻",
+    "NH₄⁺"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q95"
+  },
+  {
+   "q": "「リン酸イオン」のイオン式は?",
+   "correct": "PO₄³⁻",
+   "wrongs": [
+    "CO₃²⁻",
+    "PO₃⁻",
+    "PO₄²⁻",
+    "NO₃⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q96"
+  },
+  {
+   "q": "「酢酸イオン」のイオン式は?",
+   "correct": "CH₃COO⁻",
+   "wrongs": [
+    "C₂O₄²⁻",
+    "CH₃CO⁻",
+    "CH₃COOH⁻",
+    "MnO₄⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q97"
+  },
+  {
+   "q": "「過マンガン酸イオン」のイオン式は?",
+   "correct": "MnO₄⁻",
+   "wrongs": [
+    "MnO₃²⁻",
+    "MnO²⁻",
+    "MnO₃⁻",
+    "MnO₄²⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q98"
+  },
+  {
+   "q": "「オキソニウムイオン」のイオン式は?",
+   "correct": "H₃O⁺",
+   "wrongs": [
+    "NH₄⁺",
+    "H₂O⁺",
+    "H₃O⁻",
+    "NH₃⁺"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q99"
+  },
+  {
+   "q": "「シュウ酸イオン」のイオン式は?",
+   "correct": "C₂O₄²⁻",
+   "wrongs": [
+    "CH₃COO⁻",
+    "CH₃CO⁻",
+    "CH₃COOH⁻",
+    "C₂O₄⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q100"
+  },
+  {
+   "q": "「炭酸水素イオン」のイオン式は?",
+   "correct": "HCO₃⁻",
+   "wrongs": [
+    "CH₃COO⁻",
+    "C₂O₄²⁻",
+    "CO₃²⁻",
+    "HCO₃²⁻"
+   ],
+   "cat": "No.4 イオン式 多原子イオン編",
+   "id": "q101"
+  },
+  {
+   "q": "次の物質のうち、昇華しやすいものを1つ選べ。",
+   "correct": "I₂",
+   "wrongs": [
+    "NaCl",
+    "SiO₂",
+    "Cu",
+    "C"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q102"
+  },
+  {
+   "q": "次の物質のうち、分子間力で結晶ができるものを選べ。",
+   "correct": "CH₄",
+   "wrongs": [
+    "SiO₂",
+    "CuCl₂",
+    "NaOH",
+    "AgNO₃"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q103"
+  },
+  {
+   "q": "次の物質のうち、常温常圧で固体でないものを選べ。",
+   "correct": "NH₃",
+   "wrongs": [
+    "Al",
+    "SiO₂",
+    "Si",
+    "NH₄Cl"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q104"
+  },
+  {
+   "q": "次の物質のうち、融点が最も低いものを選べ。",
+   "correct": "H₂O",
+   "wrongs": [
+    "CH₃COONa",
+    "CaCO₃",
+    "SiO₂",
+    "KF"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q105"
+  },
+  {
+   "q": "次の物質のうち、融点が最も高いものを選べ。",
+   "correct": "SiO₂",
+   "wrongs": [
+    "Ar",
+    "CO₂",
+    "SO₂",
+    "Al"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q106"
+  },
+  {
+   "q": "次の物質のうち、最も熱伝導率が高いものを選べ。",
+   "correct": "Cu",
+   "wrongs": [
+    "SiO₂",
+    "He",
+    "NH₃",
+    "CH₄"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q107"
+  },
+  {
+   "q": "次の物質のうち、電気をよく通すものを選べ。",
+   "correct": "C(黒鉛)",
+   "wrongs": [
+    "H₂O",
+    "HF",
+    "O₂",
+    "H₂O₂"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q108"
+  },
+  {
+   "q": "次の物質のうち、組成式で表されているものを選べ。",
+   "correct": "Si",
+   "wrongs": [
+    "Ne",
+    "N₂",
+    "Cl₂",
+    "CO₂"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q109"
+  },
+  {
+   "q": "次の物質のうち、展性・延性を持つものを選べ。",
+   "correct": "Al",
+   "wrongs": [
+    "CH₃COOH",
+    "Ar",
+    "H₂",
+    "H₂SO₄"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q110"
+  },
+  {
+   "q": "次の物質のうち、クーロン力(静電気力)により結晶を形成するものを選べ。",
+   "correct": "NaOH",
+   "wrongs": [
+    "H₂O",
+    "Si",
+    "O₃",
+    "Na"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q111"
+  },
+  {
+   "q": "次の物質のうち、固体では電気を通さないが、融解液では電気を通すものを選べ。",
+   "correct": "NaCl",
+   "wrongs": [
+    "Al",
+    "SiO₂",
+    "Cl₂",
+    "CO₂"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q112"
+  },
+  {
+   "q": "次の物質のうち、硬いがもろいものを選べ。",
+   "correct": "CH₃COONa",
+   "wrongs": [
+    "CH₃COOH",
+    "NH₃",
+    "Cu",
+    "H₂SO₄"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q113"
+  },
+  {
+   "q": "次の物質のうち、水に溶けて電離するものを選べ。",
+   "correct": "CuSO₄",
+   "wrongs": [
+    "Ne",
+    "Fe",
+    "SiO₂",
+    "Si"
+   ],
+   "cat": "No.5 結晶の性質",
+   "id": "q114"
+  }
+ ]
+};
+const CATEGORIES = DATA.categories;
+const ITEMS = DATA.items;
+const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
+
+/* ================= 状態 ================= */
+let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
+function save(){try{localStorage.setItem('inorganicQuest1',JSON.stringify(state));}catch(e){}LB.pushState('inorganicQuest1',state);}
+function load(){try{const s=localStorage.getItem('inorganicQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+LB.attachStateSync('inorganicQuest1',()=>localStorage.getItem('inorganicQuest1'));
+LB.maybeShowOnboarding('inorganicQuest1');
+function isMastered(id){return state.mastered.includes(id);}
+function markMastered(id){if(!isMastered(id)){state.mastered.push(id);save();}}
+function weakCount(){return Object.keys(state.weak).length;}
+function updateWeakBadge(){
+  const b=document.getElementById('weakBadge');
+  const n=weakCount();
+  b.style.display=n?'block':'none'; b.textContent=n;
+}
+
+/* ================= 共通ユーティリティ ================= */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sample(a,n){return shuffle(a.slice()).slice(0,n);}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function buildChoices(it){
+  const choices=[{text:it.correct,ok:true},...it.wrongs.map(w=>({text:w,ok:false}))];
+  return shuffle(choices);
+}
+function renderQuiz(el,it,onDone,progressText){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt">${it.q}</div>
+    ${ch}
+    <div class="explain" id="explainBox"></div>
+    <button class="bigbtn" id="nextBtn" style="display:none">つぎへ</button>`;
+  let answered=false;
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=choices[+btn.dataset.i];
+      el.querySelectorAll('.choice').forEach((b,j)=>{
+        const cc=choices[j];
+        if(cc.ok)b.classList.add('correct');
+        else if(b===btn)b.classList.add('wrong');
+        else b.classList.add('dim');
+      });
+      const ex=el.querySelector('#explainBox');
+      ex.className='explain '+(c.ok?'ok':'ng');
+      ex.innerHTML=`<div class="rname">${c.ok?'⭕ 正解!':'❌ 不正解… 正解は「'+it.correct+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
+      const nb=el.querySelector('#nextBtn');
+      nb.style.display='block';
+      nb.onclick=()=>onDone(c.ok);
+      nb.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  });
+}
+
+/* ================= 正誤ポップアップ・自動送り(芳香族クエストと共通仕様) ================= */
+function refreshAnswerFxBtn(){
+  const popup=state.answerFx!=='simple';
+  const btn=document.getElementById('btnAnswerFx');
+  btn.textContent=popup?'🎊 ポップアップ':'🟩 シンプル';
+  btn.title='正誤リアクションの切り替え';
+}
+document.getElementById('btnAnswerFx').addEventListener('click',()=>{
+  state.answerFx=state.answerFx!=='simple'?'simple':'popup';
+  save(); refreshAnswerFxBtn();
+  toast(state.answerFx==='simple'?'正誤リアクション:シンプルに切り替えました':'正誤リアクション:ポップアップに切り替えました');
+});
+function refreshAnswerAutoBtn(){
+  const on=state.answerAuto===true;
+  const btn=document.getElementById('btnAnswerAuto');
+  btn.textContent=on?'⏭ 自動:ON':'⏭ 自動:OFF';
+  btn.classList.toggle('on',on);
+  btn.title='正解/不正解後に自動で次へ進む';
+}
+document.getElementById('btnAnswerAuto').addEventListener('click',()=>{
+  state.answerAuto=state.answerAuto!==true;
+  save(); refreshAnswerAutoBtn();
+  toast(state.answerAuto?'自動で次へ進むようにしました':'自動で次へ進むのをOFFにしました');
+});
+const ANSWER_FX_DURATION=900;
+function showAnswerFxPopup(ok){
+  const el=document.getElementById('answerFxPopup');
+  el.innerHTML=ok?
+    `<div class="afx-box"><div class="afx-symbol ok">○</div><div class="afx-confetti">🎉🎊✨</div></div>`:
+    `<div class="afx-box"><div class="afx-symbol ng">×</div><div class="afx-sub">( ；∀；)</div></div>`;
+  el.classList.add('show');
+  clearTimeout(showAnswerFxPopup._t);
+  showAnswerFxPopup._t=setTimeout(()=>el.classList.remove('show'),ANSWER_FX_DURATION);
+}
+function renderMemoQ(el,it,onDone,progressText){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt">${it.q}</div>
+    ${ch}
+    <div style="height:80px"></div>
+    <button class="bigbtn fixed-next" id="memoNextBtn" style="display:none">次へ</button>`;
+  let answered=false;
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=choices[+btn.dataset.i];
+      btn.classList.add(c.ok?'correct':'wrong');
+      if(state.answerFx!=='simple')showAnswerFxPopup(c.ok);
+      const nb=el.querySelector('#memoNextBtn');
+      nb.style.display='block';
+      let advanced=false;
+      const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok);};
+      nb.onclick=advance;
+      if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
+    });
+  });
+}
+function reviewRetry(it){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  infoSheet.innerHTML=`<h3>もう一度<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div class="qprompt">${it.q}</div>
+    ${ch}`;
+  infoModal.classList.add('open');
+  let answered=false;
+  infoSheet.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const c=choices[+btn.dataset.i];
+      infoSheet.querySelectorAll('.choice').forEach((b,j)=>{
+        const cc=choices[j];
+        if(cc.ok)b.classList.add('correct');
+        else if(b===btn)b.classList.add('wrong');
+        else b.classList.add('dim');
+      });
+    });
+  });
+}
+
+/* ================= 単元別ドリル(暗記モード) ================= */
+const homePanel=document.getElementById('homePanel');
+const infoModal=document.getElementById('infoModal');
+const infoSheet=document.getElementById('infoSheet');
+infoModal.addEventListener('click',e=>{if(e.target===infoModal)infoModal.classList.remove('open');});
+let catDrill=null;
+let memoAdvanceTimer=null;
+function memoClearAdvanceTimer(){ if(memoAdvanceTimer){clearTimeout(memoAdvanceTimer);memoAdvanceTimer=null;} }
+function catStats(cat){
+  return state.catStats[cat]||null;
+}
+let catSort={field:'no',dir:'asc'};
+function sortedCategories(){
+  const arr=CATEGORIES.map((c,i)=>({c,i}));
+  arr.sort((a,b)=>{
+    let av,bv;
+    if(catSort.field==='pct'){
+      const sa=catStats(a.c.name), sb=catStats(b.c.name);
+      av=sa?(sa.best||0):0; bv=sb?(sb.best||0):0;
+    }else{ av=a.i; bv=b.i; }
+    return catSort.dir==='asc'?av-bv:bv-av;
+  });
+  return arr.map(x=>x.c);
+}
+function renderHome(){
+  memoClearAdvanceTimer();
+  if(!memoLikesLoaded && LB.currentUser()){
+    memoLikesLoaded=true;
+    LB.fetchLikes('inorganic').then(likes=>{ memoLikes=likes||{}; if(!catDrill) renderHome(); });
+  }
+  let list='';
+  for(const c of sortedCategories()){
+    const s=catStats(c.name);
+    const lastPct=s?Math.round(100*s.correct/s.total):0;
+    const bestPct=s?(s.best||lastPct):0;
+    const ip=state.inProgress[c.name];
+    list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-cat="${c.name}">
+      <span>${c.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.ids.length})・`:''}${c.count}問</span></span>
+      <span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[c.name]?' 👍':''}</span></span>
+      </button>`;
+  }
+  const arrow=catSort.dir==='asc'?'▲':'▼';
+  homePanel.innerHTML=`
+    <h2>🧠 暗記モード</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">単元を選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
+    </div>
+    <div class="card-ui">
+      <div class="decklist-head">
+        <b>単元を選ぶ</b>
+        <div style="display:flex;gap:4px">
+          <button id="sortNo" class="sortmini ${catSort.field==='no'?'sel':''}">No順${catSort.field==='no'?' '+arrow:''}</button>
+          <button id="sortPct" class="sortmini ${catSort.field==='pct'?'sel':''}">正答率順${catSort.field==='pct'?' '+arrow:''}</button>
+        </div>
+      </div>
+      <div class="decklist">${list}</div>
+    </div>`;
+  document.getElementById('sortNo').onclick=()=>{
+    if(catSort.field==='no')catSort.dir=catSort.dir==='asc'?'desc':'asc';
+    else{catSort.field='no';catSort.dir='asc';}
+    renderHome();
+  };
+  document.getElementById('sortPct').onclick=()=>{
+    if(catSort.field==='pct')catSort.dir=catSort.dir==='asc'?'desc':'asc';
+    else{catSort.field='pct';catSort.dir='desc';}
+    renderHome();
+  };
+  homePanel.querySelectorAll('.deckbtn').forEach(el=>{
+    el.addEventListener('click',()=>startCatDrill(el.dataset.cat));
+  });
+}
+function startCatDrill(cat,mode){
+  memoClearAdvanceTimer();
+  const ip=state.inProgress[cat];
+  if(ip&&!mode){
+    homePanel.innerHTML=`<div class="card-ui" style="text-align:center">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${cat}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
+      <button class="bigbtn" id="resumeBtn">続きから</button>
+      <button class="bigbtn secondary" id="restartBtn">最初から</button>
+      <button class="backbtn" id="chooseBack" style="margin-top:8px">← 単元一覧に戻る</button>
+    </div>`;
+    document.getElementById('resumeBtn').onclick=()=>startCatDrill(cat,'resume');
+    document.getElementById('restartBtn').onclick=()=>startCatDrill(cat,'restart');
+    document.getElementById('chooseBack').onclick=()=>renderHome();
+    return;
+  }
+  if(mode==='resume'){
+    catDrill={cat,its:ip.ids.map(id=>IMAP[id]),i:ip.i,results:ip.results||[]};
+  }else{
+    delete state.inProgress[cat]; save();
+    catDrill={cat,its:shuffle(ITEMS.filter(it=>it.cat===cat)),i:0,results:[]};
+  }
+  nextCatQ();
+}
+function catResult(){
+  memoClearAdvanceTimer();
+  const correct=catDrill.results.filter(x=>x.ok).length;
+  const total=catDrill.results.length;
+  const pct=Math.round(100*correct/total);
+  const prev=state.catStats[catDrill.cat];
+  const prevBest=prev?prev.best:0;
+  const best=Math.max(prevBest,pct);
+  state.catStats[catDrill.cat]={correct,total,best};
+  delete state.inProgress[catDrill.cat];
+  LB.recordQuizResults('inorganic', catDrill.results.map(x=>({id:x.it.id, ok:x.ok})));
+  if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'化学基礎', setName:catDrill.cat});
+  save();
+  let review='';
+  catDrill.results.forEach((x,i)=>{
+    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.it.q} → ${x.it.correct}</div>`;
+  });
+  homePanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line" style="font-size:22px">正解 ${correct} / ${total}(${pct}%)</div>
+      <div class="muted">${pct>=best?'自己ベスト更新!':`最高記録 ${best}%`}</div>
+      <button class="bigbtn" id="catAgain">もう一度</button>
+      <button class="bigbtn secondary" id="catHome">単元一覧に戻る</button>
+    </div>
+    <div class="card-ui"><b>復習リスト</b>${review}</div>`;
+  homePanel.querySelectorAll('.review-tap').forEach(el=>{
+    el.onclick=()=>reviewRetry(catDrill.results[+el.dataset.i].it);
+  });
+  document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat);
+  document.getElementById('catHome').onclick=()=>{catDrill=null;renderHome();};
+  homePanel.scrollTop=0;
+}
+function nextCatQ(){
+  if(catDrill.i>=catDrill.its.length)return catResult();
+  const it=catDrill.its[catDrill.i];
+  homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← 単元選択</button>';
+  document.getElementById('catBack').onclick=()=>{
+    memoClearAdvanceTimer();
+    state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results};
+    save();
+    catDrill=null; renderHome();
+  };
+  renderMemoQ(document.getElementById('cdq'),it,ok=>{
+    memoAdvanceTimer=null;
+    catDrill.results.push({it,ok});
+    if(ok)markMastered(it.id);
+    else{state.weak[it.id]=2;save();updateWeakBadge();}
+    catDrill.i++; nextCatQ();
+  },`${catDrill.cat}　${catDrill.i+1} / ${catDrill.its.length}`);
+  homePanel.scrollTop=0;
+}
+
+/* ================= チャレンジモード(1問ミスでゲームオーバー・芳香族クエストと共通仕様) ================= */
+const chalPanel=document.getElementById('chalPanel');
+let chal=null, chalKind='score', chalTimerIv=null;
+function stopChalTimer(){if(chalTimerIv){clearInterval(chalTimerIv);chalTimerIv=null;}}
+const CHAL_DESC={
+  score:'ランダム出題。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!',
+  time:'制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!'
+};
+const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
+const CHAL_TIME_LIMIT=60;
+function chalRank(kind,correct){
+  if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
+  return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+}
+function refreshLbBox(kind){
+  const box=document.getElementById('lbBox');
+  if(!box)return;
+  if(LB.currentUser()){
+    box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
+    LB.fetchTop(kind,10).then(list=>{
+      const b=document.getElementById('lbBox');
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list,LB.currentUser().uid,kind);
+    });
+  }else{
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ログインすると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtn" style="width:100%">ログインする</button>`;
+    document.getElementById('lbRegisterBtn').onclick=()=>LB.openAccountModal();
+  }
+}
+function renderChallengeHome(){
+  const list=(state.bestList&&state.bestList[chalKind])||[];
+  chalPanel.innerHTML=`
+    <h2>${PODIUM_ICON} チャレンジモード</h2>
+    <div class="card-ui">
+      <div class="scopebtns">
+        <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
+        <button id="kTime" class="${chalKind==='time'?'sel':''}">⏱ 1分間タイムアタック</button>
+      </div>
+      <div style="font-size:13.5px;line-height:1.8;margin-top:10px">${CHAL_DESC[chalKind]}</div>
+      <button class="bigbtn" id="chalStart">スタート!</button>
+    </div>
+    <div class="card-ui" id="lbBox"></div>
+    ${list.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(list,chalKind)}</div>`:''}`;
+  document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
+  document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
+  document.getElementById('chalStart').onclick=startChallenge;
+  refreshLbBox(chalKind);
+}
+function buildChalQueue(){
+  return shuffle(ITEMS.slice());
+}
+function startChallenge(){
+  chal={kind:chalKind,queue:buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
+  nextChalQ();
+}
+function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
+  const choices=buildChoices(it);
+  let ch='<div class="choices">';
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
+  ch+='</div>';
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    ${timeLimitSec?`<div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>`:''}
+    <div class="qprompt">${it.q}</div>
+    ${ch}`;
+  let answered=false;
+  function finish(ok,timedOut){
+    if(answered)return; answered=true;
+    stopChalTimer();
+    el.querySelectorAll('.choice').forEach(b=>{
+      const c=choices[+b.dataset.i];
+      if(c.ok)b.classList.add('correct');
+      else if(!timedOut&&b.dataset.clicked)b.classList.add('wrong');
+    });
+    setTimeout(()=>onDone(ok,timedOut),650);
+  }
+  if(timeLimitSec){
+    const t0=Date.now();
+    const timerEl=el.querySelector('#chalTimer');
+    chalTimerIv=setInterval(()=>{
+      const left=timeLimitSec-(Date.now()-t0)/1000;
+      if(left<=0){finish(false,true);}
+      else{timerEl.textContent=`⏱ ${Math.ceil(left)}秒`;timerEl.classList.toggle('urgent',left<=3);}
+    },100);
+  }
+  el.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return;
+      btn.dataset.clicked='1';
+      finish(choices[+btn.dataset.i].ok,false);
+    });
+  });
+}
+function nextChalQ(){
+  if(chal.kind==='time'){
+    const left=CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000;
+    if(left<=0)return chalResult(true);
+  }
+  if(chal.idx>=chal.queue.length)return chalResult(true);
+  const it=chal.queue[chal.idx];
+  const session=chal;
+  const timeLimitSec=chal.kind==='score'?10:Math.max(1,Math.ceil(CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000));
+  const progressText=chal.kind==='score'?`連続正解 ${chal.correct}問`:`正解 ${chal.correct}問`;
+  chalPanel.innerHTML='<div id="cq"></div>';
+  renderChalQuiz(document.getElementById('cq'),it,progressText,timeLimitSec,(ok,timedOut)=>{
+    if(chal!==session||chal.over)return;
+    if(chal.kind==='time'&&timedOut){chalResult(true);return;}
+    if(ok){
+      if(ok)markMastered(it.id);
+      chal.correct++; chal.idx++; nextChalQ();
+    }else{
+      state.weak[it.id]=2; save(); updateWeakBadge();
+      chalResult(false);
+    }
+  });
+  chalPanel.scrollTop=0;
+}
+function chalResult(reachedEnd){
+  if(!chal||chal.over)return;
+  chal.over=true;
+  stopChalTimer();
+  const correct=chal.correct;
+  const sec=Math.floor((Date.now()-chal.t0)/1000);
+  const rank=chalRank(chal.kind,correct);
+  if(!state.bestList)state.bestList={score:[],time:[]};
+  const list=state.bestList[chal.kind]||[];
+  list.push({correct,sec,rank});
+  list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
+  state.bestList[chal.kind]=list.slice(0,3);
+  save();
+  if(LB.currentUser())LB.submitScore(chal.kind,correct,sec,rank);
+  const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
+  chalPanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line" style="font-size:17px">${headline}</div>
+      <div class="rankbig rank-${rank}">${rank}</div>
+      <div class="score-line">正解 ${correct}問　⏱ ${sec}秒</div>
+      <div class="muted">${rank==='S'?'完璧!化学基礎マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'弱点特訓で復習しよう!':'暗記モードで基礎から固めよう!'}</div>
+      <button class="bigbtn" id="chalAgain">もう一度</button>
+      <button class="bigbtn secondary" id="chalHome">トップへ</button>
+    </div>
+    <div class="card-ui" id="lbBox"></div>`;
+  document.getElementById('chalAgain').onclick=startChallenge;
+  document.getElementById('chalHome').onclick=renderChallengeHome;
+  refreshLbBox(chal.kind);
+  chalPanel.scrollTop=0;
+}
+
+/* ================= 弱点特訓 ================= */
+const weakPanel=document.getElementById('weakPanel');
+let drill=null;
+function renderWeakHome(){
+  const n=weakCount();
+  let list='';
+  for(const id in state.weak){
+    const it=IMAP[id];
+    if(!it){delete state.weak[id];continue;}
+    list+=`<div class="review-item">🎯 ${it.q} <b>${it.correct}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
+  }
+  weakPanel.innerHTML=`
+    <h2>🎯 弱点特訓</h2>
+    <div class="card-ui">
+      <div style="font-size:13.5px;line-height:1.8">間違えた問題がここに溜まります。<b>2回連続で正解</b>するとリストから消えます。</div>
+      <button class="bigbtn amber" id="drillStart" ${n?'':'disabled'}>${n?`特訓スタート(${n}件)`:'弱点はありません🎉'}</button>
+    </div>
+    ${list?`<div class="card-ui"><b>弱点リスト</b>${list}</div>`:''}`;
+  const ds=document.getElementById('drillStart');
+  if(n)ds.onclick=startDrill;
+}
+function startDrill(){
+  drill={ids:shuffle(Object.keys(state.weak)),i:0};
+  nextDrillQ();
+}
+function nextDrillQ(){
+  while(drill.i<drill.ids.length&&!(drill.ids[drill.i] in state.weak))drill.i++;
+  if(drill.i>=drill.ids.length){drill=null;renderWeakHome();updateWeakBadge();toast('特訓おつかれさま!');return;}
+  const id=drill.ids[drill.i];
+  const it=IMAP[id];
+  weakPanel.innerHTML='<div id="dq"></div>';
+  renderQuiz(document.getElementById('dq'),it,ok=>{
+    if(ok){
+      state.weak[id]--;
+      if(state.weak[id]<=0){delete state.weak[id];markMastered(id);}
+    }else state.weak[id]=2;
+    save(); updateWeakBadge();
+    drill.i++; nextDrillQ();
+  },`弱点特訓　残り ${drill.ids.length-drill.i} 件`);
+  weakPanel.scrollTop=0;
+}
+
+/* ================= 確認ダイアログ ================= */
+function confirmDialog(message,onConfirm){
+  infoSheet.innerHTML=`<h3>確認<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+    <div style="font-size:13.5px;line-height:1.8;margin-bottom:6px">${message}</div>
+    <button class="bigbtn amber" id="confirmYes">終了する</button>
+    <button class="bigbtn secondary" id="confirmNo">続ける</button>`;
+  infoModal.classList.add('open');
+  document.getElementById('confirmYes').onclick=()=>{infoModal.classList.remove('open');onConfirm();};
+  document.getElementById('confirmNo').onclick=()=>infoModal.classList.remove('open');
+}
+
+/* ================= ナビ・共通 ================= */
+const VIEW_TITLES={challenge:'チャレンジモード',weak:'🎯 弱点特訓'};
+function switchView(view){
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  const t=document.getElementById('hdrTitle');
+  if(VIEW_TITLES[view]){t.style.display='';t.textContent=VIEW_TITLES[view];}
+  else t.style.display='none';
+  if(view==='home'&&!catDrill)renderHome();
+  if(view==='challenge'&&(!chal||chal.over))renderChallengeHome();
+  if(view==='weak'&&!drill)renderWeakHome();
+}
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const target=b.dataset.view;
+    const activeView=document.querySelector('.view.active').id.replace('view-','');
+    if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
+      confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
+        stopChalTimer(); chal.over=true; chal=null;
+        switchView(target);
+      });
+      return;
+    }
+    switchView(target);
+  });
+});
+document.getElementById('questSelect').addEventListener('change',e=>{location.href=e.target.value;});
+
+/* ================= 起動 ================= */
+load();
+updateWeakBadge();
+refreshAnswerFxBtn();
+refreshAnswerAutoBtn();
+renderHome();
+</script>
+</body>
+</html>
