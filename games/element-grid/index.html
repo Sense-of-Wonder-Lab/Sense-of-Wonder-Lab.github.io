@@ -1,4 +1,6 @@
+<meta charset="UTF-8">
 <title>元素グリッドEX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -42,6 +44,7 @@
 
   #stage{
     position:relative;
+    height:100vh;
     height:100dvh;
     min-height:560px;
     max-width:560px;
@@ -78,7 +81,7 @@
   button{ font-family:inherit; }
 
   /* ---------- MENU ---------- */
-  #menu{ justify-content:flex-start; gap:0; overflow-y:auto; }
+  #menu{ justify-content:center; gap:0; overflow-y:auto; }
   .menu-head{ padding-top:10px; flex-shrink:0; }
   .menu-title{
     font-size:52px;
@@ -290,6 +293,28 @@
     overflow:hidden;
   }
 
+  .countdown-overlay{
+    position:absolute; inset:0;
+    display:none;
+    align-items:center; justify-content:center;
+    background:rgba(11,15,16,0.72);
+    backdrop-filter:blur(2px);
+    z-index:20;
+    pointer-events:none;
+  }
+  .countdown-overlay.active{ display:flex; }
+  .countdown-num{
+    font-size:110px;
+    color:var(--accent);
+    text-shadow:0 0 30px rgba(79,216,196,0.5);
+    animation:countpop .5s ease-out;
+  }
+  @keyframes countpop{
+    0%{ transform:scale(0.4); opacity:0; }
+    60%{ transform:scale(1.1); opacity:1; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+
   .tile{
     position:absolute;
     transform:translate(-50%,-50%);
@@ -473,6 +498,10 @@
     </div>
 
     <div id="field"></div>
+
+    <div class="countdown-overlay" id="countdownOverlay">
+      <div class="countdown-num stencil" id="countdownNum">3</div>
+    </div>
   </div>
 
   <!-- RESULT -->
@@ -546,6 +575,21 @@
   var $ = function(id){ return document.getElementById(id); };
   var menu = $('menu'), playScreen = $('play'), resultScreen = $('result');
   var field = $('field');
+  var stageEl = $('stage');
+
+  // Some in-app WebViews miscompute 100dvh (report a much larger value than
+  // the real visible viewport). Force the actual pixel height via JS so the
+  // stage never grows taller than what's on screen.
+  function fixStageHeight(){
+    var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    stageEl.style.height = Math.max(h, 1) + 'px';
+    if(state) layoutTiles();
+  }
+  window.addEventListener('load', fixStageHeight);
+  window.addEventListener('resize', fixStageHeight);
+  window.addEventListener('orientationchange', fixStageHeight);
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', fixStageHeight);
+  fixStageHeight();
 
   var state = null; // active game state
   var rafId = null;
@@ -657,9 +701,37 @@
     resultScreen.classList.remove('active');
     playScreen.classList.add('active');
 
+    state.locked = true;
     layoutTiles();
-    state.startTime = performance.now();
-    tick();
+    runCountdown();
+  }
+
+  function runCountdown(){
+    var st = state;
+    var overlay = $('countdownOverlay'), numEl = $('countdownNum');
+    var steps = ['3','2','1','START'];
+    var i = 0;
+    overlay.classList.add('active');
+    function showNext(){
+      if(state !== st) return;
+      numEl.textContent = steps[i];
+      numEl.style.animation = 'none';
+      void numEl.offsetWidth;
+      numEl.style.animation = '';
+      i++;
+      if(i < steps.length){
+        setTimeout(showNext, 600);
+      } else {
+        setTimeout(function(){
+          overlay.classList.remove('active');
+          if(state !== st) return;
+          st.locked = false;
+          st.startTime = performance.now();
+          tick();
+        }, 450);
+      }
+    }
+    showNext();
   }
 
   function tick(){
@@ -670,7 +742,7 @@
   }
 
   function onTileTap(el, tileEl, ev){
-    if(!state || tileEl.classList.contains('correct')) return;
+    if(!state || state.locked || tileEl.classList.contains('correct')) return;
     var expected = state.levelDef.list[state.currentIndex];
     if(el.z === expected.z){
       tileEl.classList.add('correct');
@@ -716,6 +788,7 @@
   function backToMenu(){
     if(rafId) cancelAnimationFrame(rafId);
     state = null;
+    $('countdownOverlay').classList.remove('active');
     playScreen.classList.remove('active');
     resultScreen.classList.remove('active');
     menu.style.display = 'flex';
