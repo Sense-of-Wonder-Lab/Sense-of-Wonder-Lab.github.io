@@ -185,7 +185,10 @@ LB.onMessages(count=>{
   b.textContent = count>9?'9+':count;
   b.style.display = count>0?'':'none';
 });
-LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
+LB.onAuth(()=>{
+  if(document.getElementById('chalStart')&&typeof renderChallengeHome==='function') renderChallengeHome();
+  else if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind);
+});
 /* ================= データ(MONOXER「化学基礎」教材準拠) ================= */
 const DATA = {
  "categories": [

@@ -422,7 +422,10 @@ document.getElementById('themeBtn').onclick=()=>{
   document.documentElement.setAttribute('data-theme', next);
   if(next==='navy') fixOpaqueBgImages(document);
 };
-LB.onAuth(()=>{ if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind); });
+LB.onAuth(()=>{
+  if(document.getElementById('chalStart')&&typeof renderChallengeHome==='function') renderChallengeHome();
+  else if(document.getElementById('lbBox')&&typeof chalKind!=='undefined'&&typeof refreshLbBox==='function') refreshLbBox(chalKind);
+});
 /* ================= データ(教材「有機化学学習の朋」準拠) ================= */
 const NW=150, NH=112;
 
