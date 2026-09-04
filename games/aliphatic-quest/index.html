@@ -1539,7 +1539,7 @@ function chalResult(reachedEnd){
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
   state.bestList[chal.kind]=list.slice(0,3);
   save();
-  if(LB.currentUser())LB.submitScore(chal.kind,correct,sec,rank);
+  const lbSubmit=LB.currentUser()?LB.submitScore(chal.kind,correct,sec,rank):Promise.resolve();
   chalHeaderUpdate('結果発表');
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`
@@ -1556,6 +1556,7 @@ function chalResult(reachedEnd){
   document.getElementById('chalAgain').onclick=startChallenge;
   document.getElementById('chalHome').onclick=renderChallengeHome;
   refreshLbBox(chal.kind);
+  lbSubmit.then(()=>refreshLbBox(chal.kind));
   chalPanel.scrollTop=0;
 }
 

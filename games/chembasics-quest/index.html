@@ -2010,7 +2010,7 @@ function chalResult(reachedEnd){
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
   state.bestList[chal.kind]=list.slice(0,3);
   save();
-  if(LB.currentUser())LB.submitScore(chal.kind,correct,sec,rank);
+  const lbSubmit=LB.currentUser()?LB.submitScore(chal.kind,correct,sec,rank):Promise.resolve();
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`
     <h2>結果発表</h2>
@@ -2026,6 +2026,7 @@ function chalResult(reachedEnd){
   document.getElementById('chalAgain').onclick=startChallenge;
   document.getElementById('chalHome').onclick=renderChallengeHome;
   refreshLbBox(chal.kind);
+  lbSubmit.then(()=>refreshLbBox(chal.kind));
   chalPanel.scrollTop=0;
 }
 
