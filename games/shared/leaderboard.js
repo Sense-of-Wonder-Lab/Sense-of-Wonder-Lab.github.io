@@ -337,7 +337,7 @@ const LB = (function(){
         console.warn('[LB] submitScore: existing score is not worse, skipped', cur, {correct,sec});
         return false;
       }
-      return ref.set({name:user.nickname, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>{
+      return ref.set({name:user.nickname, avatar:user.avatar||null, correct, sec, rank, ts:firebase.database.ServerValue.TIMESTAMP}).then(()=>{
         notifyAdmin('newBest', {game:gameId, kind, correct, sec, rank});
         return true;
       });
