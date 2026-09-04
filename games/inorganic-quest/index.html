@@ -33,7 +33,7 @@ header{
 header .title{font-weight:700;font-size:15px;letter-spacing:.02em;flex:1}
 header .sub{font-size:10px;opacity:.75}
 .questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
-.accountBtnWrap{margin-left:auto}
+header .accountBtnWrap{margin-left:6px}
 .questSelect option{color:var(--ink)}
 .backrow{margin-bottom:10px}
 .backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
@@ -124,7 +124,7 @@ nav button.active{color:var(--blue);font-weight:700}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
-.themeBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;display:flex;align-items:center;justify-content:center}
+.themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;display:flex;align-items:center;justify-content:center}
 html[data-theme="navy"]{
   --ink:#e8eefc;
   --bg:#0a1120;
