@@ -355,11 +355,15 @@ const LB = (function(){
 
   function fetchTop(kind, n){
     n = n || 10;
-    if(!db || !gameId) return Promise.resolve([]);
-    return db.ref('leaderboard/'+gameId+'/'+kind).orderByChild('correct').limitToLast(50).once('value')
-      .then(snap=>{
+    if(!gameId) return Promise.resolve([]);
+    // REST 経由の素の読み込みを使う。SDK の WebSocket 経由 (.once('value') や
+    // orderByChild) だと、この一覧読み込みだけ稀に一部の子しか返らないことが
+    // あったための回避策。
+    const url = FIREBASE_CONFIG.databaseURL + '/leaderboard/' + encodeURIComponent(gameId) + '/' + encodeURIComponent(kind) + '.json';
+    return fetch(url).then(r=>r.json())
+      .then(obj=>{
         const arr = [];
-        snap.forEach(ch=>arr.push(Object.assign({uid:ch.key}, ch.val())));
+        for(const uid in (obj||{})) arr.push(Object.assign({uid}, obj[uid]));
         arr.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
         return arr.slice(0, n);
       }).catch(err=>{ console.warn('[LB] fetchTop failed', err); return []; });
