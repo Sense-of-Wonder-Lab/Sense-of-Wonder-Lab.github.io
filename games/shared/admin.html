@@ -159,6 +159,9 @@
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
       </select></span>
+      <span class="qGameFilter"><select id="qUserSelect">
+        <option value="">個人正答率: 対象なし</option>
+      </select></span>
     </div>
     <div class="resultCount" id="qResultCount"></div>
     <div class="resultCount" id="qPersonalHint" style="color:#2563eb"></div>
@@ -359,8 +362,10 @@ function render(){
 }
 
 function selectUser(uid){
-  selectedUid = uid;
+  selectedUid = uid || null;
   render();
+  const qSel = document.getElementById('qUserSelect');
+  if(qSel) qSel.value = selectedUid || '';
   if(document.getElementById('questionsView').style.display !== 'none' && allQuestions) renderQuestions();
 }
 function renderDetail(uid){
@@ -556,6 +561,14 @@ function fmtPct(stat){
   if(p===null) return '<span class="noProg">-</span>';
   return `${p}%<span class="qWrongs">(${stat.correct||0}/${stat.total})</span>`;
 }
+function populateQUserSelect(){
+  const sel = document.getElementById('qUserSelect');
+  if(!sel) return;
+  const rows = buildRows().slice().sort((a,b)=>a.nickname.localeCompare(b.nickname, 'ja'));
+  sel.innerHTML = '<option value="">個人正答率: 対象なし</option>' +
+    rows.map(r=>`<option value="${r.uid}">${escapeHtml(r.nickname)}</option>`).join('');
+  sel.value = selectedUid || '';
+}
 let qSortKey = null, qSortDir = 1;
 let qSelectedSets = null; // null = 絞り込みなし(全セット表示)。Set(空含む)なら明示的な選択状態。
 function availableSets(){
@@ -658,9 +671,11 @@ document.getElementById('tabQuestions').addEventListener('click', ()=>{
   document.getElementById('tabUsers').classList.remove('active');
   document.getElementById('usersView').style.display = 'none';
   document.getElementById('questionsView').style.display = '';
+  populateQUserSelect();
   Promise.all([loadAllQuestions(), loadQuestionStats()]).then(renderQuestions);
 });
 document.getElementById('qGameSelect').addEventListener('change', ()=>{ qSelectedSets = null; renderQuestions(); });
+document.getElementById('qUserSelect').addEventListener('change', e=>{ selectUser(e.target.value); });
 document.querySelectorAll('#qTbl th.sortable').forEach(th=>{
   th.addEventListener('click', ()=>{
     if(qSortKey === th.dataset.key) qSortDir *= -1;
