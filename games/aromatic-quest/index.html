@@ -194,7 +194,8 @@ nav button.active{color:var(--blue);font-weight:700}
 .chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
 .chal-timer.urgent{color:var(--red)}
 .rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
-.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.rank-SSS{background:linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rank-SS{color:#7c3aed}.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
 .score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
 .review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
 .review-item.review-tap{cursor:pointer;display:flex;align-items:center;gap:6px}
@@ -1507,9 +1508,10 @@ const CHAL_DESC={
 };
 const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
 const CHAL_TIME_LIMIT=60;
-function chalRank(kind,correct){
+function chalRank(kind,correct,reachedEnd){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
-  return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+  if(reachedEnd)return 'SSS';
+  return correct>=100?'SS':correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
 }
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
@@ -1586,7 +1588,7 @@ function chalResult(reachedEnd){
   stopChalTimer();
   const correct=chal.correct;
   const sec=Math.floor((Date.now()-chal.t0)/1000);
-  const rank=chalRank(chal.kind,correct);
+  const rank=chalRank(chal.kind,correct,reachedEnd&&chal.kind==='score');
   if(!state.bestList)state.bestList={score:[],time:[]};
   const list=state.bestList[chal.kind]||[];
   list.push({correct,sec,rank});
@@ -1602,7 +1604,7 @@ function chalResult(reachedEnd){
       <div class="score-line" style="font-size:17px">${headline}</div>
       <div class="rankbig rank-${rank}">${rank}</div>
       <div class="score-line">正解 ${correct}問　⏱ ${sec}秒</div>
-      <div class="muted">${rank==='S'?'完璧!芳香族マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'解説を読んで弱点特訓へ!':'マップモードで基礎から固めよう!'}</div>
+      <div class="muted">${rank==='SSS'?'全問制覇!伝説の芳香族マスター!':rank==='SS'?'神域の連続正解!':rank==='S'?'完璧!芳香族マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'解説を読んで弱点特訓へ!':'マップモードで基礎から固めよう!'}</div>
       <button class="bigbtn" id="chalAgain">もう一度</button>
       <button class="bigbtn secondary" id="chalHome">トップへ</button>
     </div>
