@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#8b5cf6">
 <title>化学基礎クエスト 〜暗記事項マスター〜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 :root{
   --ink:#1e293b;
@@ -123,6 +125,40 @@ nav button.active{color:var(--blue);font-weight:700}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
+/* ================= 元素タッチ(元素グリッド) ================= */
+#view-grid{--eg-metal:#8b5cf6;--eg-nonmetal:#16a34a}
+.eg-levelgrid{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.eg-levelbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid #e2e8f0;background:#fff}
+.eg-levelbtn:active{border-color:var(--blue)}
+.eg-lv-name{font-size:16px;font-weight:800;color:var(--ink)}
+.eg-lv-sub{display:block;font-size:11.5px;color:#64748b;margin-top:2px}
+.eg-lv-best{text-align:right;font-size:11px;color:#64748b;flex:none}
+.eg-lv-best b{display:block;font-size:16px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+.eg-legend{display:flex;gap:14px;margin-top:12px;font-size:12px;color:#64748b}
+.eg-legend span{display:inline-flex;align-items:center;gap:5px}
+.eg-legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.eg-hud{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.eg-timer{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:var(--ink)}
+.eg-miss{font-size:12px;color:var(--red);font-weight:700}
+.eg-target{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:10px 14px;margin-bottom:12px}
+.eg-target-label{font-size:10.5px;color:#94a3b8}
+.eg-target-symbol{font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:30px;line-height:1;color:var(--blue);min-width:1.6ch}
+.eg-target-name{font-size:12px;color:#64748b}
+.eg-target-z{margin-left:auto;font-size:10.5px;color:#94a3b8;text-align:right}
+.eg-target-z b{display:block;font-size:18px;color:var(--ink);font-family:'JetBrains Mono',monospace}
+.eg-fieldwrap{position:relative;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:10px}
+.eg-field{display:grid;gap:8px}
+.eg-tile{aspect-ratio:1;border-radius:12px;border:2px solid var(--tile-color,var(--blue));background:#fff;color:var(--ink);font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,opacity .3s ease,box-shadow .15s ease;touch-action:manipulation}
+.eg-field.eg-pre-start .eg-tile{opacity:0}
+.eg-tile:active{transform:scale(.9)}
+.eg-tile.eg-correct{animation:eg-pop .4s ease forwards;pointer-events:none}
+.eg-tile.eg-wrong{animation:eg-shake .32s ease;border-color:var(--red)}
+@keyframes eg-pop{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(.3);opacity:0}}
+@keyframes eg-shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.eg-countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.85);border-radius:16px;z-index:5}
+.eg-countdown.active{display:flex}
+.eg-countdown-num{font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:70px;color:var(--blue);animation:eg-countpop .5s ease-out}
+@keyframes eg-countpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
 </style>
 </head>
 <body>
@@ -147,12 +183,14 @@ nav button.active{color:var(--blue);font-weight:700}
     <div class="panel" id="homePanel"></div>
   </div>
   <div class="view" id="view-challenge"><div class="panel" id="chalPanel"></div></div>
+  <div class="view" id="view-grid"><div class="panel" id="gridPanel"></div></div>
   <div class="view" id="view-weak"><div class="panel" id="weakPanel"></div></div>
 </main>
 
 <nav>
   <button data-view="home" class="active"><span class="ico">🧠</span>暗記</button>
   <button data-view="challenge"><span class="ico"><svg viewBox="0 0 24 22" width="20" height="18" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pdGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe08a"/><stop offset="55%" stop-color="#f4b942"/><stop offset="100%" stop-color="#c8891f"/></linearGradient><linearGradient id="pdSilver" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f1f4f7"/><stop offset="55%" stop-color="#c3ccd6"/><stop offset="100%" stop-color="#8b96a3"/></linearGradient><linearGradient id="pdBronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e3a874"/><stop offset="55%" stop-color="#c2703d"/><stop offset="100%" stop-color="#8f4f28"/></linearGradient></defs><rect x="1" y="11" width="6" height="10" rx="1.2" fill="url(#pdSilver)"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="url(#pdGold)"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="url(#pdBronze)"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg></span>チャレンジ</button>
+  <button data-view="grid"><span class="ico">🔢</span>元素タッチ</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
 </nav>
 
@@ -2320,6 +2358,217 @@ function nextDrillQ(){
   weakPanel.scrollTop=0;
 }
 
+/* ================= 元素タッチ(元素グリッド・タイムアタック) ================= */
+const gridPanel=document.getElementById('gridPanel');
+let gridState=null, gridRafId=null;
+const GRID_ELEMENTS=[
+  {s:'H',  n:'水素',       z:1,  cat:'nonmetal'},
+  {s:'He', n:'ヘリウム',    z:2,  cat:'nonmetal'},
+  {s:'Li', n:'リチウム',    z:3,  cat:'metal'},
+  {s:'Be', n:'ベリリウム',  z:4,  cat:'metal'},
+  {s:'B',  n:'ホウ素',     z:5,  cat:'nonmetal'},
+  {s:'C',  n:'炭素',       z:6,  cat:'nonmetal'},
+  {s:'N',  n:'窒素',       z:7,  cat:'nonmetal'},
+  {s:'O',  n:'酸素',       z:8,  cat:'nonmetal'},
+  {s:'F',  n:'フッ素',     z:9,  cat:'nonmetal'},
+  {s:'Ne', n:'ネオン',     z:10, cat:'nonmetal'},
+  {s:'Na', n:'ナトリウム',  z:11, cat:'metal'},
+  {s:'Mg', n:'マグネシウム',z:12, cat:'metal'},
+  {s:'Al', n:'アルミニウム',z:13, cat:'metal'},
+  {s:'Si', n:'ケイ素',     z:14, cat:'nonmetal'},
+  {s:'P',  n:'リン',       z:15, cat:'nonmetal'},
+  {s:'S',  n:'硫黄',       z:16, cat:'nonmetal'},
+  {s:'Cl', n:'塩素',       z:17, cat:'nonmetal'},
+  {s:'Ar', n:'アルゴン',    z:18, cat:'nonmetal'},
+  {s:'K',  n:'カリウム',    z:19, cat:'metal'},
+  {s:'Ca', n:'カルシウム',  z:20, cat:'metal'},
+  {s:'Sc', n:'スカンジウム',z:21, cat:'metal'},
+  {s:'Ti', n:'チタン',     z:22, cat:'metal'},
+  {s:'V',  n:'バナジウム',  z:23, cat:'metal'},
+  {s:'Cr', n:'クロム',     z:24, cat:'metal'},
+  {s:'Mn', n:'マンガン',    z:25, cat:'metal'}
+];
+const GRID_LEVELS={
+  basic:   {label:'初級', cols:3, rows:3, list:GRID_ELEMENTS.slice(0,9),  kind:'gridBasic',    bands:[6,9,13,18]},
+  mid:     {label:'中級', cols:4, rows:4, list:GRID_ELEMENTS.slice(0,16), kind:'gridMid',      bands:[12,17,23,30]},
+  advanced:{label:'上級', cols:5, rows:5, list:GRID_ELEMENTS.slice(0,25), kind:'gridAdvanced', bands:[20,28,38,50]}
+};
+function gridBestKey(lv){return 'chembasicsGridBest_'+lv;}
+function getGridBest(lv){try{const v=localStorage.getItem(gridBestKey(lv));return v?parseFloat(v):null;}catch(e){return null;}}
+function setGridBest(lv,sec){try{localStorage.setItem(gridBestKey(lv),String(sec));}catch(e){}}
+function fmtGridTime(sec){
+  sec=Math.max(0,sec||0);
+  const m=Math.floor(sec/60), s=sec-m*60;
+  return (m<10?'0':'')+m+':'+(s<10?'0':'')+s.toFixed(1);
+}
+function gridRank(lv,sec){
+  const b=GRID_LEVELS[lv].bands;
+  if(sec<=b[0])return 'S';
+  if(sec<=b[1])return 'A';
+  if(sec<=b[2])return 'B';
+  if(sec<=b[3])return 'C';
+  return 'D';
+}
+function shuffleGrid(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t;}
+  return a;
+}
+function refreshGridLbBox(kind){
+  const box=document.getElementById('lbBox');
+  if(!box)return;
+  if(LB.currentUser()){
+    box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
+    LB.fetchTop(kind,10).then(list=>{
+      const b=document.getElementById('lbBox');
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list,LB.currentUser().uid,kind);
+    });
+  }else{
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ログインすると、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtnGrid" style="width:100%">ログインする</button>`;
+    document.getElementById('lbRegisterBtnGrid').onclick=()=>LB.openAccountModal();
+  }
+}
+function renderGridHome(){
+  gridState=null;
+  const rows=Object.keys(GRID_LEVELS).map(lv=>{
+    const def=GRID_LEVELS[lv], best=getGridBest(lv);
+    return `<button class="eg-levelbtn" data-lv="${lv}">
+      <span><span class="eg-lv-name">${def.label}</span><span class="eg-lv-sub">${def.cols}×${def.rows}・${def.list.length}元素</span></span>
+      <span class="eg-lv-best">BEST<b>${best?fmtGridTime(best):'--:--.-'}</b></span>
+    </button>`;
+  }).join('');
+  gridPanel.innerHTML=`
+    <h2>🔢 元素タッチ</h2>
+    <div class="card-ui">
+      <div class="muted">マスに並んだ元素記号を、<b>原子番号の小さい順</b>にタップしていくタイムアタック。レベルが上がるほどマスと元素の数が増えるよ。</div>
+      <div class="eg-levelgrid">${rows}</div>
+      <div class="eg-legend"><span><i style="background:var(--eg-metal)"></i>金属</span><span><i style="background:var(--eg-nonmetal)"></i>非金属</span></div>
+    </div>`;
+  gridPanel.querySelectorAll('.eg-levelbtn').forEach(btn=>{
+    btn.addEventListener('click',()=>startGridLevel(btn.dataset.lv));
+  });
+}
+function stopGridLevel(){
+  if(gridRafId){cancelAnimationFrame(gridRafId); gridRafId=null;}
+  gridState=null;
+}
+function startGridLevel(lv){
+  const def=GRID_LEVELS[lv];
+  gridState={lv,def,order:shuffleGrid(def.list),currentIndex:0,misses:0,startTime:null,locked:true};
+  gridPanel.innerHTML=`
+    <div class="eg-hud">
+      <div class="eg-timer" id="egTimer">00:00.0</div>
+      <div class="eg-miss">MISS <b id="egMiss">0</b></div>
+    </div>
+    <div class="eg-target">
+      <div><div class="eg-target-label">次にタップ</div><div class="eg-target-symbol" id="egSymbol">-</div><div class="eg-target-name" id="egName"></div></div>
+      <div class="eg-target-z">Z<b id="egZ">-</b></div>
+    </div>
+    <div class="eg-fieldwrap">
+      <div class="eg-field eg-pre-start" id="egField" style="grid-template-columns:repeat(${def.cols},1fr)"></div>
+      <div class="eg-countdown active" id="egCountdown"><div class="eg-countdown-num" id="egCountNum">3</div></div>
+    </div>
+    <button class="bigbtn secondary" id="egQuit" style="margin-top:12px">やめる</button>`;
+  const field=document.getElementById('egField');
+  gridState.order.forEach(el=>{
+    const d=document.createElement('button');
+    d.className='eg-tile';
+    d.textContent=el.s;
+    d.style.setProperty('--tile-color', el.cat==='metal'?'var(--eg-metal)':'var(--eg-nonmetal)');
+    d.addEventListener('click',()=>onGridTileTap(el,d));
+    field.appendChild(d);
+  });
+  updateGridTarget();
+  document.getElementById('egQuit').addEventListener('click',()=>{
+    stopGridLevel();
+    renderGridHome();
+  });
+  runGridCountdown();
+}
+function updateGridTarget(){
+  const def=gridState.def, idx=gridState.currentIndex;
+  if(idx>=def.list.length)return;
+  const el=def.list[idx];
+  document.getElementById('egSymbol').textContent=el.s;
+  document.getElementById('egName').textContent=el.n;
+  document.getElementById('egZ').textContent=el.z;
+}
+function runGridCountdown(){
+  const st=gridState;
+  const overlay=document.getElementById('egCountdown'), numEl=document.getElementById('egCountNum');
+  const steps=['3','2','1','START'];
+  let i=0;
+  function showNext(){
+    if(gridState!==st)return;
+    numEl.textContent=steps[i];
+    numEl.style.animation='none'; void numEl.offsetWidth; numEl.style.animation='';
+    i++;
+    if(i<steps.length){ setTimeout(showNext,600); }
+    else{
+      setTimeout(()=>{
+        overlay.classList.remove('active');
+        if(gridState!==st)return;
+        const f=document.getElementById('egField'); if(f)f.classList.remove('eg-pre-start');
+        st.locked=false;
+        st.startTime=performance.now();
+        gridTick();
+      },450);
+    }
+  }
+  showNext();
+}
+function gridTick(){
+  if(!gridState||!gridState.startTime)return;
+  const elapsed=(performance.now()-gridState.startTime)/1000;
+  const timerEl=document.getElementById('egTimer');
+  if(timerEl)timerEl.textContent=fmtGridTime(elapsed);
+  gridRafId=requestAnimationFrame(gridTick);
+}
+function onGridTileTap(el,tileEl){
+  if(!gridState||gridState.locked||tileEl.classList.contains('eg-correct'))return;
+  const expected=gridState.def.list[gridState.currentIndex];
+  if(el.z===expected.z){
+    tileEl.classList.add('eg-correct');
+    gridState.currentIndex++;
+    if(gridState.currentIndex>=gridState.def.list.length){ finishGridLevel(); }
+    else{ updateGridTarget(); }
+  }else{
+    tileEl.classList.remove('eg-wrong'); void tileEl.offsetWidth; tileEl.classList.add('eg-wrong');
+    gridState.misses++;
+    const missEl=document.getElementById('egMiss'); if(missEl)missEl.textContent=gridState.misses;
+    if(navigator.vibrate){try{navigator.vibrate(60);}catch(e){}}
+    setTimeout(()=>tileEl.classList.remove('eg-wrong'),320);
+  }
+}
+function finishGridLevel(){
+  if(gridRafId){cancelAnimationFrame(gridRafId); gridRafId=null;}
+  const st=gridState;
+  const elapsed=(performance.now()-st.startTime)/1000;
+  const rank=gridRank(st.lv,elapsed);
+  const prevBest=getGridBest(st.lv);
+  const isRecord=!prevBest||elapsed<prevBest;
+  if(isRecord)setGridBest(st.lv,elapsed);
+  const kind=st.def.kind;
+  const roundedSec=Math.round(elapsed*10)/10;
+  const lbSubmit=LB.currentUser()?LB.submitScore(kind, st.def.list.length, roundedSec, rank):Promise.resolve();
+  gridPanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line" style="font-size:17px">${st.def.label}クリア!</div>
+      <div class="rankbig rank-${rank}">${rank}</div>
+      <div class="score-line" style="font-family:'JetBrains Mono',monospace">${fmtGridTime(elapsed)}${isRecord?' 🆕':''}</div>
+      <div class="muted">MISS ${st.misses}回 ・ BEST ${fmtGridTime(isRecord?elapsed:prevBest)}</div>
+      <button class="bigbtn" id="egRetry">もう一度</button>
+      <button class="bigbtn secondary" id="egBack">レベル選択に戻る</button>
+    </div>
+    <div class="card-ui" id="lbBox"></div>`;
+  document.getElementById('egRetry').addEventListener('click',()=>startGridLevel(st.lv));
+  document.getElementById('egBack').addEventListener('click',renderGridHome);
+  refreshGridLbBox(kind);
+  lbSubmit.then(()=>refreshGridLbBox(kind));
+  gridState=null;
+}
+
 /* ================= 確認ダイアログ ================= */
 function confirmDialog(message,onConfirm){
   infoSheet.innerHTML=`<h3>確認<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
@@ -2332,7 +2581,7 @@ function confirmDialog(message,onConfirm){
 }
 
 /* ================= ナビ・共通 ================= */
-const VIEW_TITLES={challenge:'チャレンジモード',weak:'🎯 弱点特訓'};
+const VIEW_TITLES={challenge:'チャレンジモード',grid:'🔢 元素タッチ',weak:'🎯 弱点特訓'};
 function switchView(view){
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -2342,6 +2591,7 @@ function switchView(view){
   else t.style.display='none';
   if(view==='home'&&!catDrill)renderHome();
   if(view==='challenge'&&(!chal||chal.over))renderChallengeHome();
+  if(view==='grid'&&!gridState)renderGridHome();
   if(view==='weak'&&!drill)renderWeakHome();
 }
 document.querySelectorAll('nav button').forEach(b=>{
@@ -2351,6 +2601,13 @@ document.querySelectorAll('nav button').forEach(b=>{
     if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
       confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
         stopChalTimer(); chal.over=true; chal=null;
+        switchView(target);
+      });
+      return;
+    }
+    if(activeView==='grid'&&target!=='grid'&&gridState&&!gridState.locked){
+      confirmDialog('元素タッチを終了しますか？記録は保存されません。',()=>{
+        stopGridLevel();
         switchView(target);
       });
       return;
