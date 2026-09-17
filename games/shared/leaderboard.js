@@ -394,7 +394,7 @@ const LB = (function(){
   function fmtSec(sec){
     sec = Math.max(0, sec||0);
     const m = Math.floor(sec/60), s = sec-m*60;
-    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s.toFixed(1);
+    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s.toFixed(3);
   }
   function statsHtml(e, kind){
     if(isTimeAttackKind(kind)){

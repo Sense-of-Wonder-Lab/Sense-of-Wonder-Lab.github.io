@@ -585,8 +585,8 @@
     var totalMs = Math.max(0, ms);
     var m = Math.floor(totalMs/60000);
     var s = Math.floor((totalMs%60000)/1000);
-    var t = Math.floor((totalMs%1000)/100);
-    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s+'.'+t;
+    var t = Math.floor(totalMs%1000);
+    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s+'.'+(t<100?(t<10?'00':'0'):'')+t;
   }
 
   function getBest(key){
