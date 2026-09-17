@@ -126,7 +126,7 @@ nav button.active{color:var(--blue);font-weight:700}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
-/* ================= 元素タッチ(元素グリッド) ================= */
+/* ================= 元素グリッド ================= */
 #view-grid{--eg-metal:#8b5cf6;--eg-nonmetal:#16a34a}
 .eg-levelgrid{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .eg-levelbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid #e2e8f0;background:#fff}
@@ -160,7 +160,7 @@ nav button.active{color:var(--blue);font-weight:700}
 .eg-countdown.active{display:flex}
 .eg-countdown-num{font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:70px;color:var(--blue);animation:eg-countpop .5s ease-out}
 @keyframes eg-countpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
-/* ================= ダークモード(元素タッチの配色ベース) ================= */
+/* ================= ダークモード(元素グリッドの配色ベース) ================= */
 .themeBtn{flex:none;margin-left:8px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
 html[data-theme="navy"]{
   --ink:#eef3f1;
@@ -237,7 +237,7 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 <nav>
   <button data-view="home" class="active"><span class="ico">🧠</span>暗記</button>
   <button data-view="challenge"><span class="ico"><svg viewBox="0 0 24 22" width="20" height="18" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pdGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe08a"/><stop offset="55%" stop-color="#f4b942"/><stop offset="100%" stop-color="#c8891f"/></linearGradient><linearGradient id="pdSilver" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f1f4f7"/><stop offset="55%" stop-color="#c3ccd6"/><stop offset="100%" stop-color="#8b96a3"/></linearGradient><linearGradient id="pdBronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e3a874"/><stop offset="55%" stop-color="#c2703d"/><stop offset="100%" stop-color="#8f4f28"/></linearGradient></defs><rect x="1" y="11" width="6" height="10" rx="1.2" fill="url(#pdSilver)"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="url(#pdGold)"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="url(#pdBronze)"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg></span>チャレンジ</button>
-  <button data-view="grid"><span class="ico">🔢</span>元素タッチ</button>
+  <button data-view="grid"><span class="ico">🔢</span>元素グリッド</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
 </nav>
 
@@ -2410,7 +2410,7 @@ function nextDrillQ(){
   weakPanel.scrollTop=0;
 }
 
-/* ================= 元素タッチ(元素グリッド・タイムアタック) ================= */
+/* ================= 元素グリッド(タイムアタック) ================= */
 const gridPanel=document.getElementById('gridPanel');
 let gridState=null, gridRafId=null;
 const GRID_ELEMENTS=[
@@ -2503,7 +2503,7 @@ function renderGridHome(){
     </button>`;
   }).join('');
   gridPanel.innerHTML=`
-    <h2>🔢 元素タッチ</h2>
+    <h2>🔢 元素グリッド</h2>
     <div class="card-ui">
       <div class="muted">マスに並んだ元素記号を、<b>原子番号の小さい順</b>にタップしていくタイムアタック。レベルが上がるほどマスと元素の数が増えるよ。</div>
       <div class="eg-levelgrid">${rows}</div>
@@ -2527,7 +2527,7 @@ function startGridLevel(lv){
     </div>
     <div class="eg-target">
       <div><div class="eg-target-label">次にタップ</div><div class="eg-target-symbol" id="egSymbol">-</div><div class="eg-target-name" id="egName"></div></div>
-      <div class="eg-target-z">Z<b id="egZ">-</b></div>
+      <div class="eg-target-z">原子番号<b id="egZ">-</b></div>
     </div>
     <div class="eg-fieldwrap">
       <div class="eg-field eg-pre-start" id="egField" style="grid-template-columns:repeat(${def.cols},1fr)"></div>
@@ -2648,7 +2648,7 @@ function confirmDialog(message,onConfirm){
 }
 
 /* ================= ナビ・共通 ================= */
-const VIEW_TITLES={challenge:'チャレンジモード',grid:'🔢 元素タッチ',weak:'🎯 弱点特訓'};
+const VIEW_TITLES={challenge:'チャレンジモード',grid:'🔢 元素グリッド',weak:'🎯 弱点特訓'};
 function switchView(view){
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -2673,7 +2673,7 @@ document.querySelectorAll('nav button').forEach(b=>{
       return;
     }
     if(activeView==='grid'&&target!=='grid'&&gridState&&!gridState.locked){
-      confirmDialog('元素タッチを終了しますか？記録は保存されません。',()=>{
+      confirmDialog('元素グリッドを終了しますか？記録は保存されません。',()=>{
         stopGridLevel();
         switchView(target);
       });
