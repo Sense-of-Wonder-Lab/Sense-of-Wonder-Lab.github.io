@@ -129,6 +129,7 @@
         <div class="toolbar">
           <input type="search" id="searchBox" placeholder="🔍 ニックネーム・メールで検索">
           <button class="btn" id="broadcastBtn">📣 一斉メッセージ</button>
+          <button class="btn" id="bulkLikeAllBtn">👍 全員いいね一括送信</button>
           <button class="btn" id="csvBtn">⬇️ CSV出力</button>
         </div>
         <div class="resultCount" id="resultCount"></div>
@@ -158,6 +159,7 @@
         <option value="芳香族">芳香族</option>
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
+        <option value="化学ランナー">化学ランナー</option>
       </select></span>
       <span class="qGameFilter"><select id="qUserSelect">
         <option value="">個人正答率: 対象なし</option>
@@ -195,7 +197,7 @@ const FIREBASE_CONFIG = {
   appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
 };
 const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
-const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト'};
+const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学ランナー'};
 // leaderboard.js 側で、Firebase が禁止する文字(. # $ [ ] /)を含むキー(無機化学の単元名など)
 // を可逆エスケープして保存している。ここは別ファイルなのでロジックを複製して復元する。
 const FB_KEY_UNESCAPE = [['%2E','.'],['%23','#'],['%24','$'],['%5B','['],['%5D',']'],['%2F','/'],['%25','%']];
@@ -232,6 +234,8 @@ function getAllProgress(u){
   // 表示名は復元するが、deckId は Firebase 上の実際のキー(エスケープ済み)のまま保つ
   // (likes の書き込み先パスにそのまま使うため。中身が変わるわけではない)。
   if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: bestPctOf(s)}); });
+  const chemRunner = d.chemRunnerCat1 && d.chemRunnerCat1.catStats;
+  if(chemRunner) Object.entries(chemRunner).forEach(([rawName,s])=>{ out.push({game:'化学ランナー', name: unescapeFbKey(rawName), gameKey:'chemrunner', deckId:rawName, best: bestPctOf(s)}); });
   return out;
 }
 
@@ -310,7 +314,7 @@ function render(){
   const active7d = rows.filter(r=>now-r.lastActive < 7*24*3600*1000).length;
   const newThisWeek = rows.filter(r=>now-r.ts < 7*24*3600*1000).length;
   const avgDays = total ? (rows.reduce((s,r)=>s+r.days,0)/total).toFixed(1) : '0';
-  const gameSet = {aromatic:new Set(), aliphatic:new Set(), inorganic:new Set()};
+  const gameSet = {aromatic:new Set(), aliphatic:new Set(), inorganic:new Set(), chemrunner:new Set()};
   rows.forEach(r=>{ r.progress.forEach(p=>{ if(p.best>0){ const gk = p.gameKey==='aroma'?'aromatic':p.gameKey; if(gameSet[gk]) gameSet[gk].add(r.uid); } }); });
 
   document.getElementById('stats').innerHTML = `
@@ -322,6 +326,7 @@ function render(){
     <div class="stat"><b>${gameSet.aromatic.size}</b><span>芳香族プレイ者</span></div>
     <div class="stat"><b>${gameSet.aliphatic.size}</b><span>脂肪族プレイ者</span></div>
     <div class="stat"><b>${gameSet.inorganic.size}</b><span>無機化学プレイ者</span></div>
+    <div class="stat"><b>${gameSet.chemrunner.size}</b><span>化学ランナープレイ者</span></div>
   `;
 
   if(q){
@@ -373,9 +378,10 @@ function renderDetail(uid){
   if(!u) return;
   const r = buildRows().find(x=>x.uid===uid);
   const av = r.avatar ? `<img class="avatar" src="${r.avatar}" style="width:32px;height:32px">` : `<span class="avatar" style="width:32px;height:32px;font-size:13px">${escapeHtml(r.nickname[0]||'?')}</span>`;
-  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[]};
+  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[], '化学ランナー':[]};
   r.progress.forEach(p=>{ if(groups[p.game]) groups[p.game].push(p); });
   const likes = u.likes || {};
+  const unlikedCount = r.progress.filter(p=>p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId])).length;
   const groupHtml = Object.entries(groups).map(([game, list])=>{
     if(!list.length) return `<div class="progGroup"><h3>${game}</h3><div class="noProg">まだプレイ記録がありません</div></div>`;
     return `<div class="progGroup"><h3>${game} (${list.length}セット挑戦済み)</h3>${list.map(p=>{
@@ -396,6 +402,7 @@ function renderDetail(uid){
     <div class="msub">${escapeHtml(r.email)}<br>登録 ${fmtDateShort(r.ts)} ・ 最終 ${fmtDateTime(r.lastActive)} ・ ${r.days}日プレイ</div>
     <div class="detailQuick">
       <button class="btn" id="rawDataBtn">🔍 生データ</button>
+      <button class="btn" id="bulkLikeUserBtn" ${unlikedCount?'':'disabled'}>👍 未いいね一括送信${unlikedCount?`(${unlikedCount})`:''}</button>
     </div>
     <pre id="rawDataBox" style="display:none;white-space:pre-wrap;word-break:break-all;font-size:11px;background:#111;color:#9f9;padding:8px;border-radius:6px;max-height:260px;overflow:auto"></pre>
     ${groupHtml}
@@ -405,6 +412,7 @@ function renderDetail(uid){
     </div>
     </div>
   `;
+  if(unlikedCount) document.getElementById('bulkLikeUserBtn').onclick = ()=>bulkLikeUser(uid);
   document.getElementById('rawDataBtn').onclick = ()=>{
     const box = document.getElementById('rawDataBox');
     if(box.style.display==='none'){
@@ -438,6 +446,59 @@ document.getElementById('detailCard').addEventListener('click', e=>{
   }).catch(err=>alert('送信に失敗しました: '+err.message));
 });
 
+function bulkLikeUser(uid){
+  const u = allUsers[uid];
+  const r = buildRows().find(x=>x.uid===uid);
+  if(!u || !r) return;
+  const likes = u.likes || {};
+  const targets = r.progress.filter(p=>p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId]));
+  if(!targets.length){ alert('未いいねの100%達成セットはありません。'); return; }
+  const text = prompt(`${r.nickname} さんの未いいね${targets.length}件に送ります。メッセージを入力してください:`, '100%達成おめでとう!いいね!👍');
+  if(!text) return;
+  Promise.all(targets.map(p=>Promise.all([
+    sendMessage(uid, text, {game:p.game, setName:p.name}),
+    db.ref('users/'+uid+'/likes/'+p.gameKey+'/'+p.deckId).set(true)
+  ]))).then(()=>{
+    if(!allUsers[uid].likes) allUsers[uid].likes = {};
+    targets.forEach(p=>{
+      if(!allUsers[uid].likes[p.gameKey]) allUsers[uid].likes[p.gameKey] = {};
+      allUsers[uid].likes[p.gameKey][p.deckId] = true;
+    });
+    renderDetail(uid);
+    alert(`${targets.length}件送信しました。`);
+  }).catch(err=>alert('送信に失敗しました: '+err.message));
+}
+function bulkLikeAllUsers(){
+  const rows = buildRows();
+  const items = [];
+  rows.forEach(r=>{
+    const likes = (allUsers[r.uid]&&allUsers[r.uid].likes) || {};
+    r.progress.forEach(p=>{
+      if(p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId])){
+        items.push({uid:r.uid, game:p.game, setName:p.name, gameKey:p.gameKey, deckId:p.deckId});
+      }
+    });
+  });
+  if(!items.length){ alert('未いいねの100%達成セットはありません。'); return; }
+  const peopleCount = new Set(items.map(it=>it.uid)).size;
+  const text = prompt(`全ユーザーの未いいね${items.length}件(${peopleCount}人)に送ります。メッセージを入力してください:`, '100%達成おめでとう!いいね!👍');
+  if(!text) return;
+  if(!confirm(`「${text}」を${peopleCount}人・${items.length}件に送信します。よろしいですか?`)) return;
+  Promise.all(items.map(it=>Promise.all([
+    sendMessage(it.uid, text, {game:it.game, setName:it.setName}),
+    db.ref('users/'+it.uid+'/likes/'+it.gameKey+'/'+it.deckId).set(true)
+  ]))).then(()=>{
+    items.forEach(it=>{
+      if(!allUsers[it.uid].likes) allUsers[it.uid].likes = {};
+      if(!allUsers[it.uid].likes[it.gameKey]) allUsers[it.uid].likes[it.gameKey] = {};
+      allUsers[it.uid].likes[it.gameKey][it.deckId] = true;
+    });
+    render();
+    if(selectedUid) renderDetail(selectedUid);
+    alert(`${items.length}件送信しました。`);
+  }).catch(err=>alert('送信に失敗しました: '+err.message));
+}
+document.getElementById('bulkLikeAllBtn').addEventListener('click', bulkLikeAllUsers);
 document.getElementById('searchBox').addEventListener('input', render);
 document.querySelectorAll('#tbl th.sortable').forEach(th=>{
   th.addEventListener('click', ()=>{
@@ -518,7 +579,8 @@ function loadAllQuestions(){
   const sources = [
     {url:'../aromatic-quest/index.html', game:'芳香族', gameKey:'aromatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../aliphatic-quest/index.html', game:'脂肪族', gameKey:'aliphatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
-    {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'}
+    {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'},
+    {url:'../chem-runner/index.html', game:'化学ランナー', gameKey:'chemrunner', marker:'const QUESTIONS = ', open:'[', close:']', kind:'boolq'}
   ];
   return Promise.all(sources.map(s=>
     fetch(s.url).then(r=>r.text()).then(text=>{
@@ -532,6 +594,11 @@ function loadAllQuestions(){
           (deck.items||[]).forEach(it=>{
             out.push({game:s.game, gameKey:s.gameKey, id:it.id, set: deck.name, q: it.q, correct: it.a, wrongs: it.wrongs||[]});
           });
+        });
+      } else if(s.kind==='boolq'){
+        const stripTags = html => String(html||'').replace(/<[^>]+>/g, '');
+        parsed.forEach(it=>{
+          out.push({game:s.game, gameKey:s.gameKey, id:it.id, set: it.genre, q: stripTags(it.statement), correct: it.answer ? '正しい(○)' : '誤り(×)', wrongs: []});
         });
       } else {
         (parsed.items||[]).forEach(it=>{

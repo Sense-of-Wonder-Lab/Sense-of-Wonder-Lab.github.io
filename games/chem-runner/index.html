@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>化学ランナー〜正誤ダッシュ〜</title>
+<style>
+:root{
+  --bg1:#0f2027; --bg2:#203a43; --bg3:#2c5364;
+  --accent:#ffd166; --true-color:#06d6a0; --false-color:#ef476f;
+  --panel:#ffffffee; --text:#1b1b1b; --sub:#555;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;}
+body{
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  padding:16px;
+}
+#app{
+  width:100%; max-width:640px; background:var(--panel); border-radius:20px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; position:relative;
+}
+.topbar{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3)); color:#fff;
+}
+.topbar .tb-title{ font-weight:bold; font-size:.85rem; letter-spacing:.02em; flex:1; }
+.accountBtnWrap{ margin-left:auto; }
+.screen{ padding:24px 20px 20px; }
+h1{ font-size:1.4rem; margin:0 0 4px; text-align:center; color:#123; }
+.subtitle{ text-align:center; color:var(--sub); font-size:.85rem; margin-bottom:18px;}
+.diff-grid{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:18px 0;}
+.diff-btn{
+  flex:1 1 28%; min-width:90px; padding:14px 8px; border-radius:14px; border:2px solid #ddd;
+  background:#fff; cursor:pointer; font-size:1rem; font-weight:bold; color:#333;
+  transition:.15s;
+}
+.diff-btn:hover{ transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.15); }
+.diff-btn .n{ display:block; font-size:.75rem; color:var(--sub); font-weight:normal; margin-top:2px;}
+.diff-btn.easy{border-color:#06d6a0;} .diff-btn.normal{border-color:#ffd166;} .diff-btn.hard{border-color:#ef476f;}
+#genreFilter{ margin:10px 0 4px; text-align:center; font-size:.85rem; color:var(--sub);}
+#genreSelect{ padding:8px; border-radius:8px; border:1px solid #ccc; font-size:.85rem; max-width:100%; }
+.start-btn{
+  display:block; width:100%; margin-top:16px; padding:14px; border:none; border-radius:14px;
+  background:linear-gradient(135deg,#3a86ff,#2667cc); color:#fff; font-size:1.05rem; font-weight:bold;
+  cursor:pointer;
+}
+.hidden{ display:none !important; }
+
+/* ---- game screen ---- */
+#gameScreen{ padding:0; }
+#track{
+  position:relative; height:170px; background:linear-gradient(#bde0fe,#eaf6ff 55%,#a2d2ff);
+  overflow:hidden; border-bottom:6px solid #5b3d24;
+}
+.hill{ position:absolute; bottom:20px; border-radius:50% 50% 0 0; opacity:.5; }
+.hill1{ width:220px; height:70px; left:-30px; background:#8fc2a0; animation:hillScroll 9s linear infinite; }
+.hill2{ width:180px; height:46px; left:280px; background:#a8d4b3; animation:hillScroll 13s linear infinite; }
+@keyframes hillScroll{ from{transform:translateX(0);} to{transform:translateX(-900px);} }
+
+.ground-wrap{ position:absolute; bottom:0; left:0; width:200%; height:20px; display:flex; animation:groundMove var(--grounddur,.55s) linear infinite; }
+.ground-strip{ width:50%; height:100%; background:repeating-linear-gradient(90deg,#8a5a3b 0 28px,#6b4326 28px 34px); }
+@keyframes groundMove{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+/* ---- approaching wall ---- */
+#wall{
+  position:absolute; bottom:6px; left:290px; width:30px; height:84px;
+  background:
+    repeating-linear-gradient(0deg,#b5533c 0 14px,#93402d 14px 16px),
+    repeating-linear-gradient(90deg,transparent 0 24px,#93402d 24px 26px);
+  border-radius:3px 3px 0 0;
+  box-shadow:0 4px 6px rgba(0,0,0,.35);
+  transition:left .35s cubic-bezier(.4,0,.2,1);
+}
+
+/* ---- runner figure (CSS run-cycle, not a static emoji) ---- */
+#runner{
+  position:absolute; bottom:6px; left:30px; width:40px; height:64px;
+  animation:bob var(--legdur,.38s) infinite ease-in-out;
+}
+#runner.hit{ animation:hitshake .4s; }
+#runner.boost{ animation:dash .3s ease-out; }
+#runner.crash{ animation:crash .6s forwards; }
+
+.r-head{ position:absolute; top:0; left:14px; width:14px; height:14px; border-radius:50%; background:#2b2b2b; }
+.r-torso{ position:absolute; top:13px; left:17px; width:7px; height:22px; background:#2b2b2b; border-radius:3px; }
+.r-arm{ position:absolute; top:15px; width:4px; height:17px; background:#2b2b2b; border-radius:2px; transform-origin:top center; }
+.r-arm-back{ left:12px; animation:armBack var(--legdur,.38s) infinite linear; }
+.r-arm-front{ left:24px; animation:armFront var(--legdur,.38s) infinite linear; }
+.r-leg{ position:absolute; top:33px; width:5px; height:20px; background:#2b2b2b; border-radius:2px; transform-origin:top center; }
+.r-leg-back{ left:15px; animation:legBack var(--legdur,.38s) infinite linear; }
+.r-leg-front{ left:21px; animation:legFront var(--legdur,.38s) infinite linear; }
+
+@keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+@keyframes legBack{ 0%{transform:rotate(35deg);} 50%{transform:rotate(-35deg);} 100%{transform:rotate(35deg);} }
+@keyframes legFront{ 0%{transform:rotate(-35deg);} 50%{transform:rotate(35deg);} 100%{transform:rotate(-35deg);} }
+@keyframes armBack{ 0%{transform:rotate(-30deg);} 50%{transform:rotate(30deg);} 100%{transform:rotate(-30deg);} }
+@keyframes armFront{ 0%{transform:rotate(30deg);} 50%{transform:rotate(-30deg);} 100%{transform:rotate(30deg);} }
+@keyframes hitshake{ 0%,100%{transform:translateX(0) rotate(0);} 25%{transform:translateX(-8px) rotate(-6deg);} 75%{transform:translateX(8px) rotate(6deg);} }
+@keyframes dash{ 0%{transform:translateX(0);} 40%{transform:translateX(10px);} 100%{transform:translateX(0);} }
+@keyframes crash{ 0%{transform:rotate(0) translateY(0);} 100%{transform:rotate(75deg) translateY(6px);} }
+
+.cloud{ position:absolute; font-size:1.6rem; opacity:.8; animation:drift linear infinite; }
+@keyframes drift{ from{transform:translateX(0);} to{transform:translateX(-700px);} }
+
+#hud{ display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:#12233a; color:#fff; font-size:.85rem;}
+#hud b{ color:var(--accent); }
+.life-hearts{ letter-spacing:2px; }
+
+#qArea{ padding:18px 20px 8px; }
+#genreTag{ display:inline-block; background:#eef; color:#345; padding:3px 10px; border-radius:20px; font-size:.72rem; margin-bottom:8px;}
+#timerRow{ float:right; font-size:.78rem; font-weight:bold; color:#345; margin-bottom:8px; }
+#timerBar{ clear:both; height:8px; background:#e5e5ea; border-radius:6px; overflow:hidden; margin-bottom:12px; }
+#timerFill{ height:100%; width:100%; background:#06d6a0; transition:width .12s linear, background .3s; }
+#statement{ font-size:1.08rem; line-height:1.6; color:#1b1b1b; min-height:80px; }
+#feedback{ min-height:54px; margin-top:10px; padding:10px 12px; border-radius:10px; font-size:.88rem; line-height:1.5; display:none; }
+#feedback.correct{ background:#e5fff5; color:#046b4c; display:block; }
+#feedback.wrong{ background:#ffe9ee; color:#9c1338; display:block; }
+
+.answer-row{ display:flex; gap:14px; padding:14px 20px 22px; }
+.ans-btn{
+  flex:1; padding:20px 0; font-size:1.6rem; font-weight:bold; border-radius:16px; border:none; color:#fff;
+  cursor:pointer; transition:.1s; box-shadow:0 6px 0 rgba(0,0,0,.2);
+}
+.ans-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.2); }
+.ans-btn.true-btn{ background:var(--true-color); }
+.ans-btn.false-btn{ background:var(--false-color); }
+.ans-btn:disabled{ opacity:.5; }
+.ans-btn small{ display:block; font-size:.7rem; font-weight:normal; margin-top:2px;}
+
+#nextBtn{
+  display:none; margin:0 20px 20px; padding:12px; width:calc(100% - 40px); border:none; border-radius:12px;
+  background:#333; color:#fff; font-size:1rem; cursor:pointer;
+}
+
+/* ---- game over ---- */
+#overScreen{ text-align:center; padding:36px 24px; }
+#overScreen h2{ font-size:1.6rem; margin-bottom:6px; }
+.score-box{ background:#f5f5f7; border-radius:14px; padding:18px; margin:18px 0; }
+.score-box .big{ font-size:2.4rem; font-weight:bold; color:#2667cc; }
+.score-box .row{ display:flex; justify-content:space-between; font-size:.85rem; color:#444; margin-top:6px; }
+.retry-btn{
+  display:block; width:100%; padding:14px; border:none; border-radius:14px; margin-top:8px;
+  background:linear-gradient(135deg,#ff6b6b,#c9184a); color:#fff; font-weight:bold; font-size:1.05rem; cursor:pointer;
+}
+.menu-btn{
+  display:block; width:100%; padding:12px; border:2px solid #ccc; border-radius:14px; margin-top:10px;
+  background:#fff; color:#333; font-weight:bold; font-size:.95rem; cursor:pointer;
+}
+.stats-link-btn{
+  display:block; width:100%; padding:12px; border:none; border-radius:14px; margin-top:10px;
+  background:#eef2ff; color:#2667cc; font-weight:bold; font-size:.9rem; cursor:pointer;
+}
+
+/* ---- review screen (今回のプレイの振り返り) ---- */
+#reviewScreen{ padding:20px; max-height:80vh; overflow-y:auto; }
+.review-item{ padding:10px; border:1px solid #eee; border-radius:10px; margin-bottom:8px; font-size:.85rem; }
+.review-item.is-wrong{ border-color:#f7c3ce; background:#fff8f9; }
+.review-item .rv-head{ display:flex; justify-content:space-between; align-items:center; color:#888; font-size:.72rem; margin-bottom:4px; }
+.review-item .rv-mark{ font-weight:bold; font-size:.95rem; }
+.review-item .rv-mark.correct{ color:#06a06a; }
+.review-item .rv-mark.wrong{ color:#ef476f; }
+.review-item .rv-statement{ color:#1b1b1b; line-height:1.5; }
+.review-item .rv-explanation{ color:#555; margin-top:6px; padding-top:6px; border-top:1px dashed #eee; line-height:1.5; }
+.review-empty{ text-align:center; color:#888; font-size:.85rem; padding:20px 0; }
+@media (max-width:400px){
+  #statement{ font-size:.98rem; }
+  .ans-btn{ font-size:1.3rem; padding:16px 0; }
+  #track{ height:150px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <span class="tb-title">🧪 化学ランナー</span>
+    <span class="accountBtnWrap"><button class="accountBtn" id="accountBtn" title="アカウント">👤</button><span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></span>
+  </div>
+
+  <!-- ================= START SCREEN ================= -->
+  <div id="startScreen" class="screen">
+    <h1>化学ランナー 〜正誤ダッシュ〜</h1>
+    <div class="subtitle">正誤問題で連続正解を目指そう。間違えるとライフが減り、0になったらゲームオーバー。</div>
+
+    <div id="genreFilter">
+      出題分野：
+      <select id="genreSelect">
+        <option value="all">すべての分野</option>
+      </select>
+    </div>
+
+    <div class="diff-grid">
+      <button class="diff-btn easy" data-diff="5">易しい<span class="n">ミス許容 5回</span></button>
+      <button class="diff-btn normal" data-diff="3">普通<span class="n">ミス許容 3回</span></button>
+      <button class="diff-btn hard" data-diff="1">難しい<span class="n">ミス許容 1回</span></button>
+    </div>
+    <button class="start-btn" id="startBtn">スタート（普通で開始）</button>
+  </div>
+
+  <!-- ================= REVIEW SCREEN (今回のプレイの振り返り) ================= -->
+  <div id="reviewScreen" class="screen hidden">
+    <h2 style="margin:0 0 12px; font-size:1.25rem; text-align:center;">📋 今回の振り返り</h2>
+    <div id="reviewList"></div>
+    <button class="menu-btn" id="reviewBackBtn">戻る</button>
+  </div>
+
+  <!-- ================= GAME SCREEN ================= -->
+  <div id="gameScreen" class="screen hidden">
+    <div id="track">
+      <div class="cloud" style="top:10px; left:420px; animation-duration:16s;">☁️</div>
+      <div class="cloud" style="top:30px; left:180px; animation-duration:22s;">☁️</div>
+      <div class="hill hill1"></div>
+      <div class="hill hill2"></div>
+      <div id="wall"></div>
+      <div id="runner">
+        <div class="r-arm r-arm-back"></div>
+        <div class="r-leg r-leg-back"></div>
+        <div class="r-torso"></div>
+        <div class="r-head"></div>
+        <div class="r-leg r-leg-front"></div>
+        <div class="r-arm r-arm-front"></div>
+      </div>
+      <div class="ground-wrap">
+        <div class="ground-strip"></div>
+        <div class="ground-strip"></div>
+      </div>
+    </div>
+    <div id="hud">
+      <div>連続正解 <b id="streak">0</b>（最高 <b id="bestStreak">0</b>）</div>
+      <div class="life-hearts" id="lifeHearts"></div>
+    </div>
+    <div id="qArea">
+      <span id="genreTag">-</span>
+      <div id="timerRow">⏱ <span id="timerNum">10</span>秒</div>
+      <div id="timerBar"><div id="timerFill"></div></div>
+      <div id="statement">問題文がここに表示されます</div>
+      <div id="feedback"></div>
+    </div>
+    <div class="answer-row">
+      <button class="ans-btn true-btn" id="btnTrue">○<small>正しい</small></button>
+      <button class="ans-btn false-btn" id="btnFalse">×<small>誤り</small></button>
+    </div>
+    <button id="nextBtn">次の問題へ ▶</button>
+  </div>
+
+  <!-- ================= GAME OVER SCREEN ================= -->
+  <div id="overScreen" class="screen hidden">
+    <h2>🏁 ゲームオーバー</h2>
+    <div class="score-box">
+      <div class="big" id="finalScore">0問正解</div>
+      <div class="row"><span>最高連続正解</span><span id="finalBest">0</span></div>
+      <div class="row"><span>総正解数</span><span id="finalCorrect">0</span></div>
+      <div class="row"><span>総回答数</span><span id="finalTotal">0</span></div>
+      <div class="row"><span>正答率</span><span id="finalRate">0%</span></div>
+    </div>
+    <button class="retry-btn" id="retryBtn">もう一度挑戦する</button>
+    <button class="menu-btn" id="menuBtn">難易度選択に戻る</button>
+    <button class="stats-link-btn" id="openReviewBtn">📋 今回の問題を振り返る</button>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../shared/leaderboard.js?v=34"></script>
+<script>
+const QUESTIONS = [{"id":"q001","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"原油からガソリンや灯油を分離する操作は分留（分別蒸留）である。","answer":true,"explanation":"沸点の差を利用して複数の液体成分を分ける操作を分留という。"},{"id":"q002","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"砂の混じった食塩水から砂を分離する操作はろ過である。","answer":true,"explanation":"液体と溶けない固体をろ紙などで分離する操作をろ過という。"},{"id":"q003","year":"2019","genre":"物質の構成","difficulty":"normal","statement":"すりつぶした大豆から大豆油を分離する操作は再結晶である。","answer":false,"explanation":"溶媒への溶解度差を利用して目的物質を溶かし出す操作は抽出である。再結晶は温度による溶解度差を利用する操作。"},{"id":"q004","year":"2019","genre":"物質の構成","difficulty":"normal","statement":"少量の硫酸銅(II)の混じった硝酸カリウムから純粋な硝酸カリウムを得る操作は再結晶である。","answer":true,"explanation":"温度による溶解度の差を利用して不純物を除き結晶を得る操作を再結晶という。"},{"id":"q005","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"「人体の質量の約63%は酸素である」という文の文中の酸素は、単体としての意味で使われている。","answer":false,"explanation":"人体中の酸素は化合物として存在しており、この場合は元素としての意味で使われている。"},{"id":"q006","year":"2019","genre":"物質の構成","difficulty":"normal","statement":"「水素は二酸化炭素よりも軽い気体である」という文の文中の水素は、単体としての意味で使われている。","answer":true,"explanation":"実際に存在する気体としての性質を述べているので単体の意味である。"},{"id":"q007","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"コップに入れた水を数日放置すると水が減るのは、蒸発という状態変化による。","answer":true,"explanation":"液体表面の分子が熱運動で気体になる現象を蒸発という。"},{"id":"q008","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"寒い日の夜に室内の窓ガラスがくもるのは、凝固という状態変化による。","answer":false,"explanation":"空気中の水蒸気が冷やされて液体になる現象は凝縮であり、凝固ではない。"},{"id":"q009","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"原子核に含まれる陽子の数は原子番号と一致する。","answer":true,"explanation":"原子番号は陽子の数で定義される。"},{"id":"q010","year":"2019","genre":"物質の構成","difficulty":"normal","statement":"電子を12個もつ原子が電子を放出して安定になると、Mg<sup>2+</sup>になる。","answer":true,"explanation":"電子12個は原子番号12のマグネシウム原子であり、2個の価電子を放出してMg<sup>2+</sup>になる。"},{"id":"q011","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"周期表の17族元素はハロゲンとよばれる。","answer":true,"explanation":"17族元素（F, Cl, Br, Iなど）はハロゲンと呼ばれる同族元素群である。"},{"id":"q012","year":"2019","genre":"物質の構成","difficulty":"easy","statement":"周期表の18族元素は貴ガス（希ガス）とよばれ、価電子の数は0とみなす。","answer":true,"explanation":"18族元素は安定な電子配置をもち、価電子の数は0とみなされる。"},{"id":"q013","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"プラスチックは自然界で分解されやすいという特徴をもつ。","answer":false,"explanation":"プラスチックは化学的に安定なものが多く、自然界では分解されにくい。"},{"id":"q014","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"メタノールの沸点は一定の値を示さない。","answer":false,"explanation":"メタノールは純物質（化合物）であり、一定の沸点（約65℃）を示す。"},{"id":"q015","year":"2020","genre":"物質の構成","difficulty":"easy","statement":"アルミニウムの融点は、その質量によらず一定の値を示す。","answer":true,"explanation":"純物質の融点は物質の量に関係なく一定である。"},{"id":"q016","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"食塩水の密度は、濃度によらず一定の値を示す。","answer":false,"explanation":"食塩水は混合物であり、密度は濃度（混合の割合）によって変化する。"},{"id":"q017","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"冷たいジュースを入れたガラスコップの表面に水滴がつく現象は化学変化である。","answer":false,"explanation":"空気中の水蒸気が冷やされて凝縮する現象で、物質の種類は変わらないため物理変化である。"},{"id":"q018","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"廃油に水酸化ナトリウムを加えてセッケンが生じる変化は化学変化である。","answer":true,"explanation":"油脂と水酸化ナトリウムが反応して別の物質（セッケン）が生成するため化学変化である。"},{"id":"q019","year":"2020","genre":"物質の構成","difficulty":"easy","statement":"鉄粉入りの使い捨てカイロが発熱するのは、鉄が酸化される化学変化による。","answer":true,"explanation":"鉄粉が空気中の酸素と反応（酸化）して熱を発生する化学変化である。"},{"id":"q020","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"水酸化物イオンOH⁻1個がもつ電子の総数は8個である。","answer":false,"explanation":"酸素原子の電子8個、水素原子の電子1個に加え、電子を1個余分にもつため合計10個である。"},{"id":"q021","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"原子番号とイオン化エネルギーの関係を周期表でみると、貴ガスでイオン化エネルギーが最大になる。","answer":true,"explanation":"同一周期では貴ガス（18族）でイオン化エネルギーが最大になる。"},{"id":"q022","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"周期表第2周期に含まれる元素のうち、金属元素はLiとBeのみである。","answer":true,"explanation":"第2周期はLi, Be, B, C, N, O, F, Neであり、金属元素はLiとBeのみである。"},{"id":"q023","year":"2020","genre":"物質の構成","difficulty":"hard","statement":"グルコース（ブドウ糖）の水溶液は電流を流すと電球が点灯する電解質水溶液である。","answer":false,"explanation":"グルコースは非電解質であり、その水溶液には電球は点灯しない。"},{"id":"q024","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"塩化ナトリウムの水溶液は炎色反応で黄色を示す。","answer":true,"explanation":"塩化ナトリウムに含まれるナトリウムは黄色の炎色反応を示す。"},{"id":"q025","year":"2021","genre":"物質の構成","difficulty":"normal","statement":"ダイヤモンドと黒鉛はともに炭素の単体であり、互いに同素体の関係にある。","answer":true,"explanation":"同じ元素からなる単体で性質が異なるものを同素体という。"},{"id":"q026","year":"2021","genre":"物質の構成","difficulty":"easy","statement":"ヨウ素がヨウ化カリウム水溶液に溶けた混合物からヘキサンを使ってヨウ素を分離する操作は抽出である。","answer":true,"explanation":"溶媒への溶解度の差を利用して目的物質を分離する操作は抽出である。"},{"id":"q027","year":"2021","genre":"物質の構成","difficulty":"normal","statement":"氷を加熱し続けたときの温度変化のグラフにおいて、固体と液体が共存する区間では温度が一定に保たれる。","answer":true,"explanation":"融解中は加えた熱がすべて状態変化に使われるため温度が一定になる。","svg":"<svg viewBox=\"0 0 240 150\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width:100%;max-width:280px;height:auto;display:block;margin:0 auto 10px;\"><rect x=\"0\" y=\"0\" width=\"240\" height=\"150\" fill=\"#f5f7fb\"/><line x1=\"30\" y1=\"10\" x2=\"30\" y2=\"130\" stroke=\"#333\" stroke-width=\"1.5\"/><line x1=\"30\" y1=\"130\" x2=\"230\" y2=\"130\" stroke=\"#333\" stroke-width=\"1.5\"/><text x=\"4\" y=\"20\" font-size=\"10\" fill=\"#333\">温度</text><text x=\"200\" y=\"143\" font-size=\"10\" fill=\"#333\">加えた熱量</text><path d=\"M30,120 L60,90 L110,90 L140,50 L170,50 L210,15\" fill=\"none\" stroke=\"#2667cc\" stroke-width=\"2.2\"/><line x1=\"60\" y1=\"86\" x2=\"110\" y2=\"86\" stroke=\"#c9184a\" stroke-width=\"2\" stroke-dasharray=\"3 2\"/><text x=\"63\" y=\"80\" font-size=\"8\" fill=\"#c9184a\">融解中(一定)</text><line x1=\"140\" y1=\"46\" x2=\"170\" y2=\"46\" stroke=\"#c9184a\" stroke-width=\"2\" stroke-dasharray=\"3 2\"/><text x=\"130\" y=\"40\" font-size=\"8\" fill=\"#c9184a\">沸騰中(一定)</text></svg>"},{"id":"q028","year":"2021","genre":"物質の構成","difficulty":"normal","statement":"水（氷）の量を増やして加熱しても、融点・沸点の値は変わらない。","answer":true,"explanation":"融点・沸点は物質固有の値であり、量には依存しない。"},{"id":"q029","year":"2021","genre":"物質の構成","difficulty":"normal","statement":"¹H原子と¹²C原子からなるメタン分子CH<sub>4</sub> 1個に含まれる中性子の数は4個である。","answer":false,"explanation":"1Hの中性子は0個、12Cの中性子は6個であり、CH<sub>4</sub>全体では6個（1H×4個は中性子0）となる。"},{"id":"q030","year":"2021","genre":"物質の構成","difficulty":"normal","statement":"現在の元素の周期表は原子番号の順に元素が並べられている。","answer":true,"explanation":"周期表は原子番号の順に配列されている。"},{"id":"q031","year":"2021","genre":"物質の構成","difficulty":"hard","statement":"遷移元素はすべて金属元素である。","answer":true,"explanation":"3〜11族に属する遷移元素はすべて金属元素である。"},{"id":"q032","year":"2021","genre":"物質の構成","difficulty":"hard","statement":"典型元素の同族元素では、原子番号が大きいほどイオン化エネルギーが大きくなる。","answer":false,"explanation":"典型元素の同族元素では、原子番号が大きいほどイオン化エネルギーは小さくなる。"},{"id":"q033","year":"2022","genre":"物質の構成","difficulty":"easy","statement":"アルゴンは単原子分子として存在する。","answer":true,"explanation":"貴ガスであるアルゴンは1個の原子のまま分子としてふるまう単原子分子である。"},{"id":"q034","year":"2022","genre":"物質の構成","difficulty":"normal","statement":"鉄くぎがさびる変化は物理変化である。","answer":false,"explanation":"鉄が酸化物に変わる変化であり化学変化である。"},{"id":"q035","year":"2022","genre":"物質の構成","difficulty":"normal","statement":"原油からナフサ（粗製ガソリン）を分離する操作（分留）は化学変化である。","answer":false,"explanation":"沸点の違いを利用した分離操作であり、各成分は別の物質に変化しないため物理変化である。"},{"id":"q036","year":"2022","genre":"物質の構成","difficulty":"hard","statement":"電子親和力が大きい原子ほど陰イオンになりやすい。","answer":true,"explanation":"電子親和力は電子を受け取るときに放出されるエネルギーで、大きいほど陰イオンになりやすい。"},{"id":"q037","year":"2015","genre":"物質の構成","difficulty":"normal","statement":"蒸留は2種類以上の液体の混合物を沸点の差を利用して分ける操作の総称であり、分留と全く同じ意味で使われる。","answer":false,"explanation":"蒸留は液体から蒸気を発生させ冷却して液体を得る操作全般を指し、複数液体を沸点差で成分ごとに分ける操作を特に分留（分別蒸留）とよぶ。"},{"id":"q038","year":"2016","genre":"物質の構成","difficulty":"easy","statement":"混合物は2種類以上の純物質が混じり合ったものである。","answer":true,"explanation":"混合物の定義そのものである。"},{"id":"q039","year":"2016","genre":"物質の構成","difficulty":"normal","statement":"化合物は2種類以上の元素からできている純物質である。","answer":true,"explanation":"化合物の定義そのものである。"},{"id":"q040","year":"2017","genre":"物質の構成","difficulty":"normal","statement":"原子の質量数は陽子の数と中性子の数の差で求められる。","answer":false,"explanation":"質量数は陽子の数と中性子の数の和である。"},{"id":"q041","year":"2018","genre":"物質の構成","difficulty":"normal","statement":"同位体どうしは陽子の数が異なり中性子の数が同じ原子である。","answer":false,"explanation":"同位体は陽子の数（原子番号）が同じで中性子の数が異なる原子である。"},{"id":"q042","year":"2018","genre":"物質の構成","difficulty":"easy","statement":"電子殻はK殻・L殻・M殻の順に原子核に近い。","answer":true,"explanation":"内側からK, L, M, N…の順に電子殻が並ぶ。"},{"id":"q043","year":"2018","genre":"物質の構成","difficulty":"normal","statement":"K殻に収容できる電子の最大数は8個である。","answer":false,"explanation":"K殻の最大収容数は2個であり、L殻が8個、M殻が18個である。"},{"id":"q044","year":"2024","genre":"物質の構成","difficulty":"normal","statement":"第3周期の元素のうち金属元素はNa, Mg, Alの3つである。","answer":true,"explanation":"第3周期（Na〜Ar）で金属元素はNa, Mg, Alのみである。"},{"id":"q045","year":"2024","genre":"物質の構成","difficulty":"easy","statement":"リチウムの炎色反応は赤色である。","answer":true,"explanation":"アルカリ金属Liの炎色反応は赤色である。"},{"id":"q046","year":"2024","genre":"物質の構成","difficulty":"easy","statement":"カリウムの炎色反応は黄色である。","answer":false,"explanation":"カリウムの炎色反応は赤紫色である。黄色はナトリウムの炎色反応である。"},{"id":"q047","year":"2024","genre":"物質の構成","difficulty":"normal","statement":"銅の炎色反応は青緑色である。","answer":true,"explanation":"銅の炎色反応は青緑色を示す。"},{"id":"q048","year":"2019","genre":"化学結合・結晶","difficulty":"normal","statement":"分子中で共有されていない対になった電子対を非共有電子対という。","answer":true,"explanation":"共有結合に使われず、原子に残っている電子対を非共有電子対という。"},{"id":"q049","year":"2019","genre":"化学結合・結晶","difficulty":"normal","statement":"水分子中の酸素原子の非共有電子対がH⁺に提供されてできる結合を配位結合という。","answer":true,"explanation":"オキソニウムイオン生成時のこの結合は配位結合とよばれる。"},{"id":"q050","year":"2019","genre":"化学結合・結晶","difficulty":"easy","statement":"電気陰性度とは原子が共有電子対を引き寄せる強さを表す数値である。","answer":true,"explanation":"電気陰性度の定義そのものである。"},{"id":"q051","year":"2019","genre":"化学結合・結晶","difficulty":"normal","statement":"二酸化炭素分子は炭素原子と酸素原子が単結合で結びついている。","answer":false,"explanation":"二酸化炭素は炭素原子と酸素原子がそれぞれ2組の共有電子対による二重結合で結びついている。"},{"id":"q052","year":"2019","genre":"化学結合・結晶","difficulty":"normal","statement":"アンモニアとメタンはいずれも二原子分子である。","answer":false,"explanation":"アンモニア（NH<sub>3</sub>）とメタン（CH<sub>4</sub>）はいずれも多原子分子である。"},{"id":"q053","year":"2019","genre":"化学結合・結晶","difficulty":"easy","statement":"アルゴンは単原子分子であり、塩素は二原子分子である。","answer":true,"explanation":"アルゴンは単原子分子、塩素Cl<sub>2</sub>は二原子分子である。"},{"id":"q054","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"アンモニウムイオンNH<sub>4</sub><sup>+</sup>と硫酸イオンSO<sub>4</sub><sup>2-</sup>からなる化合物の組成式は(NH<sub>4</sub>)<sub>2</sub>SO<sub>4</sub>である。","answer":true,"explanation":"電荷のつり合いよりNH<sub>4</sub><sup>+</sup>：SO<sub>4</sub><sup>2-</sup>=2：1となり(NH<sub>4</sub>)<sub>2</sub>SO<sub>4</sub>となる。"},{"id":"q055","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"CaCO<sub>3</sub>とMgOはいずれもイオン結晶である。","answer":true,"explanation":"どちらも金属イオンと陰イオンからなるイオン結晶である。"},{"id":"q056","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"ドライアイス（CO<sub>2</sub>）とヨウ素（I<sub>2</sub>）はいずれも分子結晶である。","answer":true,"explanation":"分子間力によって結びついた分子結晶である。"},{"id":"q057","year":"2020","genre":"化学結合・結晶","difficulty":"easy","statement":"銅Cuは自由電子によって原子どうしが結合した金属結晶である。","answer":true,"explanation":"金属結晶は自由電子による金属結合で構成される。"},{"id":"q058","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"黒鉛（グラファイト）は電気を導かない。","answer":false,"explanation":"黒鉛は余った価電子が平面構造内を移動できるため電気を導く（共有結合の結晶の例外）。"},{"id":"q059","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"ダイヤモンドは各炭素原子が4個の炭素原子と共有結合している。","answer":true,"explanation":"ダイヤモンドは正四面体構造が三次元的に連続する共有結合の結晶である。"},{"id":"q060","year":"2020","genre":"化学結合・結晶","difficulty":"easy","statement":"二酸化ケイ素は水に溶けやすい。","answer":false,"explanation":"二酸化ケイ素は共有結合の結晶で硬く融点が高く、水に溶けにくい。"},{"id":"q061","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"金属結晶中の自由電子は特定の原子に固定されず金属全体を移動できる。","answer":true,"explanation":"自由電子が電子殻の重なりを介して自由に移動することで金属の電気伝導性が生じる。"},{"id":"q062","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"水分子では共有電子対の数と非共有電子対の数の比は1：1である。","answer":true,"explanation":"水分子は共有電子対2組、非共有電子対2組をもつ。"},{"id":"q063","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"非共有電子対をもつ分子や陰イオンが金属イオンに配位結合してできたイオンを錯イオンという。","answer":true,"explanation":"錯イオンの定義そのものである。"},{"id":"q064","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"分子結晶は一般に硬くてもろく、熱や電気をよく通す。","answer":false,"explanation":"分子結晶は融点が低く軟らかいものが多く、熱や電気を通さない。硬くてもろく電気を通すのは共有結合の結晶やイオン結晶の性質。"},{"id":"q065","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"水分子は折れ線形の構造をもつため極性分子である。","answer":true,"explanation":"水分子（H<sub>2</sub>O）は折れ線形で結合の極性が打ち消されず極性分子となる。"},{"id":"q066","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"二酸化炭素分子は直線形であるため、結合の極性が打ち消しあい無極性分子となる。","answer":true,"explanation":"二酸化炭素（CO<sub>2</sub>）は直線形で2つのC=O結合の極性が互いに打ち消しあう。"},{"id":"q067","year":"2021","genre":"化学結合・結晶","difficulty":"easy","statement":"元素の原子量は、各元素の原子1個の質量そのものをグラムで表した値である。","answer":false,"explanation":"原子量は質量数12の炭素原子の質量を基準とした相対質量の平均値であり、質量そのもの（g）ではない。"},{"id":"q068","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"イオンからなる物質を表す際は分子量のかわりに式量を用いる。","answer":true,"explanation":"イオン結晶などイオンからなる物質は式量で表される。"},{"id":"q069","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"0℃、1.013×10<sup>5</sup> Paで密度1.25 g/Lの気体の分子量は28である。","answer":true,"explanation":"1.25 g/L×22.4 L/mol=28.0となり分子量は28である。"},{"id":"q070","year":"2022","genre":"化学結合・結晶","difficulty":"normal","statement":"イオン結晶は昇華しやすいものが多い。","answer":false,"explanation":"イオン結晶は陽イオンと陰イオンの結合力が強く、融点・沸点は高いものが多く、昇華しやすいとはいえない。"},{"id":"q071","year":"2022","genre":"化学結合・結晶","difficulty":"easy","statement":"イオン結晶は融解して液体にすると電気を導くようになる。","answer":true,"explanation":"融解するとイオンが自由に動けるようになり電気を導く。"},{"id":"q072","year":"2022","genre":"化学結合・結晶","difficulty":"normal","statement":"黒鉛と二酸化ケイ素はいずれも共有結合の結晶である。","answer":true,"explanation":"どちらも非金属原子が共有結合で結びついた共有結合の結晶である。"},{"id":"q073","year":"2022","genre":"化学結合・結晶","difficulty":"normal","statement":"塩化ナトリウムと酸化アルミニウムはいずれも共有結合の結晶である。","answer":false,"explanation":"塩化ナトリウムも酸化アルミニウムも金属イオンと陰イオンからなるイオン結晶である。"},{"id":"q074","year":"2022","genre":"化学結合・結晶","difficulty":"normal","statement":"金属結晶中の価電子は自由電子とよばれ、展性・延性のもとになる。","answer":true,"explanation":"自由電子により原子配列が変わっても結合が保たれるため展性・延性を示す。"},{"id":"q075","year":"2023","genre":"化学結合・結晶","difficulty":"normal","statement":"アンモニウムイオンが形成する共有結合のうち、水素イオンとの間にできる結合は特に配位結合とよばれる。","answer":true,"explanation":"窒素原子の非共有電子対を水素イオンに提供してできる結合であり配位結合という。"},{"id":"q076","year":"2023","genre":"化学結合・結晶","difficulty":"easy","statement":"メタンCH<sub>4</sub>は無極性分子である。","answer":true,"explanation":"正四面体形で結合の極性が打ち消しあうため無極性分子となる。"},{"id":"q077","year":"2023","genre":"化学結合・結晶","difficulty":"normal","statement":"アンモニアNH<sub>3</sub>は無極性分子である。","answer":false,"explanation":"アンモニアは三角錐形で結合の極性が打ち消されず、極性分子である。"},{"id":"q078","year":"2023","genre":"化学結合・結晶","difficulty":"normal","statement":"エチレングリコールとテレフタル酸から水がとれながら結合する重合反応を縮合重合という。","answer":true,"explanation":"分子間から簡単な分子（水）がとれながら結合する重合反応を縮合重合という。"},{"id":"q079","year":"2023","genre":"化学結合・結晶","difficulty":"normal","statement":"12C原子の相対質量は12と定められている。","answer":true,"explanation":"原子量・分子量・式量は12C原子の質量を12とした相対値である。"},{"id":"q080","year":"2015","genre":"化学結合・結晶","difficulty":"normal","statement":"組成式で表される物質は主に分子からなる物質である。","answer":false,"explanation":"組成式はイオン結晶・共有結合の結晶・金属など、分子を作らない物質を表す際に使う。分子からなる物質は分子式で表す。"},{"id":"q081","year":"2016","genre":"化学結合・結晶","difficulty":"normal","statement":"共有結合の結晶であるダイヤモンドと黒鉛は、化学式を表す際に組成式を用いる。","answer":true,"explanation":"共有結合の結晶は分子が存在しないため組成式で表す。"},{"id":"q082","year":"2017","genre":"化学結合・結晶","difficulty":"easy","statement":"金属結晶は自由電子によって金属原子どうしが結合している。","answer":true,"explanation":"金属結合の定義である。"},{"id":"q083","year":"2018","genre":"化学結合・結晶","difficulty":"normal","statement":"共有結合の結晶は一般に軟らかく融点が低い。","answer":false,"explanation":"共有結合の結晶は非常に硬く融点が高いものが多い（例外の黒鉛は軟らかい）。"},{"id":"q084","year":"2024","genre":"化学結合・結晶","difficulty":"normal","statement":"塩素分子Cl<sub>2</sub>は無極性分子である。","answer":true,"explanation":"同じ原子2個からなる分子は電気陰性度の差がなく無極性分子となる。"},{"id":"q085","year":"2024","genre":"化学結合・結晶","difficulty":"normal","statement":"フッ化水素HFは極性分子であり、分子間に水素結合を形成する。","answer":true,"explanation":"HFはF-Hの強い極性をもち、分子間に水素結合を形成する。"},{"id":"q086","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0.21gの窒素N<sub>2</sub>の物質量は7.5×10<sup>-3</sup>molである。","answer":true,"explanation":"N<sub>2</sub>のモル質量28 g/molより、0.21÷28=7.5×10<sup>-3</sup>molとなる。"},{"id":"q087","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"アボガドロの法則によれば、同温・同圧のもとで同体積の気体は気体の種類に関係なく同数の分子を含む。","answer":true,"explanation":"アボガドロの法則の定義そのものである。"},{"id":"q088","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"同温・同圧のもとで気体の体積は分子の数に反比例する。","answer":false,"explanation":"アボガドロの法則より、気体の体積は分子の数に比例する。"},{"id":"q089","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"二酸化炭素分子には二重結合が2組あり、非共有電子対は酸素原子側に2組ずつある。","answer":true,"explanation":"炭素と各酸素の間に二重結合があり、各酸素原子には非共有電子対が2組ずつ存在する。"},{"id":"q090","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"hard","statement":"二クロム酸イオンと過酸化水素の反応で酸素が0.045mol発生したとき、反応した二クロム酸イオンは0.015molである。","answer":true,"explanation":"Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>：O<sub>2</sub>=1：3の関係より0.045÷3=0.015molとなる。"},{"id":"q091","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"1分子のアンモニアが水分子と反応すると、OH⁻を3個生じる。","answer":false,"explanation":"NH<sub>3</sub>+H<sub>2</sub>O⇋NH<sub>4</sub><sup>+</sup>+OH⁻の反応でOH⁻は1個しか生じない。"},{"id":"q092","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"easy","statement":"酸の化学式中でH<sup>+</sup>になれるHの数を酸の価数という。","answer":true,"explanation":"酸の価数の定義である。"},{"id":"q093","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0.0500mol/Lのシュウ酸標準溶液を作るには、シュウ酸二水和物の結晶3.15gを溶かして500mLにすればよい。","answer":true,"explanation":"3.15g÷126 g/mol=0.025mol、0.025mol÷0.0500mol/L=0.500L=500mLとなる。"},{"id":"q094","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"この中和滴定でフェノールフタレインを用いると、中和点付近で溶液の色は赤色から無色に変化する。","answer":false,"explanation":"弱酸を強塩基で滴定する場合、中和点付近の色の変化は無色から赤色である。"},{"id":"q095","year":"2020","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0.10mol/Lの塩酸20mL中に含まれる塩化水素の物質量は2.0×10<sup>-3</sup>molである。","answer":true,"explanation":"0.10mol/L×20/1000L=2.0×10<sup>-3</sup>molである。"},{"id":"q096","year":"2020","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"炭酸水素ナトリウムは加熱すると分解して炭酸ナトリウム、水、二酸化炭素を生じる。","answer":true,"explanation":"2NaHCO<sub>3</sub>→Na<sub>2</sub>CO<sub>3</sub>+H<sub>2</sub>O+CO<sub>2</sub>の反応が起こる。"},{"id":"q097","year":"2020","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"NaHCO<sub>3</sub>とHClは物質量比1：1で過不足なく反応しCO<sub>2</sub>が生成する。","answer":true,"explanation":"NaHCO<sub>3</sub>+HCl→NaCl+H<sub>2</sub>O+CO<sub>2</sub>の係数比より1：1で反応する。"},{"id":"q098","year":"2020","genre":"物質量・化学反応式・濃度","difficulty":"hard","statement":"質量パーセント濃度36.5%、密度1.2 g/cm<sup>3</sup>の濃塩酸を用いて2.0mol/Lの塩酸を100mLつくるには、濃塩酸が約17mL必要である。","answer":true,"explanation":"計算により必要な濃塩酸の体積は約17mLとなる。"},{"id":"q099","year":"2020","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"結晶を構成する粒子がイオン結合で結合している物質はCO<sub>2</sub>とI<sub>2</sub>である。","answer":false,"explanation":"CO<sub>2</sub>とI<sub>2</sub>は分子結晶であり、イオン結合ではなく分子間力で構成されている。CaCO<sub>3</sub>とMgOがイオン結晶の例である。"},{"id":"q100","year":"2021","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"気体反応の実験でアルミニウムに塩酸を加えたとき、発生した水素の物質量からアルミニウムと反応した塩酸のモル濃度を求めることができる。","answer":true,"explanation":"化学反応式の係数比から量的関係を計算できる。"},{"id":"q101","year":"2021","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"2Al+6HCl→2AlCl<sub>3</sub>+3H<sub>2</sub>の反応において、Alの物質量とHClの物質量の比は1：3である。","answer":true,"explanation":"係数比よりAl：HCl=2：6=1：3である。"},{"id":"q102","year":"2021","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"シュウ酸標準溶液を用いた滴定で、ホールピペットの内部が蒸留水で濡れたまま使用すると、はかりとる溶液が薄まり滴定に要する塩基の体積は大きくなる方向に誤差が生じる。","answer":false,"explanation":"溶液が薄まるとシュウ酸の物質量が少なくなるため、中和に要する塩基の体積はむしろ小さくなる。"},{"id":"q103","year":"2021","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"メスフラスコの内部が蒸留水で濡れたまま溶液を調製しても、最終的な濃度には影響しない。","answer":true,"explanation":"最終的に標線まで水を加えて体積を調整するため、内部が濡れていても結果に影響しない。"},{"id":"q104","year":"2021","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"共洗いとは、ピペットやビュレットを使用する水溶液自体で内部をすすいでから使うことである。","answer":true,"explanation":"共洗いの定義そのものである。"},{"id":"q105","year":"2022","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"2.0 mol/Lの塩酸100mLに含まれる塩化水素の物質量は0.20molである。","answer":true,"explanation":"2.0mol/L×100/1000L=0.20molである。"},{"id":"q106","year":"2022","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0.10mol/Lの塩酸10mLと過不足なく反応する水酸化ナトリウムは1.0×10<sup>-3</sup>molである。","answer":true,"explanation":"HClは1価の酸であり、0.10mol/L×10/1000L=1.0×10<sup>-3</sup>molのNaOHと反応する。"},{"id":"q107","year":"2022","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0℃、1.013×10<sup>5</sup>Paにおける気体のモル体積は気体の種類によらず22.4L/molである。","answer":true,"explanation":"標準状態のモル体積は気体の種類に関係なく一定である。"},{"id":"q108","year":"2022","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0.20mol/Lの塩酸15mLと過不足なく反応するアンモニアは3.0×10<sup>-3</sup>molで、その標準状態の体積は約67mLである。","answer":true,"explanation":"0.20×15/1000=3.0×10<sup>-3</sup>mol、3.0×10<sup>-3</sup>×22.4=0.0672L≒67mLとなる。"},{"id":"q109","year":"2022","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"モル濃度に価数と体積をかけると、その水溶液中の酸または塩基の物質量が求まる。","answer":true,"explanation":"物質量＝モル濃度×体積の関係であり、価数は当量計算の際に別途かけあわせる。"},{"id":"q110","year":"2023","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"CaCO<sub>3</sub>+2HCl→CaCl<sub>2</sub>+H<sub>2</sub>O+CO<sub>2</sub>の反応で、発生したCO<sub>2</sub>の物質量は反応したHClの物質量の半分である。","answer":true,"explanation":"係数比よりHCl：CO<sub>2</sub>=2：1なのでCO<sub>2</sub>はHClの半分の物質量になる。"},{"id":"q111","year":"2023","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"炭酸カルシウム中のカルシウム、炭素、酸素の質量比が常に一定であることは、定比例の法則に関係する法則である。","answer":true,"explanation":"化合物を構成する元素の質量比が一定であることを示す定比例の法則に対応する。"},{"id":"q112","year":"2023","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"0℃、1.013×10<sup>5</sup>Paにおける二酸化炭素の密度は約2.0g/Lである。","answer":true,"explanation":"CO<sub>2</sub>のモル質量44 g/mol÷22.4 L/mol≒2.0 g/Lとなる。"},{"id":"q113","year":"2023","genre":"物質量・化学反応式・濃度","difficulty":"hard","statement":"食酢を10倍にうすめた溶液10.0mLを0.10mol/Lの水酸化ナトリウム水溶液で中和したところ7.50mL要した場合、うすめる前の食酢中の酢酸のモル濃度は0.75mol/Lである。","answer":true,"explanation":"計算によりx=0.75mol/Lとなる。"},{"id":"q114","year":"2023","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"中和滴定でメスフラスコは溶液を一定の割合で希釈するために使う器具である。","answer":true,"explanation":"メスフラスコは正確な体積の溶液を調製する（希釈も含む）器具である。"},{"id":"q115","year":"2023","genre":"物質量・化学反応式・濃度","difficulty":"easy","statement":"ビュレットは溶液を滴下しその体積をはかるための器具である。","answer":true,"explanation":"ビュレットの用途そのものである。"},{"id":"q116","year":"2024","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"モル濃度の単位はmol/Lで表される。","answer":true,"explanation":"モル濃度は溶液1Lあたりの溶質の物質量で定義される。"},{"id":"q117","year":"2024","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"質量パーセント濃度は溶質の質量を溶媒の質量で割って100をかけた値である。","answer":false,"explanation":"質量パーセント濃度は溶質の質量を溶液全体の質量で割って100をかけた値である。"},{"id":"q118","year":"2024","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"化学反応式の係数の比は反応する物質量の比と一致する。","answer":true,"explanation":"化学反応式の係数比はそのまま物質量比として利用できる。"},{"id":"q119","year":"2015","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"溶液を希釈しても溶質の物質量は変化しない。","answer":true,"explanation":"希釈は溶媒を加えるだけであり溶質の物質量自体は変わらない。"},{"id":"q120","year":"2016","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"気体の密度は同じ温度・圧力であれば分子量が大きいほど大きくなる。","answer":true,"explanation":"密度＝モル質量÷モル体積であり、モル体積が同じであれば分子量が大きいほど密度は大きい。"},{"id":"q121","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"酸化還元反応の量的関係を利用した滴定において、酸化剤が受け取る電子の物質量と還元剤が失う電子の物質量が等しいとき過不足なく反応する。","answer":true,"explanation":"酸化還元反応の基本原則である。"},{"id":"q122","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"easy","statement":"水酸化バリウムは2価の塩基である。","answer":true,"explanation":"Ba(OH)<sub>2</sub>は電離してBa<sup>2+</sup>と2つのOH<sup>-</sup>を生じる2価の塩基である。"},{"id":"q123","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"酢酸1分子が水分子と反応するとH<sub>3</sub>O<sup>+</sup>を1個生じる。","answer":true,"explanation":"CH<sub>3</sub>COOH+H<sub>2</sub>O⇋CH<sub>3</sub>COO<sup>-</sup>+H<sub>3</sub>O<sup>+</sup>の反応で1個生じる。"},{"id":"q124","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"アンモニア1分子が水分子と反応するとOH<sup>-</sup>を3個生じる。","answer":false,"explanation":"NH<sub>3</sub>+H<sub>2</sub>O⇋NH<sub>4</sub><sup>+</sup>+OH<sup>-</sup>の反応でOH<sup>-</sup>は1個しか生じない。"},{"id":"q125","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"水酸化ナトリウムは空気中の水分を吸収する潮解性をもつ。","answer":true,"explanation":"固体の水酸化ナトリウムは空気中の水分を吸収して溶ける潮解性を示す。"},{"id":"q126","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"この滴定で用いる指示薬としてフェノールフタレインが選ばれるのは、中和点が塩基性側にあるためである。","answer":true,"explanation":"弱酸と強塩基の中和点は塩基性側にあり、フェノールフタレインが適している。"},{"id":"q127","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"シュウ酸ナトリウムと同じ液性（塩基性）を示す塩は酢酸カリウムと炭酸ナトリウムである。","answer":true,"explanation":"どちらも弱酸と強塩基からなる正塩で水溶液は塩基性を示す。"},{"id":"q128","year":"2019","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"硫酸水素ナトリウムの水溶液は中性を示す。","answer":false,"explanation":"硫酸水素ナトリウムは酸性塩であり、電離してH<sup>+</sup>を生じるため水溶液は酸性を示す。"},{"id":"q129","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"電離度とは、溶けている酸（塩基）の物質量に対する電離している酸（塩基）の物質量の割合である。","answer":true,"explanation":"電離度の定義そのものである。"},{"id":"q130","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"強酸・強塩基の電離度はほぼ1である。","answer":true,"explanation":"強酸・強塩基はほぼ完全に電離するため電離度は1に近い。"},{"id":"q131","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"pHが3の塩酸を10倍にうすめると、pHは4になる。","answer":true,"explanation":"強酸なので[H<sup>+</sup>]が1/10になりpHは1大きくなる。"},{"id":"q132","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"pHが3の塩酸とpHが5の塩酸を同じ体積ずつ混合すると、pHはちょうど4になる。","answer":false,"explanation":"[H<sup>+</sup>]の平均を取るため、混合後のpHは3より大きく4より小さい値になる。"},{"id":"q133","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"濃度不明の希硫酸に水酸化ナトリウム水溶液を加えて中和滴定するとき、中和点付近のpHはほぼ7である。","answer":true,"explanation":"強酸と強塩基の中和であるため中和点のpHはほぼ7になる。"},{"id":"q134","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"鉛蓄電池は一次電池である。","answer":false,"explanation":"鉛蓄電池は充電により繰り返し使用できる二次電池（蓄電池）である。"},{"id":"q135","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"アルカリマンガン乾電池は一次電池である。","answer":true,"explanation":"アルカリマンガン乾電池は充電できない一次電池である。"},{"id":"q136","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"亜鉛は鉄よりも金属のイオン化傾向が大きいため、トタンでは亜鉛が先に酸化されて鉄を保護する。","answer":true,"explanation":"亜鉛の方がイオン化傾向が大きく、優先的に酸化される（犠牲防食）。"},{"id":"q137","year":"2021","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"ブレンステッド・ローリーの定義では、塩基とは水素イオンを受け取る物質のことである。","answer":true,"explanation":"ブレンステッド・ローリーの定義そのものである。"},{"id":"q138","year":"2021","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"0.10 mol/Lのアンモニア水中の水酸化物イオン濃度が1.0×10<sup>-3</sup> mol/Lのとき、アンモニアの電離度は0.010である。","answer":true,"explanation":"電離度＝[OH<sup>-</sup>]/[NH<sub>3</sub>]=1.0×10<sup>-3</sup>/0.10=0.010となる。"},{"id":"q139","year":"2021","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"2価の水酸化銅(II)は1価の水酸化ナトリウムより強い塩基である。","answer":false,"explanation":"酸・塩基の強さは価数ではなく電離度で決まる。水酸化銅(II)は水に溶けにくい弱塩基であり、強塩基の水酸化ナトリウムより弱い。"},{"id":"q140","year":"2021","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"操作３でコニカルビーカーの内部が蒸留水で濡れていても、中和滴定の結果に影響しない。","answer":true,"explanation":"コニカルビーカー内の溶質の物質量自体は変化しないため影響しない。"},{"id":"q141","year":"2021","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"酸のHも塩基のOHも残っていない塩を正塩という。","answer":true,"explanation":"正塩の定義そのものである。"},{"id":"q142","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"希硫酸中には水酸化物イオンは存在しない。","answer":false,"explanation":"水溶液中にはpHにかかわらず水素イオンと水酸化物イオンの両方が必ず存在する。"},{"id":"q143","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"easy","statement":"水酸化ナトリウム水溶液は赤色リトマス紙を青色に変える。","answer":true,"explanation":"塩基性の水溶液は赤色リトマス紙を青色に変える。"},{"id":"q144","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"塩は酸から生じる陰イオンと塩基から生じる陽イオンからできている。","answer":true,"explanation":"塩の成り立ちそのものである。"},{"id":"q145","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"0.10mol/Lの酢酸水溶液のpHがちょうど3のとき、電離度は1.0×10<sup>-2</sup>である。","answer":true,"explanation":"[H<sup>+</sup>]=1.0×10<sup>-3</sup>mol/Lより、電離度＝1.0×10<sup>-3</sup>/0.10=1.0×10<sup>-2</sup>となる。"},{"id":"q146","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"強酸に弱塩基を滴下していく中和滴定では、開始時のpHは7より大きい。","answer":false,"explanation":"強酸から始めるので開始時のpHは1に近い小さな値である。"},{"id":"q147","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"強酸と弱塩基からなる塩の水溶液は、中和点で酸性を示す。","answer":true,"explanation":"強酸+弱塩基の中和滴定における中和点は酸性側にある。"},{"id":"q148","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"硝酸を酸化還元滴定の酸性化に用いないのは、硝酸自身が酸化剤としてはたらき正確な量的関係を得られなくなるためである。","answer":true,"explanation":"硝酸は酸化力をもつため、酸性化には一般に希硫酸が用いられる。"},{"id":"q149","year":"2023","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"リン酸H<sub>3</sub>PO<sub>4</sub>は3価の酸である。","answer":true,"explanation":"リン酸はH<sup>+</sup>になれるHを3つもつ3価の酸である。"},{"id":"q150","year":"2023","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"5.0×10<sup>-4</sup>mol/Lの水酸化バリウム水溶液（完全電離）のpHは11である。","answer":true,"explanation":"[OH<sup>-</sup>]=1.0×10<sup>-3</sup>mol/Lとなり、pHは11となる。"},{"id":"q151","year":"2023","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"フェノールフタレイン溶液を加えて赤色を示す水溶液は、炭酸ナトリウム水溶液である。","answer":true,"explanation":"炭酸ナトリウムは弱酸と強塩基の正塩で水溶液は塩基性を示し、フェノールフタレインが赤色になる。"},{"id":"q152","year":"2023","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"硫酸水素ナトリウムの水溶液は塩基性を示す。","answer":false,"explanation":"硫酸水素ナトリウムは酸性塩で、電離によりH<sup>+</sup>を生じるため水溶液は酸性を示す。"},{"id":"q153","year":"2023","genre":"酸と塩基・中和滴定","difficulty":"easy","statement":"中和滴定で使うビュレットは滴下量を正確に測定するための器具である。","answer":true,"explanation":"ビュレットの用途そのものである。"},{"id":"q154","year":"2024","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"強酸と強塩基が中和すると生じる正塩の水溶液は中性を示す。","answer":true,"explanation":"強酸+強塩基からなる正塩は中性を示す（例：NaCl水溶液）。"},{"id":"q155","year":"2024","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"弱酸と強塩基からなる正塩の水溶液は酸性を示す。","answer":false,"explanation":"弱酸と強塩基からなる正塩の水溶液は塩基性を示す。"},{"id":"q156","year":"2024","genre":"酸と塩基・中和滴定","difficulty":"easy","statement":"メチルオレンジは酸性側で変色する指示薬である。","answer":true,"explanation":"メチルオレンジの変色域はpH3.1〜4.4であり酸性側にある。"},{"id":"q157","year":"2015","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"中和反応は酸と塩基が反応して塩と水を生じる反応である。","answer":true,"explanation":"中和反応の基本定義である。"},{"id":"q158","year":"2016","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"電離度が1に近い酸を弱酸という。","answer":false,"explanation":"電離度が1に近い（ほぼ完全に電離する）酸は強酸という。"},{"id":"q159","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"物質が酸素を受け取ったとき、その物質は酸化されたという。","answer":true,"explanation":"酸化の定義の一つである。"},{"id":"q160","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"物質が水素を失ったとき、その物質は還元されたという。","answer":false,"explanation":"物質が水素を失うと酸化されたという。水素を受け取ると還元されたという。"},{"id":"q161","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"酸化された物質は電子を失っている。","answer":true,"explanation":"酸化＝電子を失うことに対応する。"},{"id":"q162","year":"2019","genre":"酸化還元反応","difficulty":"hard","statement":"過マンガン酸カリウムKMnO<sub>4</sub>中のマンガン原子の酸化数は+7である。","answer":true,"explanation":"K=+1、O=-2×4を使い計算するとMnは+7になる。"},{"id":"q163","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"硝酸イオンNO<sub>3</sub><sup>-</sup>中の窒素原子の酸化数は+5である。","answer":true,"explanation":"O=-2×3、電荷-1から逆算するとNは+5になる。"},{"id":"q164","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"二酸化硫黄は酸化剤としても還元剤としてもはたらくことができる物質である。","answer":true,"explanation":"SO<sub>2</sub>は反応相手により酸化剤にも還元剤にもなる。"},{"id":"q165","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"銀は希硝酸や熱濃硫酸のような酸化力の強い酸には反応して溶ける。","answer":true,"explanation":"銀はイオン化傾向が水素より小さいが、酸化力の強い酸には溶ける。"},{"id":"q166","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"アルミニウムは濃硝酸に入れると表面に酸化被膜（不動態）を形成し反応が進まなくなる。","answer":true,"explanation":"Al, Fe, Niなどは濃硝酸で不動態となる。"},{"id":"q167","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"金は塩酸や硝酸とは反応しないが王水とは反応する。","answer":true,"explanation":"金は極めてイオン化傾向が小さいが、酸化力の強い王水には溶ける。"},{"id":"q168","year":"2019","genre":"酸化還元反応","difficulty":"normal","statement":"電池の両電極間に生じる電位差（電圧）を起電力という。","answer":true,"explanation":"起電力の定義そのものである。"},{"id":"q169","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"電離度とは、溶けている酸や塩基の物質量に対する電離している物質量の割合である。","answer":true,"explanation":"電離度の定義（酸化還元の項でも重要語として再掲）。"},{"id":"q170","year":"2020","genre":"酸化還元反応","difficulty":"hard","statement":"H<sub>2</sub>SO<sub>4</sub>中の硫黄原子の酸化数は+6である。","answer":true,"explanation":"H=+1×2、O=-2×4を使って逆算するとSは+6になる。"},{"id":"q171","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"亜鉛は鉄よりもイオン化傾向が小さいため、トタンでは亜鉛が先に腐食して鉄を保護する。","answer":false,"explanation":"亜鉛は鉄よりもイオン化傾向が大きいため先に酸化されて鉄を保護する。"},{"id":"q172","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"Fe<sup>2+</sup>がFe<sup>3+</sup>に変化する反応はFe<sup>2+</sup> → Fe<sup>3+</sup> + e<sup>-</sup>と表され、Fe<sup>2+</sup>は還元されている。","answer":false,"explanation":"電子を失っているのでFe<sup>2+</sup>は酸化されている。"},{"id":"q173","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"水素と酸素を用いる燃料電池では酸素側の電極が正極となる。","answer":true,"explanation":"酸素は還元されて電子を受け取るため正極となる。"},{"id":"q174","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"燃料電池が放電するとき、電流は正極から負極（外部回路）へ流れる。","answer":true,"explanation":"電流の向きは電子の流れと逆で、正極から負極へ流れる。"},{"id":"q175","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"硫酸で酸性にしたヨウ化カリウム水溶液に過酸化水素水を加える反応で、ヨウ化物イオンは還元されている。","answer":false,"explanation":"ヨウ化物イオンI<sup>-</sup>は電子を失いI<sub>2</sub>になっているため酸化されている。"},{"id":"q176","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"アルミニウムと鉄は高温の水蒸気と反応する金属である。","answer":true,"explanation":"イオン化傾向の大きいAl, Feは高温の水蒸気と反応する。"},{"id":"q177","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"物質やイオンが酸化されている反応の例として、2Na+Cl<sub>2</sub>→2NaClにおけるNaが挙げられる。","answer":true,"explanation":"Naは電子を失いNa<sup>+</sup>になっているため酸化されている。"},{"id":"q178","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"二クロム酸カリウムは酸化剤としてはたらく。","answer":true,"explanation":"Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>は電子を受け取りCr<sup>3+</sup>になり酸化剤としてはたらく。"},{"id":"q179","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"ブレンステッド・ローリーの定義で、酸とは水素イオンを与える物質である。","answer":true,"explanation":"先述の酸・塩基定義の確認である。"},{"id":"q180","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"無極性分子He、Neのうち、沸点が高いのはHeである。","answer":false,"explanation":"分子量が大きいNeの方がファンデルワールス力が強く沸点が高い。"},{"id":"q181","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"酸化と還元には酸素の授受、水素の授受、電子の授受による3つの定義がある。","answer":true,"explanation":"本文の記述どおりである。"},{"id":"q182","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"電池から電流を取り出すことを充電という。","answer":false,"explanation":"電池から電流を取り出すことは放電であり、外部から逆向きに電流を流し起電力を回復させることが充電である。"},{"id":"q183","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"電池で電子が流れ出す電極を負極という。","answer":true,"explanation":"負極の定義そのものである。"},{"id":"q184","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"0.50molの硫化水素が二酸化硫黄とすべて反応すると、生成する硫黄は0.75molである。","answer":true,"explanation":"反応式の係数比の計算により0.75molとなる。"},{"id":"q185","year":"2021","genre":"酸化還元反応","difficulty":"normal","statement":"金属A、B、Cが亜鉛、銀、銅のいずれかで、金属Bの表面に金属Aが析出し金属Cには変化がない場合、イオン化傾向はB>A>Cとなる。","answer":true,"explanation":"析出関係からこの順になる（本問ではA=Cu, B=Zn, C=Ag）。"},{"id":"q186","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"MnO<sub>2</sub>+4HCl→MnCl<sub>2</sub>+Cl<sub>2</sub>+2H<sub>2</sub>Oは酸化還元反応である。","answer":true,"explanation":"Mnは+4→+2、Clの一部は-1→0に変化しており酸化還元反応である。"},{"id":"q187","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"2HCl+CaO→CaCl<sub>2</sub>+H<sub>2</sub>Oは酸化還元反応である。","answer":false,"explanation":"この反応は中和反応であり、酸化数の変化がないため酸化還元反応ではない。"},{"id":"q188","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"硝酸銀水溶液に銅板を入れると銅が溶け出し銀が析出する。","answer":true,"explanation":"銅の方が銀よりイオン化傾向が大きいため銅が溶け銀が析出する。"},{"id":"q189","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"リチウムイオン電池は一次電池に分類される。","answer":false,"explanation":"リチウムイオン電池は充電可能な二次電池である。"},{"id":"q190","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"常温の水と反応して水素を発生する金属の組合せはCaとNaである。","answer":true,"explanation":"イオン化傾向が非常に大きいLi, K, Ca, Naが常温の水と反応する。"},{"id":"q191","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"銀とリチウムはいずれも常温の水と反応する。","answer":false,"explanation":"リチウムは常温の水と反応するが、銀は反応しない（イオン化傾向が非常に小さい）。"},{"id":"q192","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"反応2CuO+C→2Cu+CO<sub>2</sub>において、Cuの酸化数は+2から0に変化しており、CuOは還元されている。","answer":true,"explanation":"Cuの酸化数減少はCuOが還元されたことを示す。"},{"id":"q193","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"硫酸酸性にした過酸化水素水に過マンガン酸カリウム水溶液を加える反応で、過マンガン酸イオンと生成する酸素の物質量比は2：5である。","answer":true,"explanation":"半反応式の合成により2MnO<sub>4</sub><sup>-</sup>：5O<sub>2</sub>の比が得られる。"},{"id":"q194","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"充電によってくり返し使うことができる電池を一次電池という。","answer":false,"explanation":"充電により繰り返し使える電池は二次電池（蓄電池）であり、一次電池は充電できない電池を指す。"},{"id":"q195","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"溶鉱炉内で鉄鉱石中の鉄の酸化物は、Fe<sub>2</sub>O<sub>3</sub>→Fe<sub>3</sub>O<sub>4</sub>→FeOの順に還元が進み最終的に鉄が得られる。","answer":true,"explanation":"酸化数の大きいものから順に段階的に還元されていく。"},{"id":"q196","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"ダニエル電池において、電流は亜鉛板から導線を通り銅板に向かって流れる。","answer":false,"explanation":"電子は亜鉛板から銅板へ流れるが、電流はその逆向き（銅板から亜鉛板）に流れる。"},{"id":"q197","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"ダニエル電池を長く放電させるには硫酸銅(II)水溶液の濃度を高くする方がよい。","answer":true,"explanation":"正極側のCu<sup>2+</sup>濃度が高い方が長時間の放電に有利である。"},{"id":"q198","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"亜鉛はダニエル電池の正極活物質としてはたらく。","answer":false,"explanation":"亜鉛は負極で酸化されるため正極活物質ではなく負極活物質としてはたらく。"},{"id":"q199","year":"2023","genre":"酸化還元反応","difficulty":"normal","statement":"銅や銀は希硫酸とは反応しないが、加熱した濃硫酸とは反応して二酸化硫黄を発生する。","answer":true,"explanation":"銅・銀は熱濃硫酸と反応しSO<sub>2</sub>を発生する（酸化力による反応）。"},{"id":"q200","year":"2024","genre":"酸化還元反応","difficulty":"normal","statement":"酸化数のルールにおいて、単体中の原子の酸化数は常に0である。","answer":true,"explanation":"酸化数の基本ルールの一つである。"},{"id":"q201","year":"2024","genre":"酸化還元反応","difficulty":"normal","statement":"過酸化水素H<sub>2</sub>O<sub>2</sub>中の酸素原子の酸化数は通常の化合物と同じく-2である。","answer":false,"explanation":"過酸化水素は例外で、酸素原子の酸化数は-1である。"},{"id":"q202","year":"2024","genre":"酸化還元反応","difficulty":"easy","statement":"金属のイオン化傾向はLiが最大でAuが最小である。","answer":true,"explanation":"イオン化列 Li>K>Ca>Na>Mg>Al>Zn>Fe>Ni>Sn>Pb>(H<sub>2</sub>)>Cu>Hg>Ag>Pt>Auのとおりである。"},{"id":"q203","year":"2015","genre":"酸化還元反応","difficulty":"normal","statement":"酸化剤は相手を酸化し自身は還元される物質である。","answer":true,"explanation":"酸化剤の定義そのものである。"},{"id":"q204","year":"2016","genre":"酸化還元反応","difficulty":"normal","statement":"還元剤は相手を還元し自身は還元される物質である。","answer":false,"explanation":"還元剤は相手を還元し自身は酸化される物質である。"},{"id":"q205","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"H<sub>2</sub>とF<sub>2</sub>では、分子量が大きいF<sub>2</sub>の方がファンデルワールス力が大きく沸点が高い。","answer":true,"explanation":"無極性分子では分子量が大きいほどファンデルワールス力が強く沸点が高くなる。"},{"id":"q206","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"F<sub>2</sub>とHClでは、HClの方が沸点が高いのはHClの分子間に共有結合が形成されているためである。","answer":false,"explanation":"HClの分子間には共有結合ではなく極性による強い分子間力（双極子間力）が働いており、それが沸点上昇の要因である。"},{"id":"q207","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"HClとHFでは、HFの方が沸点が高いのはHFの分子間に水素結合がより強くはたらくためである。","answer":true,"explanation":"HFはFの電気陰性度が高く強い水素結合を形成するため沸点が高い。"},{"id":"q208","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"圧力を1.0×10<sup>5</sup>Paから低くすると、水の融点は0℃よりも高くなる。","answer":true,"explanation":"水は特殊な物質で、圧力を下げると融点がわずかに上昇する。"},{"id":"q209","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"一定温度でヘリウムの体積を5.0Lから4.0Lに圧縮すると、圧力は2.5×10<sup>5</sup>Paになる。","answer":true,"explanation":"ボイルの法則より2.0×10<sup>5</sup>×5.0=P×4.0からP=2.5×10<sup>5</sup>Paとなる。"},{"id":"q210","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"塩化セシウム型結晶で、Cl<sup>-</sup>1個に接しているCs<sup>+</sup>の数は8個である。","answer":true,"explanation":"CsClは1：1の配位構造で互いに8個ずつ接している。"},{"id":"q211","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"面心立方格子は体心立方格子の一種である。","answer":false,"explanation":"面心立方格子と体心立方格子は異なる結晶格子の型である。"},{"id":"q212","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"面心立方格子は最密構造の一つであり、充填率は約74%である。","answer":true,"explanation":"面心立方格子・六方最密構造の充填率は約74%である。"},{"id":"q213","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"体心立方格子の充填率は面心立方格子より高い。","answer":false,"explanation":"体心立方格子の充填率は約68%で、面心立方格子（約74%）より低い。"},{"id":"q214","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"水1molの蒸発熱は約41kJ/molであり、融解熱(約6.0kJ/mol)より大きい。","answer":true,"explanation":"水の融解熱は約6.0kJ/mol、蒸発熱は約41kJ/molで、分子間の水素結合をすべて切るのに必要なエネルギーが大きい蒸発熱の方が大きい。"},{"id":"q215","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"1.013×10<sup>5</sup>Paにおいてジエチルエーテルの沸点は水の沸点より高い。","answer":false,"explanation":"蒸気圧曲線より、ジエチルエーテルの沸点は水よりも低い。"},{"id":"q216","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"エタノールの分子間力はジエチルエーテルの分子間力より大きい。","answer":true,"explanation":"エタノールはヒドロキシ基により水素結合を形成し、分子間力が強く沸点が高い。"},{"id":"q217","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"easy","statement":"大気圧を小さくすると、いずれの物質も沸騰する温度が低くなる。","answer":true,"explanation":"外圧が下がると蒸気圧が外圧に達する温度（沸点）が下がる。"},{"id":"q218","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"圧力一定のもとで一定量の気体の体積は絶対温度に比例するという法則をシャルルの法則という。","answer":true,"explanation":"シャルルの法則の定義そのものである。"},{"id":"q219","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"マグネシウムの結晶格子（六方最密構造）における配位数は12である。","answer":true,"explanation":"六方最密構造の配位数は12である。"},{"id":"q220","year":"2020","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"六方最密構造の単位格子に含まれる原子数は4個である。","answer":false,"explanation":"六方最密構造の単位格子（六角柱の1/3部分）に含まれる原子数は2個である。"},{"id":"q221","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"He（分子量4.0）とNe（分子量20）では、Heの方が沸点が低い。","answer":true,"explanation":"分子量が小さいほどファンデルワールス力が弱く沸点が低い。"},{"id":"q222","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"F<sub>2</sub>（分子量38）とHCl（分子量36.5）では、無極性分子であるF<sub>2</sub>の方が沸点が低い。","answer":true,"explanation":"極性分子のHClの方が分子間力が強く沸点が高いため、F<sub>2</sub>の方が沸点が低い。"},{"id":"q223","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"図中に点で示した位置は、固体・液体・気体の三つの状態が同時に存在する三重点である。","answer":true,"explanation":"三重点は固相・液相・気相の境界線がすべて交わる点で、その物質固有のP・Tで存在する。","svg":"<svg viewBox=\"0 0 220 160\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width:100%;max-width:260px;height:auto;display:block;margin:0 auto 10px;\"><rect x=\"0\" y=\"0\" width=\"220\" height=\"160\" fill=\"#f5f7fb\"/><line x1=\"30\" y1=\"10\" x2=\"30\" y2=\"140\" stroke=\"#333\" stroke-width=\"1.5\"/><line x1=\"30\" y1=\"140\" x2=\"210\" y2=\"140\" stroke=\"#333\" stroke-width=\"1.5\"/><text x=\"6\" y=\"20\" font-size=\"10\" fill=\"#333\">P</text><text x=\"196\" y=\"153\" font-size=\"10\" fill=\"#333\">T</text><path d=\"M30,140 C60,110 70,60 90,20\" fill=\"none\" stroke=\"#2667cc\" stroke-width=\"2\"/><path d=\"M90,20 C100,60 110,100 150,140\" fill=\"none\" stroke=\"#c9184a\" stroke-width=\"2\"/><path d=\"M30,140 C55,142 75,120 90,20\" fill=\"none\" stroke=\"#06a06a\" stroke-width=\"2\" stroke-dasharray=\"3 2\"/><circle cx=\"90\" cy=\"20\" r=\"4\" fill=\"#ffb703\" stroke=\"#333\" stroke-width=\"1\"/><text x=\"96\" y=\"16\" font-size=\"10\" fill=\"#7a4b00\">三重点</text><text x=\"140\" y=\"55\" font-size=\"9\" fill=\"#2667cc\">固体</text><text x=\"150\" y=\"100\" font-size=\"9\" fill=\"#c9184a\">気体</text><text x=\"55\" y=\"90\" font-size=\"9\" fill=\"#06a06a\">液体</text></svg>"},{"id":"q224","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"一定温度で一定量の理想気体では、圧力xと（圧力×体積）の積yの関係は、xによらずyが一定のグラフ（水平な直線）になる。","answer":true,"explanation":"ボイルの法則PV=一定より、xを変化させてもyは一定である。"},{"id":"q225","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"理想気体は分子自身の体積をもち、分子間力もはたらく気体である。","answer":false,"explanation":"理想気体は分子自身の体積がなく分子間力もはたらかないと仮定した仮想的な気体である。"},{"id":"q226","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"塩化ナトリウムの単位格子に含まれるNa<sup>+</sup>の数は4個である。","answer":true,"explanation":"中心1個+各辺1/4×12=4個となる。"},{"id":"q227","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"塩化ナトリウムの結晶で、1個のCl<sup>-</sup>に最も近い距離にあるCl<sup>-</sup>の数は12個である。","answer":true,"explanation":"Cl<sup>-</sup>は面心立方格子型の配置をとり、最近接のCl<sup>-</sup>は12個である。"},{"id":"q228","year":"2022","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"圧力一定のもとである結晶を加熱していくとき、融解が始まってから沸騰が始まるまでの間、温度は徐々に上昇し続ける。","answer":false,"explanation":"融解している間は温度が一定に保たれ、融解が完了して初めて液体の温度が上昇し始める。"},{"id":"q229","year":"2022","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"図に示す単位格子は、体心立方格子とよばれる構造である。","answer":true,"explanation":"立方体の8つの頂点と中心に原子が1個ずつ配置される構造を体心立方格子という（単位格子中の原子数は2個）。","svg":"<svg viewBox=\"0 0 200 180\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width:100%;max-width:220px;height:auto;display:block;margin:0 auto 10px;\"><rect x=\"0\" y=\"0\" width=\"200\" height=\"180\" fill=\"#f5f7fb\"/><polygon points=\"40,50 140,50 170,20 70,20\" fill=\"none\" stroke=\"#333\" stroke-width=\"1.5\"/><polygon points=\"40,50 40,150 140,150 140,50\" fill=\"none\" stroke=\"#333\" stroke-width=\"1.5\"/><polygon points=\"140,50 170,20 170,120 140,150\" fill=\"none\" stroke=\"#333\" stroke-width=\"1.5\"/><line x1=\"70\" y1=\"20\" x2=\"70\" y2=\"120\" stroke=\"#333\" stroke-width=\"1\" stroke-dasharray=\"3 2\"/><line x1=\"70\" y1=\"120\" x2=\"40\" y2=\"150\" stroke=\"#333\" stroke-width=\"1\" stroke-dasharray=\"3 2\"/><line x1=\"70\" y1=\"120\" x2=\"170\" y2=\"120\" stroke=\"#333\" stroke-width=\"1\" stroke-dasharray=\"3 2\"/><circle cx=\"40\" cy=\"50\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"140\" cy=\"50\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"70\" cy=\"20\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"170\" cy=\"20\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"40\" cy=\"150\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"140\" cy=\"150\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"70\" cy=\"120\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"170\" cy=\"120\" r=\"7\" fill=\"#2667cc\"/><circle cx=\"105\" cy=\"85\" r=\"8\" fill=\"#c9184a\"/></svg>"},{"id":"q230","year":"2022","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"シャルルの法則は同温・同圧のもとで同じ体積の気体には同数の分子が含まれることを述べた法則である。","answer":false,"explanation":"それはアボガドロの法則の内容である。シャルルの法則は圧力一定下で体積が絶対温度に比例することを述べる。"},{"id":"q231","year":"2022","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"0.30molのネオンを27℃、1.5×10<sup>5</sup>Paにしたときの体積は約5.0Lである。","answer":true,"explanation":"気体の状態方程式で計算するとおよそ5.0Lとなる。"},{"id":"q232","year":"2022","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"実在気体は高温・低圧の条件下でほぼ理想気体とみなすことができる。","answer":true,"explanation":"高温では熱運動が激しく分子間力が無視でき、低圧では分子間距離が大きく分子体積が無視できるため。"},{"id":"q233","year":"2023","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"塩化ナトリウムの結晶中の構成粒子どうしを結びつけている力はクーロン力（静電気力）である。","answer":true,"explanation":"イオン結合はクーロン力による結合である。"},{"id":"q234","year":"2023","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"水の状態図において、常圧で温度を上げていくと固体、液体、気体の順に状態変化する。","answer":true,"explanation":"常圧で温度上昇に伴い固体→液体→気体と変化する。"},{"id":"q235","year":"2023","genre":"状態変化・気体の法則・結晶格子","difficulty":"hard","statement":"1.0×10<sup>5</sup>Pa、9.6Lの酸素を800mLの容器にすべて詰めると、ボンベ内の圧力は約1.2×10<sup>6</sup>Paになる。","answer":true,"explanation":"ボイルの法則より1.0×10<sup>5</sup>×9.6=P×0.8からP≒1.2×10<sup>6</sup>Paとなる。"},{"id":"q236","year":"2023","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"ガラスのように構成粒子の配列が規則的でない固体を一般にアモルファス（非晶質）という。","answer":true,"explanation":"アモルファスの定義そのものである。"},{"id":"q237","year":"2023","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"アモルファスは結晶と同様に明確な融点をもつ。","answer":false,"explanation":"アモルファスは一定の融点をもたず、ある温度幅（軟化点）で軟化する。"},{"id":"q238","year":"2024","genre":"状態変化・気体の法則・結晶格子","difficulty":"easy","statement":"ボイルの法則は温度一定のとき気体の体積が圧力に反比例することを示す法則である。","answer":true,"explanation":"ボイルの法則の定義そのものである。"},{"id":"q239","year":"2024","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"気体の状態方程式はPV=nRTで表され、Rは気体定数である。","answer":true,"explanation":"気体の状態方程式そのものである。"},{"id":"q240","year":"2024","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"面心立方格子の配位数は8である。","answer":false,"explanation":"面心立方格子の配位数は12である。配位数8は体心立方格子の値である。"},{"id":"q241","year":"2015","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"融解や沸騰が起こっている間、加えられた熱はすべて温度上昇に使われる。","answer":false,"explanation":"状態変化中に加えられた熱はすべて状態変化（粒子の配列を崩すこと）に使われ、温度は一定に保たれる。"},{"id":"q242","year":"2016","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"絶対温度T〔K〕とセルシウス温度t〔℃〕の関係はT=t+273で表される。","answer":true,"explanation":"絶対温度とセルシウス温度の変換式である。"},{"id":"q243","year":"2017","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"0℃は絶対温度で273Kである。","answer":true,"explanation":"T=t+273より0+273=273Kとなる。"},{"id":"q244","year":"2018","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"体心立方格子の配位数は12である。","answer":false,"explanation":"体心立方格子の配位数は8である。配位数12は面心立方格子や六方最密構造の値。"},{"id":"q245","year":"2016","genre":"物質の構成","difficulty":"normal","statement":"単体は2種類以上の元素からできている純物質である。","answer":false,"explanation":"単体は1種類の元素のみからできている純物質である。2種類以上の元素からなる純物質は化合物という。"},{"id":"q246","year":"2017","genre":"物質の構成","difficulty":"normal","statement":"混合物は融点・沸点が常に一定の値を示す。","answer":false,"explanation":"混合物は混合の割合によって融点・沸点が変化し、一定の値を示さない。"},{"id":"q247","year":"2018","genre":"物質の構成","difficulty":"normal","statement":"抽出は温度による溶解度の差を利用して不純物を除く操作である。","answer":false,"explanation":"それは再結晶の説明である。抽出は溶媒への溶解度の差を利用して目的物質を溶かし出す操作である。"},{"id":"q248","year":"2015","genre":"物質の構成","difficulty":"normal","statement":"分留は1種類の液体を加熱して蒸気を冷却し液体を得る操作である。","answer":false,"explanation":"分留は2種類以上の液体の混合物を沸点差により成分ごとに分離する操作である。"},{"id":"q249","year":"2020","genre":"物質の構成","difficulty":"normal","statement":"原子番号は原子核に含まれる中性子の数と一致する。","answer":false,"explanation":"原子番号は陽子の数と一致する。中性子の数とは無関係である。"},{"id":"q250","year":"2021","genre":"物質の構成","difficulty":"normal","statement":"同位体どうしは化学的性質が大きく異なる。","answer":false,"explanation":"同位体は陽子の数（電子配置）が同じであるため化学的性質はほぼ同じである。"},{"id":"q251","year":"2022","genre":"物質の構成","difficulty":"normal","statement":"イオン化エネルギーが小さい原子ほど陰イオンになりやすい。","answer":false,"explanation":"イオン化エネルギーが小さい原子ほど陽イオンになりやすい。陰イオンのなりやすさは電子親和力で判断する。"},{"id":"q252","year":"2019","genre":"物質の構成","difficulty":"normal","statement":"第2周期の元素はすべて非金属元素である。","answer":false,"explanation":"第2周期にはLiとBeという金属元素が含まれる。"},{"id":"q253","year":"2023","genre":"物質の構成","difficulty":"normal","statement":"貴ガス（希ガス）は反応性が高く、他の原子と結合しやすい。","answer":false,"explanation":"貴ガスは安定な電子配置をもつため、他の原子とはほとんど結合しない。"},{"id":"q254","year":"2024","genre":"物質の構成","difficulty":"normal","statement":"遷移元素は典型元素に比べて同族元素どうしの性質の類似性が乏しい。","answer":false,"explanation":"遷移元素は同一周期で隣り合う元素どうしの性質が似ている傾向があり、同族での類似性も一定程度ある。なお、典型元素は同族での類似性が特に強い。"},{"id":"q255","year":"2016","genre":"化学結合・結晶","difficulty":"normal","statement":"イオン結合は非金属元素どうしの間に形成される結合である。","answer":false,"explanation":"イオン結合は一般に金属元素と非金属元素の間に形成される。非金属元素どうしは共有結合を形成する。"},{"id":"q256","year":"2017","genre":"化学結合・結晶","difficulty":"normal","statement":"配位結合は他の共有結合と区別できる特殊な結合である。","answer":false,"explanation":"配位結合はできるしくみが異なるだけで、いったん形成されると他の共有結合と区別できない。"},{"id":"q257","year":"2018","genre":"化学結合・結晶","difficulty":"normal","statement":"電気陰性度は周期表の左下にある元素ほど大きい。","answer":false,"explanation":"電気陰性度は貴ガスを除き周期表の右上にある元素ほど大きい。"},{"id":"q258","year":"2015","genre":"化学結合・結晶","difficulty":"normal","statement":"分子結晶は一般に融点が高く硬い。","answer":false,"explanation":"分子結晶は分子間力が弱いため、一般に融点が低く軟らかいものが多い。"},{"id":"q259","year":"2020","genre":"化学結合・結晶","difficulty":"normal","statement":"共有結合の結晶はすべて電気を導かない。","answer":false,"explanation":"共有結合の結晶のうち黒鉛は例外的に電気を導く。"},{"id":"q260","year":"2021","genre":"化学結合・結晶","difficulty":"normal","statement":"組成式はイオンからなる物質だけでなく、分子からなる物質にも通常使われる。","answer":false,"explanation":"分子からなる物質は通常、分子式で表される。組成式は主にイオン結晶・共有結合の結晶・金属で用いられる。"},{"id":"q261","year":"2022","genre":"化学結合・結晶","difficulty":"normal","statement":"極性分子は分子内の結合の極性が完全に打ち消される分子のことである。","answer":false,"explanation":"極性分子は結合の極性が打ち消されずに残る分子のことである。打ち消される場合は無極性分子となる。"},{"id":"q262","year":"2023","genre":"化学結合・結晶","difficulty":"normal","statement":"ファンデルワールス力は分子量が小さいほど強くなる。","answer":false,"explanation":"ファンデルワールス力は一般に分子量が大きいほど強くなる。"},{"id":"q263","year":"2024","genre":"化学結合・結晶","difficulty":"normal","statement":"水素結合はすべての分子間に働く弱い力である。","answer":false,"explanation":"水素結合はF・O・Nに結合したHをもつ特定の分子間（HF, H<sub>2</sub>O, NH<sub>3</sub>など）に働く比較的強い力であり、すべての分子間に働くわけではない。"},{"id":"q264","year":"2016","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"アボガドロ定数は6.0×10<sup>20</sup>/molである。","answer":false,"explanation":"アボガドロ定数は6.0×10<sup>23</sup>/molである。"},{"id":"q265","year":"2017","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"標準状態における気体のモル体積は気体の種類によって異なる。","answer":false,"explanation":"標準状態のモル体積は気体の種類によらず22.4L/molで一定である。"},{"id":"q266","year":"2018","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"モル濃度〔mol/L〕は溶質の物質量を溶媒の体積〔L〕で割って求める。","answer":false,"explanation":"モル濃度は溶質の物質量を溶液（溶媒+溶質）の体積で割って求める。"},{"id":"q267","year":"2015","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"化学反応式の係数の比は反応熱の比を表している。","answer":false,"explanation":"化学反応式の係数の比は物質量（molの数）の比を表している。反応熱とは直接関係しない。"},{"id":"q268","year":"2019","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"溶液を希釈すると溶質の物質量も減少する。","answer":false,"explanation":"希釈は溶媒を加えるだけの操作であり、溶質の物質量自体は変化しない。"},{"id":"q269","year":"2021","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"2Al+6HCl→2AlCl<sub>3</sub>+3H<sub>2</sub>の反応で、Alの物質量とH<sub>2</sub>の物質量の比は1：1である。","answer":false,"explanation":"係数比よりAl：H<sub>2</sub>=2：3であり、1：1ではない。"},{"id":"q270","year":"2022","genre":"物質量・化学反応式・濃度","difficulty":"normal","statement":"気体の状態方程式PV=nRTのRは気体の種類によって異なる定数である。","answer":false,"explanation":"気体定数Rはすべての気体に共通の定数である（8.3×10<sup>3</sup> Pa・L/(K・mol)）。"},{"id":"q271","year":"2016","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"強酸・強塩基は電離度が0に近い酸・塩基である。","answer":false,"explanation":"強酸・強塩基は電離度がほぼ1（1に近い）の酸・塩基である。"},{"id":"q272","year":"2017","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"pHが小さいほど水溶液は塩基性が強い。","answer":false,"explanation":"pHが小さいほど水溶液は酸性が強い。pHが大きいほど塩基性が強い。"},{"id":"q273","year":"2018","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"中和反応で強酸と強塩基が過不足なく反応すると、生じる塩の水溶液は必ず塩基性になる。","answer":false,"explanation":"強酸と強塩基からなる正塩の水溶液は中性になる。"},{"id":"q274","year":"2015","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"フェノールフタレインは酸性側で変色する指示薬である。","answer":false,"explanation":"フェノールフタレインは塩基性側（pH8.0〜9.8）で変色する指示薬である。酸性側で変色するのはメチルオレンジ。"},{"id":"q275","year":"2020","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"ホールピペットは共洗いをせずに使用してよい器具である。","answer":false,"explanation":"ホールピペットは内部が水で濡れていると溶液が薄まるため、使用前に共洗いが必要である。"},{"id":"q276","year":"2022","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"中和反応の量的関係の公式では、酸・塩基の価数を考慮する必要はない。","answer":false,"explanation":"中和の公式は（酸の価数）×（モル濃度）×（体積）＝（塩基の価数）×（モル濃度）×（体積）であり、価数を考慮する必要がある。"},{"id":"q277","year":"2023","genre":"酸と塩基・中和滴定","difficulty":"normal","statement":"酸性塩は必ず水溶液が酸性を示す塩のことである。","answer":false,"explanation":"酸性塩は組成上酸のHが残っている塩のことで、水溶液の液性とは必ずしも一致しない（例：NaHCO<sub>3</sub>水溶液は塩基性）。"},{"id":"q278","year":"2016","genre":"酸化還元反応","difficulty":"normal","statement":"酸化数が増加した原子を含む物質は還元されたという。","answer":false,"explanation":"酸化数が増加した原子を含む物質は酸化されたという。酸化数が減少すると還元されたという。"},{"id":"q279","year":"2017","genre":"酸化還元反応","difficulty":"normal","statement":"イオン化傾向の大きい金属ほど反応性が低く安定である。","answer":false,"explanation":"イオン化傾向の大きい金属ほど酸化されやすく反応性が高い。"},{"id":"q280","year":"2018","genre":"酸化還元反応","difficulty":"normal","statement":"金属のイオン化傾向はAuが最大でLiが最小である。","answer":false,"explanation":"イオン化傾向はLiが最大でAuが最小である。"},{"id":"q281","year":"2015","genre":"酸化還元反応","difficulty":"normal","statement":"二次電池は充電による再使用ができない電池である。","answer":false,"explanation":"充電による再使用ができないのは一次電池である。二次電池（蓄電池）は充電により繰り返し使用できる。"},{"id":"q282","year":"2020","genre":"酸化還元反応","difficulty":"normal","statement":"王水は濃硝酸のみからなる強い酸化力をもつ溶液である。","answer":false,"explanation":"王水は濃塩酸と濃硝酸を体積比3：1で混合したものである。"},{"id":"q283","year":"2022","genre":"酸化還元反応","difficulty":"normal","statement":"電池の負極では還元反応が起こる。","answer":false,"explanation":"負極では酸化反応が起こる。還元反応が起こるのは正極である。"},{"id":"q284","year":"2024","genre":"酸化還元反応","difficulty":"normal","statement":"単原子イオンの酸化数はそのイオンの質量数に等しい。","answer":false,"explanation":"単原子イオンの酸化数はそのイオンの電荷に等しい。質量数とは無関係である。"},{"id":"q285","year":"2016","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"ボイルの法則は圧力一定のもとで体積が絶対温度に比例することを示す法則である。","answer":false,"explanation":"それはシャルルの法則の内容である。ボイルの法則は温度一定のもとで体積が圧力に反比例することを示す。"},{"id":"q286","year":"2017","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"気体の状態方程式においてTはセルシウス温度〔℃〕を用いる。","answer":false,"explanation":"気体の状態方程式では絶対温度T〔K〕を用いる必要がある。"},{"id":"q287","year":"2018","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"面心立方格子の充填率は体心立方格子より低い。","answer":false,"explanation":"面心立方格子の充填率（約74%）は体心立方格子（約68%）より高い。"},{"id":"q288","year":"2015","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"理想気体は高温・高圧の条件下で実在気体に近い性質を示す。","answer":false,"explanation":"実在気体は高温・低圧の条件下で理想気体に近い性質を示す。高圧では分子自身の体積の影響が無視できなくなる。"},{"id":"q289","year":"2019","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"蒸気圧は温度が高くなるほど小さくなる。","answer":false,"explanation":"蒸気圧は温度が高くなるほど大きくなる。"},{"id":"q290","year":"2021","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"沸騰とは液体表面からのみ蒸発が起こる現象である。","answer":false,"explanation":"沸騰は蒸気圧が外圧と等しくなり、液体内部からも気化が起こる現象である。表面からのみの蒸発は単なる蒸発である。"},{"id":"q291","year":"2023","genre":"状態変化・気体の法則・結晶格子","difficulty":"normal","statement":"三重点を超えると気体と液体の区別がなくなる。","answer":false,"explanation":"気体と液体の区別がなくなるのは臨界点である。三重点は固体・液体・気体が共存する点である。"}];// ---------- setup genre select ----------
+const genres = [...new Set(QUESTIONS.map(q => q.genre))];
+const genreSelect = document.getElementById('genreSelect');
+genres.forEach(g=>{
+  const opt = document.createElement('option');
+  opt.value = g; opt.textContent = g;
+  genreSelect.appendChild(opt);
+});
+
+// ---------- per-question stats (localStorage) ----------
+const STATS_KEY = 'chemRunnerStats_v1';
+
+function loadStats(){
+  try{
+    const raw = localStorage.getItem(STATS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveStats(stats){
+  try{ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }catch(e){ /* ignore (private mode etc) */ }
+}
+
+function recordAnswer(qid, isCorrect){
+  const stats = loadStats();
+  if(!stats[qid]) stats[qid] = { shown: 0, correct: 0 };
+  stats[qid].shown++;
+  if(isCorrect) stats[qid].correct++;
+  saveStats(stats);
+}
+
+// ---------- cloud sync (Firebase経由で管理画面から生徒の正答率を確認できるようにする) ----------
+const CAT_KEY = 'chemRunnerCat1';
+
+function loadCatStats(){
+  try{
+    const raw = localStorage.getItem(CAT_KEY);
+    return raw ? JSON.parse(raw) : { catStats: {} };
+  }catch(e){
+    return { catStats: {} };
+  }
+}
+
+function recordGenreAnswer(genre, isCorrect){
+  const data = loadCatStats();
+  if(!data.catStats[genre]) data.catStats[genre] = { correct: 0, total: 0 };
+  data.catStats[genre].total++;
+  if(isCorrect) data.catStats[genre].correct++;
+  try{ localStorage.setItem(CAT_KEY, JSON.stringify(data)); }catch(e){}
+  if(typeof LB !== 'undefined') LB.pushState(CAT_KEY, data);
+}
+
+function renderReviewScreen(){
+  const listEl = document.getElementById('reviewList');
+  const history = state.history || [];
+  if(history.length === 0){
+    listEl.innerHTML = '<div class="review-empty">振り返る問題がありません。</div>';
+    return;
+  }
+  // 間違えた問題を先に、そのあとは出題順どおりに表示
+  const wrong = history.filter(h => !h.correct);
+  const rest = history.filter(h => h.correct);
+  const ordered = wrong.concat(rest);
+  listEl.innerHTML = ordered.map(h => `
+    <div class="review-item ${h.correct ? '' : 'is-wrong'}">
+      <div class="rv-head"><span>${h.genre}</span><span class="rv-mark ${h.correct ? 'correct' : 'wrong'}">${h.correct ? '○ 正解' : '× 不正解'}</span></div>
+      <div class="rv-statement">${h.statement}</div>
+      <div class="rv-explanation">${h.explanation}</div>
+    </div>
+  `).join('');
+}
+
+// ---------- state ----------
+let state = {
+  pool: [],
+  idx: 0,
+  lives: 3,
+  maxLives: 3,
+  streak: 0,
+  bestStreak: 0,
+  correct: 0,
+  total: 0,
+  answered: false,
+  timerInterval: null,
+  autoAdvanceTimeout: null,
+  timeLeft: 0,
+  history: [],
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildPool(){
+  const g = genreSelect.value;
+  let base = g === 'all' ? QUESTIONS : QUESTIONS.filter(q=>q.genre===g);
+  if(base.length < 5) base = QUESTIONS; // fallback safety
+  return shuffle(base);
+}
+
+const wallEl = document.getElementById('wall');
+const runnerEl = document.getElementById('runner');
+const timerFillEl = document.getElementById('timerFill');
+const timerNumEl = document.getElementById('timerNum');
+const QUESTION_TIME_MS = 10000;
+
+function updateWall(){
+  const gapFar = 260, gapNear = 44;
+  const missCount = state.maxLives - state.lives;
+  const ratio = state.maxLives > 0 ? Math.min(1, missCount / state.maxLives) : 0;
+  const gap = gapFar - ratio * (gapFar - gapNear);
+  wallEl.style.left = (30 + gap) + 'px';
+}
+
+function clearQuestionTimer(){
+  if(state.timerInterval){ clearInterval(state.timerInterval); state.timerInterval = null; }
+  if(state.autoAdvanceTimeout){ clearTimeout(state.autoAdvanceTimeout); state.autoAdvanceTimeout = null; }
+}
+
+function updateTimerVisual(ratio){
+  timerFillEl.style.width = (ratio * 100) + '%';
+  timerFillEl.style.background = ratio > .5 ? '#06d6a0' : ratio > .2 ? '#ffd166' : '#ef476f';
+  timerNumEl.textContent = Math.max(0, Math.ceil(state.timeLeft / 1000));
+  // 絵(走るアニメーション・地面スクロール)を残り時間に連動させて加速させる
+  const speedFactor = 0.45 + ratio * 0.55; // 残り少ないほど小さい値=速いアニメーション
+  document.documentElement.style.setProperty('--legdur', (0.38 * speedFactor) + 's');
+  document.documentElement.style.setProperty('--grounddur', (0.55 * speedFactor) + 's');
+}
+
+function startTimer(){
+  clearQuestionTimer();
+  state.timeLeft = QUESTION_TIME_MS;
+  updateTimerVisual(1);
+  const tickMs = 100;
+  state.timerInterval = setInterval(()=>{
+    state.timeLeft -= tickMs;
+    const ratio = Math.max(0, state.timeLeft / QUESTION_TIME_MS);
+    updateTimerVisual(ratio);
+    if(state.timeLeft <= 0){
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+      if(!state.answered) answer(null);
+    }
+  }, tickMs);
+}
+
+function goNext(){
+  clearQuestionTimer();
+  state.idx++;
+  nextQuestion();
+}
+
+function heartsHTML(){
+  let s = '';
+  for(let i=0;i<state.maxLives;i++){
+    s += i < state.lives ? '❤️' : '🖤';
+  }
+  return s;
+}
+
+function renderHUD(){
+  document.getElementById('streak').textContent = state.streak;
+  document.getElementById('bestStreak').textContent = state.bestStreak;
+  document.getElementById('lifeHearts').innerHTML = heartsHTML();
+}
+
+function nextQuestion(){
+  state.answered = false;
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('feedback').className = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('btnTrue').disabled = false;
+  document.getElementById('btnFalse').disabled = false;
+
+  if(state.idx >= state.pool.length){
+    state.pool = shuffle(state.pool);
+    state.idx = 0;
+  }
+  const q = state.pool[state.idx];
+  document.getElementById('genreTag').textContent = q.genre;
+  document.getElementById('statement').innerHTML = (q.svg || '') + q.statement;
+  runnerEl.classList.remove('hit', 'crash');
+  startTimer();
+}
+
+function currentQ(){ return state.pool[state.idx]; }
+
+function answer(userAnswer){
+  // userAnswer: true / false / null(時間切れ)
+  if(state.answered) return;
+  clearQuestionTimer();
+  state.answered = true;
+  const q = currentQ();
+  const isTimeout = userAnswer === null;
+  const correct = !isTimeout && (userAnswer === q.answer);
+  state.total++;
+  recordAnswer(q.id, correct);
+  recordGenreAnswer(q.genre, correct);
+  state.history.push({ qid: q.id, genre: q.genre, statement: q.statement, explanation: q.explanation, correct });
+  document.getElementById('btnTrue').disabled = true;
+  document.getElementById('btnFalse').disabled = true;
+
+  const fb = document.getElementById('feedback');
+  fb.style.display = 'block';
+
+  if(correct){
+    state.correct++;
+    state.streak++;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+    fb.className = 'correct';
+    fb.innerHTML = `⭕ 正解！ ${q.explanation}`;
+    runnerEl.classList.add('boost');
+    setTimeout(()=> runnerEl.classList.remove('boost'), 300);
+  } else {
+    state.streak = 0;
+    state.lives--;
+    fb.className = 'wrong';
+    fb.innerHTML = isTimeout
+      ? `⏰ 時間切れ！ 正解は「${q.answer ? '正しい(○)' : '誤り(×)'}」。 ${q.explanation}`
+      : `❌ 残念、正解は「${q.answer ? '正しい(○)' : '誤り(×)'}」。 ${q.explanation}`;
+    runnerEl.classList.add('hit');
+  }
+  updateWall();
+  renderHUD();
+  document.getElementById('nextBtn').style.display = 'block';
+
+  if(state.lives <= 0){
+    wallEl.style.left = '36px';
+    setTimeout(()=>{ runnerEl.classList.remove('hit'); runnerEl.classList.add('crash'); }, 380);
+    setTimeout(showGameOver, 1200);
+  } else {
+    state.autoAdvanceTimeout = setTimeout(goNext, 1700);
+  }
+}
+
+function startGame(maxLives){
+  clearQuestionTimer();
+  state = {
+    pool: buildPool(),
+    idx: 0,
+    lives: maxLives,
+    maxLives: maxLives,
+    streak: 0,
+    bestStreak: 0,
+    correct: 0,
+    total: 0,
+    answered: false,
+    timerInterval: null,
+    autoAdvanceTimeout: null,
+    timeLeft: 0,
+    history: [],
+  };
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('overScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  runnerEl.classList.remove('hit', 'crash', 'boost');
+  updateWall();
+  renderHUD();
+  nextQuestion();
+}
+
+function showGameOver(){
+  clearQuestionTimer();
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('overScreen').classList.remove('hidden');
+  document.getElementById('finalScore').textContent = `${state.correct}問正解`;
+  document.getElementById('finalBest').textContent = state.bestStreak;
+  document.getElementById('finalCorrect').textContent = state.correct;
+  document.getElementById('finalTotal').textContent = state.total;
+  const rate = state.total ? Math.round(state.correct/state.total*100) : 0;
+  document.getElementById('finalRate').textContent = rate + '%';
+  if(typeof LB !== 'undefined' && state.history.length){
+    LB.recordQuizResults('chemrunner', state.history.map(h=>({ id: h.qid, ok: h.correct })));
+  }
+}
+
+// ---------- events ----------
+let chosenDiff = 3;
+document.querySelectorAll('.diff-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    chosenDiff = parseInt(btn.dataset.diff, 10);
+    document.querySelectorAll('.diff-btn').forEach(b=>b.style.outline='none');
+    btn.style.outline = '3px solid #333';
+    document.getElementById('startBtn').textContent = `スタート（${btn.textContent.trim().split('ミス')[0]}で開始）`;
+  });
+});
+document.getElementById('startBtn').addEventListener('click', ()=> startGame(chosenDiff));
+document.getElementById('btnTrue').addEventListener('click', ()=> answer(true));
+document.getElementById('btnFalse').addEventListener('click', ()=> answer(false));
+document.getElementById('nextBtn').addEventListener('click', goNext);
+document.getElementById('retryBtn').addEventListener('click', ()=> startGame(state.maxLives));
+document.getElementById('menuBtn').addEventListener('click', ()=>{
+  clearQuestionTimer();
+  document.getElementById('overScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+});
+
+function openReview(){
+  clearQuestionTimer();
+  renderReviewScreen();
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('overScreen').classList.add('hidden');
+  document.getElementById('reviewScreen').classList.remove('hidden');
+}
+document.getElementById('openReviewBtn').addEventListener('click', openReview);
+document.getElementById('reviewBackBtn').addEventListener('click', ()=>{
+  document.getElementById('reviewScreen').classList.add('hidden');
+  document.getElementById('overScreen').classList.remove('hidden');
+});
+
+// keyboard shortcuts: O = true, X = false, Enter/Space = next
+document.addEventListener('keydown', (e)=>{
+  if(document.getElementById('gameScreen').classList.contains('hidden')) return;
+  if(!state.answered){
+    if(e.key === 'o' || e.key === 'O' || e.key === 'ArrowLeft') answer(true);
+    if(e.key === 'x' || e.key === 'X' || e.key === 'ArrowRight') answer(false);
+  } else {
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goNext(); }
+  }
+});
+
+// ---------- account (Google login / 進捗のクラウド同期) ----------
+LB.init('chemrunner');
+LB.attachStateSync(CAT_KEY, ()=>localStorage.getItem(CAT_KEY));
+LB.maybeShowOnboarding(CAT_KEY);
+document.getElementById('accountBtn').onclick = ()=> LB.openAccountModal();
+LB.onAuth(u=>{
+  const btn = document.getElementById('accountBtn');
+  if(!btn) return;
+  if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
+  else if(u) btn.textContent = (u.nickname||'?')[0];
+  else btn.textContent = '👤';
+});
+LB.onMessages(count=>{
+  const b = document.getElementById('notifBadge');
+  if(!b) return;
+  b.textContent = count>9?'9+':count;
+  b.style.display = count>0?'':'none';
+});
+</script>
+</body>
+</html>
