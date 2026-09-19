@@ -96,6 +96,18 @@
   .notifItem .nTitle{font-weight:700;color:#1e293b}
   .notifItem .nMeta{color:#94a3b8;font-size:11px;margin-top:2px}
   .notifEmpty{color:#94a3b8;font-size:12.5px;text-align:center;padding:24px 10px}
+  .rGenreRow{font-size:13px;margin-bottom:10px}
+  .rGenreRow .rg-head{display:flex;justify-content:space-between;margin-bottom:4px}
+  .rGenreRow .rg-name{color:#334155;font-weight:700}
+  .rGenreRow .rg-pct{color:#64748b}
+  .rGenreRow .rg-bar-bg{height:10px;background:#f1f5f9;border-radius:6px;overflow:hidden}
+  .rGenreRow .rg-bar-fill{display:block;height:100%;background:#2563eb}
+  .rWeakItem{padding:10px;border:1px solid #f1f5f9;border-radius:10px;margin-bottom:8px;font-size:13px}
+  .rWeakItem .rw-head{display:flex;justify-content:space-between;color:#94a3b8;font-size:11.5px;margin-bottom:4px}
+  .rWeakItem .rw-pct{font-weight:700}
+  .rWeakItem .rw-pct.low{color:#dc2626}
+  .rWeakItem .rw-pct.mid{color:#d97706}
+  .rWeakItem .rw-pct.high{color:#16a34a}
 </style>
 </head>
 <body>
@@ -120,6 +132,7 @@
   <div class="tabbar">
     <button class="tabbtn active" id="tabUsers">👤 会員一覧</button>
     <button class="tabbtn" id="tabQuestions">📋 全問題一覧</button>
+    <button class="tabbtn" id="tabRunner">🏃 化学ランナー</button>
   </div>
 
   <div class="layout" id="usersView">
@@ -178,6 +191,13 @@
       <th class="sortable" data-key="gpct" title="全プレイヤー合計">全体正答率<span class="arrow">▾</span></th>
       <th class="sortable" data-key="upct" title="会員一覧で選択中のユーザーのみ">個人正答率<span class="arrow">▾</span></th>
     </tr></thead><tbody id="qTbody"></tbody></table></div>
+  </div>
+
+  <div class="card" id="runnerView" style="display:none">
+    <div class="stat-row" id="runnerStats"></div>
+    <div id="runnerGenreBox"></div>
+    <div class="stats-sub-title" id="runnerWeakTitle" style="font-size:12.5px;font-weight:800;color:#334155;margin:20px 0 8px">正答率が低い問題（苦手順）</div>
+    <div id="runnerWeakList"></div>
   </div>
 </div>
 
@@ -580,7 +600,7 @@ function loadAllQuestions(){
     {url:'../aromatic-quest/index.html', game:'芳香族', gameKey:'aromatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../aliphatic-quest/index.html', game:'脂肪族', gameKey:'aliphatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'},
-    {url:'../chem-runner/index.html', game:'化学ランナー', gameKey:'chemrunner', marker:'const QUESTIONS = ', open:'[', close:']', kind:'boolq'}
+    {url:'../chembasics-quest/index.html', game:'化学ランナー', gameKey:'chemrunner', marker:'const RUNNER_QUESTIONS = ', open:'[', close:']', kind:'boolq'}
   ];
   return Promise.all(sources.map(s=>
     fetch(s.url).then(r=>r.text()).then(text=>{
@@ -627,6 +647,61 @@ function fmtPct(stat){
   const p = pctOf(stat);
   if(p===null) return '<span class="noProg">-</span>';
   return `${p}%<span class="qWrongs">(${stat.correct||0}/${stat.total})</span>`;
+}
+function rPctClass(pct){
+  if(pct < 50) return 'low';
+  if(pct < 80) return 'mid';
+  return 'high';
+}
+function renderRunnerTab(){
+  const items = (allQuestions||[]).filter(x=>x.gameKey==='chemrunner');
+  const stats = (questionStats && questionStats.chemrunner) || {};
+  let totalShown = 0, totalCorrect = 0;
+  const genreAgg = {};
+  const rows = [];
+  items.forEach(x=>{
+    const s = stats[x.id];
+    if(!s || !s.total) return;
+    totalShown += s.total;
+    totalCorrect += (s.correct||0);
+    if(!genreAgg[x.set]) genreAgg[x.set] = {correct:0, total:0};
+    genreAgg[x.set].correct += (s.correct||0);
+    genreAgg[x.set].total += s.total;
+    rows.push({genre:x.set, q:x.q, correct:s.correct||0, total:s.total, pct: Math.round(100*(s.correct||0)/s.total)});
+  });
+  const summaryEl = document.getElementById('runnerStats');
+  if(totalShown === 0){
+    summaryEl.innerHTML = '<div class="stat"><span>まだ化学ランナーの記録がありません。</span></div>';
+    document.getElementById('runnerGenreBox').innerHTML = '';
+    document.getElementById('runnerWeakList').innerHTML = '';
+    document.getElementById('runnerWeakTitle').style.display = 'none';
+    return;
+  }
+  document.getElementById('runnerWeakTitle').style.display = '';
+  const overallPct = Math.round(100*totalCorrect/totalShown);
+  summaryEl.innerHTML = `
+    <div class="stat"><b>${overallPct}%</b><span>全体正答率</span></div>
+    <div class="stat"><b>${totalShown}</b><span>総回答数</span></div>
+    <div class="stat"><b>${totalCorrect}</b><span>正解数</span></div>
+    <div class="stat"><b>${rows.length}</b><span>記録した問題数 / ${items.length}</span></div>
+  `;
+  const genreHtml = Object.keys(genreAgg).sort().map(g=>{
+    const a = genreAgg[g];
+    const pct = Math.round(100*a.correct/a.total);
+    return `<div class="rGenreRow">
+      <div class="rg-head"><span class="rg-name">${escapeHtml(g)}</span><span class="rg-pct">${pct}%（${a.total}問）</span></div>
+      <div class="rg-bar-bg"><span class="rg-bar-fill" style="width:${pct}%"></span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('runnerGenreBox').innerHTML = genreHtml;
+  rows.sort((a,b)=>a.pct-b.pct || b.total-a.total);
+  const weakRows = rows.slice(0, 50);
+  document.getElementById('runnerWeakList').innerHTML = weakRows.map(r=>`
+    <div class="rWeakItem">
+      <div class="rw-head"><span>${escapeHtml(r.genre)}</span><span class="rw-pct ${rPctClass(r.pct)}">${r.pct}%（${r.correct}/${r.total}）</span></div>
+      <div>${escapeHtml(r.q)}</div>
+    </div>
+  `).join('');
 }
 function populateQUserSelect(){
   const sel = document.getElementById('qUserSelect');
@@ -727,19 +802,23 @@ function renderQuestions(){
       <td>${selUser ? fmtPct(x.uStat) : '<span class="noProg">-</span>'}</td>
     </tr>`).join('');
 }
+function setActiveTab(id){
+  ['tabUsers','tabQuestions','tabRunner'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
+  document.getElementById('usersView').style.display = id==='tabUsers' ? '' : 'none';
+  document.getElementById('questionsView').style.display = id==='tabQuestions' ? '' : 'none';
+  document.getElementById('runnerView').style.display = id==='tabRunner' ? '' : 'none';
+}
 document.getElementById('tabUsers').addEventListener('click', ()=>{
-  document.getElementById('tabUsers').classList.add('active');
-  document.getElementById('tabQuestions').classList.remove('active');
-  document.getElementById('usersView').style.display = '';
-  document.getElementById('questionsView').style.display = 'none';
+  setActiveTab('tabUsers');
 });
 document.getElementById('tabQuestions').addEventListener('click', ()=>{
-  document.getElementById('tabQuestions').classList.add('active');
-  document.getElementById('tabUsers').classList.remove('active');
-  document.getElementById('usersView').style.display = 'none';
-  document.getElementById('questionsView').style.display = '';
+  setActiveTab('tabQuestions');
   populateQUserSelect();
   Promise.all([loadAllQuestions(), loadQuestionStats()]).then(renderQuestions);
+});
+document.getElementById('tabRunner').addEventListener('click', ()=>{
+  setActiveTab('tabRunner');
+  Promise.all([loadAllQuestions(), loadQuestionStats()]).then(renderRunnerTab);
 });
 document.getElementById('qGameSelect').addEventListener('change', ()=>{ qSelectedSets = null; renderQuestions(); });
 document.getElementById('qUserSelect').addEventListener('change', e=>{ selectUser(e.target.value); });
