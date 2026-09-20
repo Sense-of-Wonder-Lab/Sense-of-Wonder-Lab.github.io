@@ -132,7 +132,7 @@
   <div class="tabbar">
     <button class="tabbtn active" id="tabUsers">👤 会員一覧</button>
     <button class="tabbtn" id="tabQuestions">📋 全問題一覧</button>
-    <button class="tabbtn" id="tabRunner">🏃 化学ランナー</button>
+    <button class="tabbtn" id="tabRunner">🏃 化学RUSH！</button>
   </div>
 
   <div class="layout" id="usersView">
@@ -172,7 +172,7 @@
         <option value="芳香族">芳香族</option>
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
-        <option value="化学ランナー">化学ランナー</option>
+        <option value="化学RUSH！">化学RUSH！</option>
       </select></span>
       <span class="qGameFilter"><select id="qUserSelect">
         <option value="">個人正答率: 対象なし</option>
@@ -217,7 +217,7 @@ const FIREBASE_CONFIG = {
   appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
 };
 const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
-const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学ランナー'};
+const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学RUSH！'};
 // leaderboard.js 側で、Firebase が禁止する文字(. # $ [ ] /)を含むキー(無機化学の単元名など)
 // を可逆エスケープして保存している。ここは別ファイルなのでロジックを複製して復元する。
 const FB_KEY_UNESCAPE = [['%2E','.'],['%23','#'],['%24','$'],['%5B','['],['%5D',']'],['%2F','/'],['%25','%']];
@@ -255,7 +255,7 @@ function getAllProgress(u){
   // (likes の書き込み先パスにそのまま使うため。中身が変わるわけではない)。
   if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: bestPctOf(s)}); });
   const chemRunner = d.chemRunnerCat1 && d.chemRunnerCat1.catStats;
-  if(chemRunner) Object.entries(chemRunner).forEach(([rawName,s])=>{ out.push({game:'化学ランナー', name: unescapeFbKey(rawName), gameKey:'chemrunner', deckId:rawName, best: bestPctOf(s)}); });
+  if(chemRunner) Object.entries(chemRunner).forEach(([rawName,s])=>{ out.push({game:'化学RUSH！', name: unescapeFbKey(rawName), gameKey:'chemrunner', deckId:rawName, best: bestPctOf(s)}); });
   return out;
 }
 
@@ -346,7 +346,7 @@ function render(){
     <div class="stat"><b>${gameSet.aromatic.size}</b><span>芳香族プレイ者</span></div>
     <div class="stat"><b>${gameSet.aliphatic.size}</b><span>脂肪族プレイ者</span></div>
     <div class="stat"><b>${gameSet.inorganic.size}</b><span>無機化学プレイ者</span></div>
-    <div class="stat"><b>${gameSet.chemrunner.size}</b><span>化学ランナープレイ者</span></div>
+    <div class="stat"><b>${gameSet.chemrunner.size}</b><span>化学RUSH！プレイ者</span></div>
   `;
 
   if(q){
@@ -398,7 +398,7 @@ function renderDetail(uid){
   if(!u) return;
   const r = buildRows().find(x=>x.uid===uid);
   const av = r.avatar ? `<img class="avatar" src="${r.avatar}" style="width:32px;height:32px">` : `<span class="avatar" style="width:32px;height:32px;font-size:13px">${escapeHtml(r.nickname[0]||'?')}</span>`;
-  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[], '化学ランナー':[]};
+  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[], '化学RUSH！':[]};
   r.progress.forEach(p=>{ if(groups[p.game]) groups[p.game].push(p); });
   const likes = u.likes || {};
   const unlikedCount = r.progress.filter(p=>p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId])).length;
@@ -600,7 +600,7 @@ function loadAllQuestions(){
     {url:'../aromatic-quest/index.html', game:'芳香族', gameKey:'aromatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../aliphatic-quest/index.html', game:'脂肪族', gameKey:'aliphatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'},
-    {url:'../chembasics-quest/index.html', game:'化学ランナー', gameKey:'chemrunner', marker:'const RUNNER_QUESTIONS = ', open:'[', close:']', kind:'boolq'}
+    {url:'../chembasics-quest/index.html', game:'化学RUSH！', gameKey:'chemrunner', marker:'const RUNNER_QUESTIONS = ', open:'[', close:']', kind:'boolq'}
   ];
   return Promise.all(sources.map(s=>
     fetch(s.url).then(r=>r.text()).then(text=>{
@@ -671,7 +671,7 @@ function renderRunnerTab(){
   });
   const summaryEl = document.getElementById('runnerStats');
   if(totalShown === 0){
-    summaryEl.innerHTML = '<div class="stat"><span>まだ化学ランナーの記録がありません。</span></div>';
+    summaryEl.innerHTML = '<div class="stat"><span>まだ化学RUSH！の記録がありません。</span></div>';
     document.getElementById('runnerGenreBox').innerHTML = '';
     document.getElementById('runnerWeakList').innerHTML = '';
     document.getElementById('runnerWeakTitle').style.display = 'none';
