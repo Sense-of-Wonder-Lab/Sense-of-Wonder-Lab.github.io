@@ -35,7 +35,6 @@ header{
 header .title{font-weight:700;font-size:15px;letter-spacing:.02em;flex:1}
 header .sub{font-size:10px;opacity:.75}
 .questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
-.accountBtnWrap{margin-left:auto}
 .questSelect option{color:var(--ink)}
 .backrow{margin-bottom:10px}
 .backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
@@ -120,6 +119,10 @@ nav button.active{color:var(--blue);font-weight:700}
 .scopebtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .scopebtns button{flex:1;min-width:100px;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
 .scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.genretabs{display:flex;gap:4px;margin-top:10px;padding:4px;border-radius:14px;background:#f1f5f9;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.genretabs::-webkit-scrollbar{display:none}
+.genretabs button{flex:0 0 auto;white-space:nowrap;padding:9px 14px;border:none;border-radius:10px;background:transparent;font-size:12.5px;font-weight:700;color:#64748b}
+.genretabs button.sel{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .decklist-head{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .sortmini{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b}
 .sortmini.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
@@ -161,7 +164,7 @@ nav button.active{color:var(--blue);font-weight:700}
 .eg-countdown-num{font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:70px;color:var(--blue);animation:eg-countpop .5s ease-out}
 @keyframes eg-countpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
 /* ================= ダークモード(元素グリッドの配色ベース) ================= */
-.themeBtn{flex:none;margin-left:8px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
+.themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
 html[data-theme="navy"]{
   --ink:#eef3f1;
   --bg:#12181a;
@@ -198,6 +201,9 @@ html[data-theme="navy"] .explain.ng{background:rgba(255,111,111,.1);border-color
 html[data-theme="navy"] .chal-head{color:#93a4a2}
 html[data-theme="navy"] .scopebtns button,html[data-theme="navy"] .sortmini{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);color:var(--ink)}
 html[data-theme="navy"] .scopebtns button.sel,html[data-theme="navy"] .sortmini.sel{background:rgba(79,216,196,.15);border-color:var(--blue);color:var(--blue)}
+html[data-theme="navy"] .genretabs{background:rgba(255,255,255,.06)}
+html[data-theme="navy"] .genretabs button{color:var(--ink)}
+html[data-theme="navy"] .genretabs button.sel{background:rgba(79,216,196,.18);color:var(--blue)}
 html[data-theme="navy"] #toast{background:rgba(19,32,34,.95);border:1px solid rgba(79,216,196,.3)}
 html[data-theme="navy"] .eg-levelbtn{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
 html[data-theme="navy"] .eg-levelbtn:active{border-color:var(--blue)}
@@ -2770,12 +2776,12 @@ function renderRunnerHome(){
     <h2>🏃 化学RUSH！</h2>
     <div class="card-ui">
       <div class="muted">正誤(○×)問題に連続で答えるタイムアタック。1問<b>10秒</b>、間違えるとライフが減るよ。分野を選んで、難易度ボタンを押すとすぐスタート!</div>
-      <div class="scopebtns" style="margin-top:12px">${genreBtns}</div>
+      <div class="genretabs" style="margin-top:12px">${genreBtns}</div>
       <div class="eg-levelgrid" style="margin-top:14px">${diffRows}</div>
     </div>
     <div class="card-ui" id="lbBox"></div>
     ${selfBestList.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(selfBestList,'runnerScore')}</div>`:''}`;
-  runnerPanel.querySelectorAll('.scopebtns button').forEach(b=>{
+  runnerPanel.querySelectorAll('.genretabs button').forEach(b=>{
     b.addEventListener('click',()=>{ selectedRunnerGenre=b.dataset.g; renderRunnerHome(); });
   });
   runnerPanel.querySelectorAll('.eg-levelbtn').forEach(b=>{
