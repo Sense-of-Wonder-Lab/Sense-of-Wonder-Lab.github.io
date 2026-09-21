@@ -223,9 +223,9 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
   background:rgba(255,255,255,.2);overflow:hidden;z-index:5}
 .rn-timer-fill{height:100%;width:100%;background:var(--rn-true);transition:width .12s linear,background .3s}
 .rn-ans-btn{
-  position:absolute;top:42%;width:64px;height:64px;border-radius:18px;
+  position:absolute;bottom:158px;width:76px;height:76px;border-radius:20px;
   background:rgba(8,14,26,.55);backdrop-filter:blur(4px);border:2px solid;color:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;
   cursor:pointer;z-index:6;transition:transform .1s}
 .rn-ans-btn:active{transform:translateY(2px) scale(.97)}
 .rn-ans-btn:disabled{opacity:.5}
@@ -234,17 +234,17 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rn-ans-btn.false-btn{right:16px;color:#ff6f8f;border-color:rgba(255,111,143,.7);
   box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
 .rn-statement-panel{
-  position:absolute;left:14px;right:14px;bottom:56px;z-index:5;max-height:135px;overflow-y:auto;
-  background:rgba(6,10,20,.62);backdrop-filter:blur(3px);border:1px solid rgba(255,255,255,.12);
-  border-radius:14px;padding:14px 16px}
+  position:absolute;left:14px;right:14px;bottom:0;z-index:5;max-height:135px;overflow-y:auto;
+  background:rgba(6,10,20,.72);backdrop-filter:blur(3px);border:1.5px solid rgba(255,255,255,.3);
+  border-radius:14px 14px 0 0;padding:14px 16px}
 .rn-statement{font-size:14.5px;line-height:1.6;color:#f2f5ff}
 .rn-feedback{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.55;display:none}
 .rn-feedback.correct{background:rgba(6,214,160,.18);color:#5cffc0;display:block}
 .rn-feedback.wrong{background:rgba(239,71,111,.18);color:#ff8fa8;display:block}
 .rn-quit-btn{
-  position:absolute;left:0;right:0;bottom:0;z-index:5;
-  padding:14px;border:none;background:rgba(0,0,0,.55);color:#cfd8e8;font-size:13px;font-weight:700;
-  border-top:1px solid rgba(255,255,255,.12);backdrop-filter:blur(3px);cursor:pointer}
+  display:block;width:100%;margin:0;z-index:5;
+  padding:14px;border:none;background:#0b0f1a;color:#cfd8e8;font-size:13px;font-weight:700;
+  cursor:pointer}
 .rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
 .rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
 .rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
@@ -2717,9 +2717,9 @@ function runnerScopeOf(value){ return RUNNER_SCOPES.find(s=>s.value===value) || 
 
 // ---------- 沸騰フラスコ演出 (WebGL/PixiJS) ----------
 const RUNNER_INSTRUMENTS = [
-  { label:'メスフラスコ',     glass:'assets_flask/flask_empty_final.png', mask:'assets_flask/liquid_mask_raster2.png',   surfaceBase: 0.371, particleArea:{x:150,y:380,w:180,h:60},  imgW:485,  imgH:530, scale:0.48 },
+  { label:'メスフラスコ',     glass:'assets_flask/flask_empty_final.png', mask:'assets_flask/liquid_mask_raster2.png',   surfaceBase: 0.80,  particleArea:{x:150,y:380,w:180,h:60},  imgW:485,  imgH:530, scale:0.48 },
   { label:'ビュレット',       glass:'assets_flask/burette_empty.png',     mask:'assets_flask/burette_mask.png',          surfaceBase:-1.0,   particleArea:{x:225,y:250,w:30,h:100},  imgW:485,  imgH:530, scale:0.48 },
-  { label:'ホールピペット',   glass:'assets_flask/pipette_empty.png',     mask:'assets_flask/pipette_mask_v2.png',       surfaceBase: 0.37,  particleArea:{x:215,y:220,w:50,h:60},   imgW:485,  imgH:530, scale:0.48 },
+  { label:'ホールピペット',   glass:'assets_flask/pipette_empty.png',     mask:'assets_flask/pipette_mask_v3.png',       surfaceBase: 0.505, particleArea:{x:215,y:220,w:50,h:60},   imgW:485,  imgH:530, scale:0.48 },
   { label:'コニカルビーカー', glass:'assets_flask/conical_empty.png',     mask:'assets_flask/conical_mask.png',          surfaceBase: 0.25,  particleArea:{x:150,y:380,w:180,h:40},  imgW:485,  imgH:530, scale:0.48 },
   { label:'枝付きフラスコ',   glass:'assets_flask/sidearm2_crop.png',     mask:'assets_flask/sidearm2_mask.png',         surfaceBase: 0.6,   particleArea:{x:126,y:500,w:100,h:150}, imgW:600,  imgH:760, scale:0.43, dispScale:0.7 },
   { label:'リービッヒ冷却器', glass:'assets_flask/condenser_glass.png',   mask:'assets_flask/condenser_liquidmask_v2.png', surfaceBase:-1.0, particleArea:{x:600,y:180,w:300,h:130}, imgW:1429, imgH:520, scale:0.175, rotation:0 },
@@ -3050,8 +3050,8 @@ function renderRunnerPlayShell(){
           <div class="rn-statement" id="rnStatement"></div>
           <div class="rn-feedback" id="rnFeedback"></div>
         </div>
-        <button class="rn-quit-btn" id="rnQuit">やめる</button>
       </div>
+      <button class="rn-quit-btn" id="rnQuit">やめる</button>
     </div>`;
   const rnTrackEl = document.querySelector('.rn-track');
   runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, 480, 'assets_flask/bg_lab.webp');
