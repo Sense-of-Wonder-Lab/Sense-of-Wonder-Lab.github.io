@@ -211,25 +211,40 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 
 /* ---- 化学RUSH！ ---- */
 #runnerPanel{--rn-true:#06d6a0;--rn-false:#ef476f;--rn-accent:#ffd166}
-.rn-track{position:relative;height:220px;overflow:hidden;border-radius:16px;margin-bottom:12px}
+.rn-track{position:relative;height:480px;overflow:hidden;border-radius:16px;margin-bottom:12px;background:#05070c}
 .rn-flask-host{line-height:0}
-.rn-flask-host canvas{display:block}
-.rn-hud{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#64748b;margin-bottom:8px}
-.rn-genretag{display:inline-block;background:#eef2ff;color:#2667cc;padding:2px 9px;border-radius:20px;font-size:11px;margin-bottom:8px}
-.rn-timer-row{float:right;font-size:12px;font-weight:700;color:#334155}
-.rn-timer-bar{clear:both;height:7px;background:#e5e5ea;border-radius:6px;overflow:hidden;margin-bottom:10px}
+.rn-flask-host canvas{display:block;position:relative;z-index:1}
+.rn-header-row{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.rn-genretag{background:rgba(6,10,20,.55);border:1px solid rgba(255,255,255,.25);color:#eaf2ff;
+  font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:20px;backdrop-filter:blur(3px);
+  max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.life-hearts{font-size:17px;letter-spacing:3px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))}
+.rn-timer-bar{position:absolute;top:46px;left:14px;right:14px;height:6px;border-radius:6px;
+  background:rgba(255,255,255,.2);overflow:hidden;z-index:5}
 .rn-timer-fill{height:100%;width:100%;background:var(--rn-true);transition:width .12s linear,background .3s}
-.rn-statement{font-size:15px;line-height:1.65;color:var(--ink);min-height:70px}
-.rn-feedback{min-height:40px;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:12.5px;line-height:1.55;display:none}
-.rn-feedback.correct{background:#e5fff5;color:#046b4c;display:block}
-.rn-feedback.wrong{background:#ffe9ee;color:#9c1338;display:block}
-.rn-answer-row{display:flex;gap:10px;margin-top:12px}
-.rn-ans-btn{flex:1;padding:16px 0;font-size:1.3rem;font-weight:800;border-radius:14px;border:none;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.2)}
-.rn-ans-btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
-.rn-ans-btn.true-btn{background:var(--rn-true)}
-.rn-ans-btn.false-btn{background:var(--rn-false)}
+.rn-ans-btn{
+  position:absolute;top:42%;width:64px;height:64px;border-radius:18px;
+  background:rgba(8,14,26,.55);backdrop-filter:blur(4px);border:2px solid;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;
+  cursor:pointer;z-index:6;transition:transform .1s}
+.rn-ans-btn:active{transform:translateY(2px) scale(.97)}
 .rn-ans-btn:disabled{opacity:.5}
-.rn-ans-btn small{display:block;font-size:.65rem;font-weight:400;margin-top:2px}
+.rn-ans-btn.true-btn{left:16px;color:#5cffc0;border-color:rgba(92,255,192,.7);
+  box-shadow:0 0 14px rgba(92,255,192,.45),inset 0 0 12px rgba(92,255,192,.15);text-shadow:0 0 10px rgba(92,255,192,.9)}
+.rn-ans-btn.false-btn{right:16px;color:#ff6f8f;border-color:rgba(255,111,143,.7);
+  box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
+.rn-statement-panel{
+  position:absolute;left:14px;right:14px;bottom:56px;z-index:5;max-height:135px;overflow-y:auto;
+  background:rgba(6,10,20,.62);backdrop-filter:blur(3px);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:14px 16px}
+.rn-statement{font-size:14.5px;line-height:1.6;color:#f2f5ff}
+.rn-feedback{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.55;display:none}
+.rn-feedback.correct{background:rgba(6,214,160,.18);color:#5cffc0;display:block}
+.rn-feedback.wrong{background:rgba(239,71,111,.18);color:#ff8fa8;display:block}
+.rn-quit-btn{
+  position:absolute;left:0;right:0;bottom:0;z-index:5;
+  padding:14px;border:none;background:rgba(0,0,0,.55);color:#cfd8e8;font-size:13px;font-weight:700;
+  border-top:1px solid rgba(255,255,255,.12);backdrop-filter:blur(3px);cursor:pointer}
 .rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
 .rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
 .rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
@@ -238,7 +253,6 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rn-review-item .rv-mark.wrong{color:#ef476f}
 .rn-review-item .rv-statement{color:var(--ink);line-height:1.5}
 .rn-review-item .rv-explanation{color:#64748b;margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;line-height:1.5}
-html[data-theme="navy"] .rn-statement{color:var(--ink)}
 html[data-theme="navy"] .rn-review-item{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
 html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1);border-color:rgba(255,111,111,.4)}
 </style>
@@ -2789,8 +2803,8 @@ void main(void){
   gl_FragColor = vec4(r,g,b,a);
 }`;
 
-const RN_FLASK_EXTRA_SCALE = 0.85;
-const RN_FLASK_BOTTOM_MARGIN = 8;
+const RN_FLASK_EXTRA_SCALE = 1.05;
+const RN_FLASK_CENTER_Y_FRACTION = 0.46;
 
 class RunnerFlaskEngine {
   constructor(host, trackW, trackH, bgSrc){
@@ -2838,8 +2852,8 @@ class RunnerFlaskEngine {
     // 器具ごとの追加縮小率(未指定なら1倍)
     const dispScale = RN_FLASK_EXTRA_SCALE * (instr.dispScale || 1);
     this.artContainer.scale.set(dispScale);
-    // 器具の描画下端がトラック下端からRN_FLASK_BOTTOM_MARGIN分だけ浮くように毎回配置し直す
-    this.artContainer.y = this.trackH - RN_FLASK_BOTTOM_MARGIN - (imgH*scale/2)*dispScale;
+    // 器具をトラック中央付近に配置(○×ボタン・問題文パネルは写真の上に重ねて表示するデザインのため)
+    this.artContainer.y = this.trackH * RN_FLASK_CENTER_Y_FRACTION;
 
     this.liqUniA = { uTime:0, uHeat:0, uSurfaceBase:surfaceBase };
     this.liqUniB = { uTime:0, uHeat:0, uSurfaceBase:surfaceBase };
@@ -3024,29 +3038,25 @@ function renderRunnerPlayShell(){
     <div class="card-ui" style="padding:0;overflow:hidden">
       <div class="rn-track">
         <div class="rn-flask-host" id="rnFlaskHost"></div>
+        <div class="rn-header-row">
+          <span class="rn-genretag" id="rnGenreTag">-</span>
+          <span class="life-hearts" id="rnHearts"></span>
+        </div>
+        <div class="rn-timer-bar"><div class="rn-timer-fill" id="rnTimerFill"></div></div>
+        <span id="rnTimerNum" style="display:none">10</span>
+        <button class="rn-ans-btn true-btn" id="rnBtnTrue">○</button>
+        <button class="rn-ans-btn false-btn" id="rnBtnFalse">×</button>
+        <div class="rn-statement-panel">
+          <div class="rn-statement" id="rnStatement"></div>
+          <div class="rn-feedback" id="rnFeedback"></div>
+        </div>
+        <button class="rn-quit-btn" id="rnQuit">やめる</button>
       </div>
-    </div>
-    <div class="card-ui">
-      <div class="rn-hud">
-        <span>連続正解 <b id="rnStreak">0</b>（最高 <b id="rnBest">0</b>）</span>
-        <span class="life-hearts" id="rnHearts" style="letter-spacing:2px"></span>
-      </div>
-      <span class="rn-genretag" id="rnGenreTag">-</span>
-      <div class="rn-timer-row">⏱ <span id="rnTimerNum">10</span>秒</div>
-      <div class="rn-timer-bar"><div class="rn-timer-fill" id="rnTimerFill"></div></div>
-      <div class="rn-statement" id="rnStatement"></div>
-      <div class="rn-feedback" id="rnFeedback"></div>
-      <div class="rn-answer-row">
-        <button class="rn-ans-btn true-btn" id="rnBtnTrue">○<small>正しい</small></button>
-        <button class="rn-ans-btn false-btn" id="rnBtnFalse">×<small>誤り</small></button>
-      </div>
-      <button class="bigbtn secondary" id="rnQuit" style="margin-top:10px">やめる</button>
     </div>`;
   const rnTrackEl = document.querySelector('.rn-track');
-  runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, 220, 'assets_flask/bg_lab.webp');
+  runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, 480, 'assets_flask/bg_lab.webp');
   runnerState.el={
     timerFill:document.getElementById('rnTimerFill'), timerNum:document.getElementById('rnTimerNum'),
-    streak:document.getElementById('rnStreak'), best:document.getElementById('rnBest'),
     hearts:document.getElementById('rnHearts'), genreTag:document.getElementById('rnGenreTag'),
     statement:document.getElementById('rnStatement'), feedback:document.getElementById('rnFeedback'),
     btnTrue:document.getElementById('rnBtnTrue'), btnFalse:document.getElementById('rnBtnFalse')
@@ -3054,6 +3064,7 @@ function renderRunnerPlayShell(){
   runnerState.el.btnTrue.addEventListener('click',()=>runnerAnswer(true));
   runnerState.el.btnFalse.addEventListener('click',()=>runnerAnswer(false));
   document.getElementById('rnQuit').addEventListener('click',()=>{ stopRunner(); renderRunnerHome(); });
+  runnerRenderHUD();
 }
 
 function stopRunner(){
@@ -3075,8 +3086,6 @@ function runnerHeartsHTML(){
 
 function runnerRenderHUD(){
   const st=runnerState;
-  st.el.streak.textContent=st.streak;
-  st.el.best.textContent=st.bestStreak;
   st.el.hearts.innerHTML=runnerHeartsHTML();
 }
 
