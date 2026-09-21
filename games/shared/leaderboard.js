@@ -270,7 +270,7 @@ const LB = (function(){
   const GAME_IDS = ['inorganic','aromatic','aliphatic','chembasics'];
   // gridBasic/gridMid/gridAdvanced: 元素タッチ(元素グリッド)のタイムアタック3レベル。
   // correct は常にそのレベルの元素数(固定)なので、fetchTop の並び替えは実質 sec 昇順のみで効く。
-  const CHAL_KINDS = ['score','time','gridBasic','gridMid','gridAdvanced','runnerScore'];
+  const CHAL_KINDS = ['score','time','gridBasic','gridMid','gridAdvanced','runnerScore','runnerScoreBunkei','runnerScoreChemAll','runnerScoreGenre1','runnerScoreGenre2','runnerScoreGenre3','runnerScoreGenre4'];
   function propagateField(field, value){
     const jobs = [];
     GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
