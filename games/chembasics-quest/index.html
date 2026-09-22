@@ -210,6 +210,7 @@ html[data-theme="navy"] .eg-tile{background:rgba(255,255,255,.05);color:var(--in
 html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 
 /* ---- 化学RUSH！ ---- */
+main:has(.rn-track){overflow-y:auto}
 #runnerPanel{--rn-true:#06d6a0;--rn-false:#ef476f;--rn-accent:#ffd166;display:flex;flex-direction:column}
 .rn-card{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;margin-bottom:0}
 .rn-track{position:relative;height:480px;flex:0 0 auto;overflow:hidden;border-radius:16px 16px 0 0;background:#05070c}
@@ -235,7 +236,7 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rn-ans-btn.false-btn{right:16px;color:#ff6f8f;border-color:rgba(255,111,143,.7);
   box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
 .rn-statement-panel{
-  flex:1;min-height:148px;max-height:148px;margin:0 14px 14px;overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-start;
+  flex:1;min-height:150px;max-height:208px;margin:0 14px 14px;overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-start;
   background:linear-gradient(160deg,rgba(58,30,10,.75),rgba(6,10,20,.78));
   border:1.5px solid rgba(255,166,77,.55);border-radius:20px;padding:14px 16px;
   box-shadow:0 0 16px rgba(255,140,60,.12)}
@@ -243,10 +244,6 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rn-feedback{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.55;display:none}
 .rn-feedback.correct{background:rgba(6,214,160,.18);color:#5cffc0;display:block}
 .rn-feedback.wrong{background:rgba(239,71,111,.18);color:#ff8fa8;display:block}
-.rn-quit-btn{
-  display:block;width:100%;flex:0 0 auto;margin:0;z-index:5;border-radius:0 0 16px 16px;
-  padding:14px;border:none;background:#0b0f1a;color:#cfd8e8;font-size:13px;font-weight:700;
-  cursor:pointer}
 .rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
 .rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
 .rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
@@ -3053,7 +3050,6 @@ function renderRunnerPlayShell(){
         <div class="rn-statement" id="rnStatement"></div>
         <div class="rn-feedback" id="rnFeedback"></div>
       </div>
-      <button class="rn-quit-btn" id="rnQuit">やめる</button>
     </div>`;
   const rnTrackEl = document.querySelector('.rn-track');
   runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, 480, 'assets_flask/bg_lab.webp');
@@ -3065,7 +3061,6 @@ function renderRunnerPlayShell(){
   };
   runnerState.el.btnTrue.addEventListener('click',()=>runnerAnswer(true));
   runnerState.el.btnFalse.addEventListener('click',()=>runnerAnswer(false));
-  document.getElementById('rnQuit').addEventListener('click',()=>{ stopRunner(); renderRunnerHome(); });
   runnerRenderHUD();
 }
 
