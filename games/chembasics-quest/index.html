@@ -163,6 +163,7 @@ nav button.active{color:var(--blue);font-weight:700}
 @keyframes eg-countpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
 /* ================= ダークモード(元素グリッドの配色ベース) ================= */
 .themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
+header .accountBtnWrap{margin-left:0}
 html[data-theme="navy"]{
   --ink:#eef3f1;
   --bg:#12181a;
@@ -3317,6 +3318,8 @@ updateWeakBadge();
 refreshAnswerFxBtn();
 refreshAnswerAutoBtn();
 renderHome();
+if(location.hash==='#runner')switchView('runner');
+else if(location.hash==='#grid')switchView('grid');
 </script>
 </body>
 </html>
