@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sense of Wonder Lab｜化学の「なぜ」がわかる解説サイト</title>
-<meta name="description" content="早稲田大学院卒・10年以上の指導歴。東大・京大・医学部合格者多数輩出。化学を暗記ではなく理解で解く。解説記事＋LINEで質問対応。">
+<meta name="description" content="10年以上の指導歴。東大・京大・医学部合格者多数輩出。化学を暗記ではなく理解で解く。解説記事＋LINEで質問対応。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -40,8 +40,7 @@ nav {
   background: rgba(247,245,240,0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
-  padding: 0 32px;
-  height: 56px;
+  padding: 14px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -49,10 +48,10 @@ nav {
 
 .nav-logo {
   font-family: 'Shippori Mincho', serif;
-  font-size: 15px;
+  font-size: clamp(20px, 3.2vw, 32px);
   font-weight: 700;
   color: var(--ink);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-decoration: none;
 }
 
@@ -71,13 +70,73 @@ nav {
 }
 .nav-line:hover { opacity: 0.88; }
 
+/* ── New banner ── */
+.new-banner {
+  background: var(--accent);
+  padding: 14px 32px;
+}
+
+.new-banner-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.new-badge {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent2);
+  padding: 4px 12px;
+  border-radius: 100px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.new-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.new-links a {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255,255,255,0.12);
+  padding: 6px 14px;
+  border-radius: 100px;
+  transition: background 0.2s;
+}
+.new-links a:hover { background: rgba(255,255,255,0.22); }
+
+/* ── Hero image ── */
+.hero-image {
+  width: 100%;
+  height: 320px;
+  margin-top: 78px;
+  overflow: hidden;
+}
+.hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
+}
+
 /* ── Hero ── */
 .hero {
-  min-height: 100vh;
+  min-height: 80vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 100px 32px 80px;
+  padding: 60px 32px 80px;
   max-width: 900px;
   margin: 0 auto;
   position: relative;
@@ -307,6 +366,17 @@ section {
   margin-bottom: 12px;
 }
 
+.quest-thumb {
+  display: block;
+  width: calc(100% + 56px);
+  height: 160px;
+  object-fit: cover;
+  object-position: top;
+  margin: -28px -28px 16px -28px;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border);
+}
+
 .article-title {
   font-family: 'Shippori Mincho', serif;
   font-size: 17px;
@@ -314,6 +384,22 @@ section {
   color: var(--ink);
   line-height: 1.5;
   margin-bottom: 10px;
+}
+
+.quest-name {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.quest-sub {
+  display: block;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .article-desc {
@@ -497,36 +583,35 @@ footer {
   </a>
 </nav>
 
+<!-- Hero image -->
+<div class="hero-image">
+  <img src="images/hero.webp" alt="Sense of Wonder Lab">
+</div>
+
 <!-- Hero -->
 <div class="hero">
-  <p class="hero-eyebrow">化学基礎 ・ 大学受験化学</p>
-  <h1>化学の<em>「なぜ」</em>がわかる。<br>暗記じゃなく、<br>理解で解く。</h1>
+  <h1>化学の<em>「なぜ」</em>がわかる。</h1>
   <p class="hero-desc">
-    丸暗記では解けない問題がある。でも、「なぜそうなるか」を知れば、初めて見る問題でも筋道が立つ。このサイトは、化学の本質的な理解を大切にした解説と、LINEで直接質問できる場を提供します。
+    丸暗記では解けない問題がある。<br>
+    でも、「なぜそうなるか」を知れば、初めて見る問題でも筋道が立つ。<br>
+    このサイトは、化学の本質的な理解を大切にした解説と、LINEで直接質問できる場を提供します。
   </p>
   <div class="hero-cta">
     <a class="btn-line" href="https://line.me/R/ti/p/@130dwwoi?ts=03160111&oat_content=url" target="_blank">
       📱 LINEで無料相談する
     </a>
-    <a class="btn-ghost" href="#articles">解説記事を読む →</a>
   </div>
-  <div class="hero-scroll">Scroll</div>
 </div>
 
-<!-- Stats -->
-<div class="stats">
-  <div class="stats-inner">
-    <div class="stat fade-in">
-      <div class="stat-num">10年+</div>
-      <div class="stat-label">進学校トップクラスでの<br>指導歴</div>
-    </div>
-    <div class="stat fade-in">
-      <div class="stat-num">多数</div>
-      <div class="stat-label">東大・京大・東工大・<br>医学部 合格者輩出</div>
-    </div>
-    <div class="stat fade-in">
-      <div class="stat-num">早大院</div>
-      <div class="stat-label">早稲田大学大学院卒<br>化学専攻</div>
+<!-- New banner -->
+<div class="new-banner">
+  <div class="new-banner-inner">
+    <span class="new-badge">NEW！</span>
+    <div class="new-links">
+      <a href="games/aromatic-quest/index.html">芳香族クエスト</a>
+      <a href="games/aliphatic-quest/index.html">脂肪族クエスト</a>
+      <a href="games/inorganic-quest/index.html">無機化学クエスト</a>
+      <a href="games/element-grid/index.html">元素グリッドEX</a>
     </div>
   </div>
 </div>
@@ -539,55 +624,79 @@ footer {
     <div class="feature-card fade-in">
       <div class="feature-icon">📖</div>
       <div class="feature-title">解説記事を読む</div>
-      <div class="feature-desc">「なぜ」から丁寧に解説した記事を無料で読めます。Google検索でわからない問題を調べてみてください。</div>
+      <div class="feature-desc">「なぜ」から丁寧に解説した記事を無料で読めます。<br>Google検索でわからない問題を調べてみてください。</div>
     </div>
     <div class="feature-card fade-in">
       <div class="feature-icon">💬</div>
       <div class="feature-title">LINEで質問する</div>
-      <div class="feature-desc">読んでもわからなければLINEで質問を。早稲田院卒の講師が、あなたのつまずきに合わせて直接返信します。</div>
+      <div class="feature-desc">読んでもわからなければLINEで質問を。<br>講師が、あなたのつまずきに合わせて直接返信します。</div>
     </div>
     <div class="feature-card fade-in">
       <div class="feature-icon">🎯</div>
       <div class="feature-title">個別指導を受ける</div>
-      <div class="feature-desc">より本格的に大学受験に向けて取り組みたい人はZoomでの個別指導も対応しています。まずはLINEでご相談を。</div>
+      <div class="feature-desc">より本格的に大学受験に向けて取り組みたい人は<br>Zoomでの個別指導も対応しています。まずはLINEでご相談を。</div>
     </div>
   </div>
 </section>
 
-<!-- Articles -->
+<!-- Quests -->
 <section id="articles" style="padding-top: 0;">
   <p class="section-eyebrow">解説記事</p>
-  <h2 class="section-title">化学基礎から読む</h2>
+  <h2 class="section-title">知識の確認！化学クエスト！</h2>
+  <div class="articles">
+    <a class="article-card fade-in" href="games/chembasics-quest/index.html">
+      <span class="article-tag">化学基礎</span>
+      <div class="article-title"><span class="quest-name">化学基礎クエスト</span><span class="quest-sub">一問一答で覚える化学基礎ゲーム</span></div>
+      <div class="article-desc">物質の構成から化学反応式まで、単元別の一問一答とチャレンジモードで暗記事項を身につけます。</div>
+      <div class="article-arrow">遊んでみる →</div>
+    </a>
+    <a class="article-card fade-in" href="games/inorganic-quest/index.html">
+      <img class="quest-thumb" src="images/thumb-inorganic.jpg" alt="無機化学クエストのプレイ画面" loading="lazy">
+      <span class="article-tag">無機化学</span>
+      <div class="article-title"><span class="quest-name">無機化学クエスト</span><span class="quest-sub">一問一答で覚える無機化学ゲーム</span></div>
+      <div class="article-desc">アルカリ金属からハロゲンまで、単元別の一問一答とチャレンジモードで暗記事項を身につけます。</div>
+      <div class="article-arrow">遊んでみる →</div>
+    </a>
+    <a class="article-card fade-in" href="games/aliphatic-quest/index.html">
+      <img class="quest-thumb" src="images/thumb-aliphatic.jpg" alt="脂肪族クエストのプレイ画面" loading="lazy">
+      <span class="article-tag">有機化学</span>
+      <div class="article-title"><span class="quest-name">脂肪族クエスト</span><span class="quest-sub">反応マップで覚える有機化学ゲーム</span></div>
+      <div class="article-desc">エチレン・エタノールを中心に、脂肪族化合物の反応系統を遊んで身につけます。</div>
+      <div class="article-arrow">遊んでみる →</div>
+    </a>
+    <a class="article-card fade-in" href="games/aromatic-quest/index.html">
+      <img class="quest-thumb" src="images/thumb-aromatic.jpg" alt="芳香族クエストのプレイ画面" loading="lazy">
+      <span class="article-tag">有機化学</span>
+      <div class="article-title"><span class="quest-name">芳香族クエスト</span><span class="quest-sub">反応マップで覚える有機化学ゲーム</span></div>
+      <div class="article-desc">構造式・試薬・反応をつなげながら、芳香族化合物の反応系統を遊んで身につけます。</div>
+      <div class="article-arrow">遊んでみる →</div>
+    </a>
+    <a class="article-card fade-in" href="games/element-grid/index.html">
+      <span class="article-tag">化学基礎</span>
+      <div class="article-title"><span class="quest-name">元素グリッドEX</span><span class="quest-sub">タッチで覚える元素記号ゲーム</span></div>
+      <div class="article-desc">出題された元素記号や原子番号をグリッドから素早くタッチ。元素記号を暗記の第一歩に。</div>
+      <div class="article-arrow">遊んでみる →</div>
+    </a>
+    <a class="article-card fade-in" href="games/chembasics-quest/index.html#runner">
+      <img class="quest-thumb" src="images/thumb-runner.jpg" alt="化学RUSH！のプレイ画面" loading="lazy">
+      <span class="article-tag">化学基礎</span>
+      <div class="article-title"><span class="quest-name">化学RUSH！</span><span class="quest-sub">正誤判定で覚える一問一答ゲーム</span></div>
+      <div class="article-desc">流れてくる文章が正しいか誤りかを瞬時に判定。テンポよく問題を解いて知識を定着させます。</div>
+      <div class="article-arrow">遊んでみる →</div>
+    </a>
+  </div>
+</section>
+
+<!-- Articles -->
+<section style="padding-top: 0;">
+  <p class="section-eyebrow">解説記事</p>
+  <h2 class="section-title">化学基礎の解説を読む</h2>
   <div class="articles">
     <a class="article-card fade-in" href="article_mol_water.html">
       <span class="article-tag">化学基礎 ・ mol計算</span>
       <div class="article-title">水分子1molの中に水素原子は何mol？「分子のmol」と「原子のmol」を混同しない考え方</div>
       <div class="article-desc">「水分子が1molなのに水素原子が2molになるのはなぜ？」この疑問に正面から答えます。</div>
       <div class="article-arrow">読む →</div>
-    </a>
-    <a class="article-card fade-in" href="games/aromatic-quest/index.html">
-      <span class="article-tag">大学受験化学 ・ 有機化学</span>
-      <div class="article-title">芳香族クエスト ── 反応マップで覚える有機化学ゲーム</div>
-      <div class="article-desc">構造式・試薬・反応をつなげながら、芳香族化合物の反応系統を遊んで身につけます。</div>
-      <div class="article-arrow">遊んでみる →</div>
-    </a>
-    <a class="article-card fade-in" href="games/aliphatic-quest/index.html">
-      <span class="article-tag">大学受験化学 ・ 有機化学</span>
-      <div class="article-title">脂肪族クエスト ── 反応マップで覚える有機化学ゲーム</div>
-      <div class="article-desc">エチレン・エタノールを中心に、脂肪族化合物の反応系統を遊んで身につけます。</div>
-      <div class="article-arrow">遊んでみる →</div>
-    </a>
-    <a class="article-card fade-in" href="games/inorganic-quest/index.html">
-      <span class="article-tag">大学受験化学 ・ 無機化学</span>
-      <div class="article-title">無機化学クエスト ── 一問一答で覚える無機化学ゲーム</div>
-      <div class="article-desc">アルカリ金属からハロゲンまで、単元別の一問一答とチャレンジモードで暗記事項を身につけます。</div>
-      <div class="article-arrow">遊んでみる →</div>
-    </a>
-    <a class="article-card fade-in" href="games/element-grid/index.html">
-      <span class="article-tag">化学基礎 ・ 元素記号</span>
-      <div class="article-title">元素グリッドEX ── タッチで覚える元素記号ゲーム</div>
-      <div class="article-desc">出題された元素記号や原子番号をグリッドから素早くタッチ。元素記号を暗記の第一歩に。</div>
-      <div class="article-arrow">遊んでみる →</div>
     </a>
     <div class="article-card fade-in" style="background: var(--bg); border-style: dashed; cursor: default;">
       <span class="article-tag">化学基礎</span>
@@ -612,7 +721,8 @@ footer {
   <p class="section-eyebrow">質問対応</p>
   <h2 class="section-title">わからない問題、<br>LINEで送ってください。</h2>
   <p class="line-desc">
-    記事を読んでもまだ解決しないとき、問題をそのまま写真で送ってください。早稲田院卒・10年以上の経験から、あなたのつまずきに合わせて丁寧に返信します。
+    記事を読んでもまだ解決しないとき、問題をそのまま写真で送ってください。<br>
+    あなたのつまずきに合わせて丁寧に返信します。
   </p>
   <a class="btn-line" href="https://line.me/R/ti/p/@130dwwoi?ts=03160111&oat_content=url" target="_blank" style="font-size:16px; padding: 16px 36px; display: inline-flex;">
     📱 公式LINEに登録する（無料）
@@ -631,13 +741,15 @@ footer {
       <p class="section-eyebrow">講師について</p>
       <h2 class="section-title">Sense of Wonder ──<br>化学の驚きを、あなたに。</h2>
       <p class="profile-text">
-        化学は暗記科目ではありません。ガリレオがそうしたように、「なぜ？」と問い続けることで、自然の法則は必然として見えてくる。その驚きと面白さを伝えたくて、このサイトを作りました。
+        化学は暗記の多い科目ですが、覚えるだけが化学の勉強ではありません。<br>
+        先人の化学者達がそうしたように、「なぜ？」と問い続けることで、自然の法則は見えてきます。<br>
+        その驚きと面白さを知らずに、暗記に走るのはもったいない。是非化学にはまってください。
       </p>
       <p class="profile-text">
-        進学校でのトップクラス指導を10年以上続け、東大・京大・東工大・医学部への合格者を多数輩出してきました。難関大を目指す生徒には特に「考え方の本質」を大切にした指導を行っています。
+        進学校でのトップクラス指導を長年続け、東大・京大・東工大・医学部への合格者を多数輩出してきました。<br>
+        難関大を目指す生徒には特に「考え方の本質」を大切にした指導を行っています。
       </p>
       <div class="profile-badges">
-        <span class="badge">早稲田大学大学院卒</span>
         <span class="badge">指導歴10年以上</span>
         <span class="badge">東大・京大合格者多数</span>
         <span class="badge">医学部合格者多数</span>
