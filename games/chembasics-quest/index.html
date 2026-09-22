@@ -2722,7 +2722,7 @@ function runnerScopeOf(value){ return RUNNER_SCOPES.find(s=>s.value===value) || 
 const RUNNER_INSTRUMENTS = [
   { label:'メスフラスコ',     glass:'assets_flask/flask_empty_final.png', mask:'assets_flask/liquid_mask_raster2.png',   surfaceBase: 0.26,  particleArea:{x:150,y:380,w:180,h:60},  imgW:485,  imgH:530, scale:0.48 },
   { label:'ビュレット',       glass:'assets_flask/burette_empty.png',     mask:'assets_flask/burette_mask.png',          surfaceBase:-1.0,   particleArea:{x:225,y:250,w:30,h:100},  imgW:485,  imgH:530, scale:0.48 },
-  { label:'ホールピペット',   glass:'assets_flask/pipette_empty.png',     mask:'assets_flask/pipette_mask_v2.png',       surfaceBase: 0.305, particleArea:{x:215,y:220,w:50,h:60},   imgW:485,  imgH:530, scale:0.48 },
+  { label:'ホールピペット',   glass:'assets_flask/pipette_empty.png',     mask:'assets_flask/pipette_mask_v3.png',       surfaceBase: 0.305, particleArea:{x:215,y:220,w:50,h:60},   imgW:485,  imgH:530, scale:0.48 },
   { label:'コニカルビーカー', glass:'assets_flask/conical_empty.png',     mask:'assets_flask/conical_mask.png',          surfaceBase: 0.25,  particleArea:{x:150,y:380,w:180,h:40},  imgW:485,  imgH:530, scale:0.48 },
   { label:'枝付きフラスコ',   glass:'assets_flask/sidearm2_crop.png',     mask:'assets_flask/sidearm2_mask.png',         surfaceBase: 0.6,   particleArea:{x:126,y:500,w:100,h:150}, imgW:600,  imgH:760, scale:0.43, dispScale:0.7 },
   { label:'リービッヒ冷却器', glass:'assets_flask/condenser_glass.png',   mask:'assets_flask/condenser_liquidmask_v2.png', surfaceBase:-1.0, particleArea:{x:600,y:180,w:300,h:130}, imgW:1429, imgH:520, scale:0.175, rotation:0 },
@@ -2732,7 +2732,6 @@ const RN_LIQUID_FRAG = `
 precision mediump float;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
-uniform sampler2D uMask;
 uniform float uTime;
 uniform float uHeat;
 uniform float uSurfaceBase;
@@ -2764,7 +2763,6 @@ float snoise(vec2 v){
 
 void main(void){
   vec2 uv = vTextureCoord;
-  if(texture2D(uMask, uv).a < 0.5){ discard; }
   float turb = 1.0 + uHeat*3.5;
   float speed = 0.25 + uHeat*1.8;
   float n = snoise(vec2(uv.x*4.0, uv.y*3.2 - uTime*speed) * turb);
@@ -2860,19 +2858,26 @@ class RunnerFlaskEngine {
     // 器具をトラック中央付近に配置(○×ボタン・問題文パネルは写真の上に重ねて表示するデザインのため)
     this.artContainer.y = this.trackH * RN_FLASK_CENTER_Y_FRACTION;
 
-    const maskTex = PIXI.Texture.from(mask);
-    this.liqUniA = { uTime:0, uHeat:0, uSurfaceBase:surfaceBase, uMask:maskTex };
-    this.liqUniB = { uTime:0, uHeat:0, uSurfaceBase:surfaceBase, uMask:maskTex };
+    this.liqUniA = { uTime:0, uHeat:0, uSurfaceBase:surfaceBase };
+    this.liqUniB = { uTime:0, uHeat:0, uSurfaceBase:surfaceBase };
     const liqFilterA = new PIXI.Filter(undefined, RN_LIQUID_FRAG, this.liqUniA);
     const liqFilterB = new PIXI.Filter(undefined, RN_LIQUID_FRAG, this.liqUniB);
 
-    // 液体マスクは極端に細い器具(ピペット等)でPIXIのスプライトマスクが正しく描画できないため、
-    // container.maskではなくシェーダー側でuMaskのアルファを直接判定して切り抜く
+    const makeMask = ()=>{
+      const spr = new PIXI.Sprite(PIXI.Texture.from(mask));
+      spr.x = this.originX; spr.y = this.originY; spr.width = imgW*scale; spr.height = imgH*scale;
+      this.artContainer.addChild(spr);
+      return spr;
+    };
+    const liquidMask = makeMask();
+    const liquidMaskB = makeMask();
+
     const liquidSprite = new PIXI.Sprite(PIXI.Texture.WHITE);
     liquidSprite.x = this.originX; liquidSprite.y = this.originY;
     liquidSprite.width = imgW*scale; liquidSprite.height = imgH*scale;
     liquidSprite.filters = [liqFilterA];
     const liquidContainer = new PIXI.Container();
+    liquidContainer.mask = liquidMask;
     liquidContainer.addChild(liquidSprite);
     this.artContainer.addChild(liquidContainer);
 
@@ -2884,6 +2889,7 @@ class RunnerFlaskEngine {
     liquidBloom.blendMode = PIXI.BLEND_MODES.ADD;
     liquidBloom.alpha = 0.6;
     const liquidBloomContainer = new PIXI.Container();
+    liquidBloomContainer.mask = liquidMaskB;
     liquidBloomContainer.addChild(liquidBloom);
     this.artContainer.addChild(liquidBloomContainer);
 
