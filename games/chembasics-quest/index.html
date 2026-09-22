@@ -210,10 +210,9 @@ html[data-theme="navy"] .eg-tile{background:rgba(255,255,255,.05);color:var(--in
 html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 
 /* ---- 化学RUSH！ ---- */
-main:has(.rn-track){overflow-y:auto}
-#runnerPanel{--rn-true:#06d6a0;--rn-false:#ef476f;--rn-accent:#ffd166;display:flex;flex-direction:column}
-.rn-card{padding:0;overflow-y:auto;overflow-x:hidden;flex:1;display:flex;flex-direction:column;margin-bottom:0}
-.rn-track{position:relative;height:480px;flex:0 0 auto;overflow:hidden;border-radius:16px 16px 0 0;background:#05070c}
+#runnerPanel{--rn-true:#06d6a0;--rn-false:#ef476f;--rn-accent:#ffd166}
+.rn-card{padding:0;overflow:hidden}
+.rn-track{position:relative;height:480px;overflow:hidden;border-radius:16px;background:#05070c}
 .rn-flask-host{line-height:0}
 .rn-flask-host canvas{display:block;position:relative;z-index:1}
 .rn-header-row{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
@@ -225,9 +224,9 @@ main:has(.rn-track){overflow-y:auto}
   background:rgba(255,255,255,.2);overflow:hidden;z-index:5}
 .rn-timer-fill{height:100%;width:100%;background:var(--rn-true);transition:width .12s linear,background .3s}
 .rn-ans-btn{
-  position:absolute;bottom:20px;width:76px;height:76px;border-radius:20px;
+  position:absolute;bottom:158px;width:92px;height:92px;border-radius:22px;
   background:rgba(8,14,26,.55);backdrop-filter:blur(4px);border:2px solid;color:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;
   cursor:pointer;z-index:6;transition:transform .1s}
 .rn-ans-btn:active{transform:translateY(2px) scale(.97)}
 .rn-ans-btn:disabled{opacity:.5}
@@ -236,8 +235,8 @@ main:has(.rn-track){overflow-y:auto}
 .rn-ans-btn.false-btn{right:16px;color:#ff6f8f;border-color:rgba(255,111,143,.7);
   box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
 .rn-statement-panel{
-  flex:1;min-height:150px;max-height:208px;margin:0 14px 14px;overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-start;
-  background:linear-gradient(160deg,rgba(58,30,10,.75),rgba(6,10,20,.78));
+  position:absolute;left:14px;right:14px;bottom:14px;z-index:5;min-height:130px;max-height:calc(100% - 28px);overflow-y:auto;
+  background:linear-gradient(160deg,rgba(58,30,10,.82),rgba(6,10,20,.85));backdrop-filter:blur(3px);
   border:1.5px solid rgba(255,166,77,.55);border-radius:20px;padding:14px 16px;
   box-shadow:0 0 16px rgba(255,140,60,.12)}
 .rn-statement{font-size:14.5px;line-height:1.6;color:#f2f5ff}
@@ -2718,7 +2717,7 @@ function runnerScopeOf(value){ return RUNNER_SCOPES.find(s=>s.value===value) || 
 const RUNNER_INSTRUMENTS = [
   { label:'メスフラスコ',     glass:'assets_flask/flask_empty_final.png', mask:'assets_flask/liquid_mask_raster2.png',   surfaceBase: 0.26,  particleArea:{x:150,y:380,w:180,h:60},  imgW:485,  imgH:530, scale:0.48 },
   { label:'ビュレット',       glass:'assets_flask/burette_empty.png',     mask:'assets_flask/burette_mask.png',          surfaceBase:-1.0,   particleArea:{x:225,y:250,w:30,h:100},  imgW:485,  imgH:530, scale:0.48 },
-  { label:'ホールピペット',   glass:'assets_flask/pipette_empty.png',     mask:'assets_flask/pipette_mask_v4.png',       surfaceBase: 0.305, particleArea:{x:215,y:220,w:50,h:60},   imgW:485,  imgH:530, scale:0.48 },
+  { label:'ホールピペット',   glass:'assets_flask/pipette_empty.png',     mask:'assets_flask/pipette_mask_v4.png',       surfaceBase: 0.20,  particleArea:{x:215,y:220,w:50,h:60},   imgW:485,  imgH:530, scale:0.48 },
   { label:'コニカルビーカー', glass:'assets_flask/conical_empty.png',     mask:'assets_flask/conical_mask.png',          surfaceBase: 0.25,  particleArea:{x:150,y:380,w:180,h:40},  imgW:485,  imgH:530, scale:0.48 },
   { label:'枝付きフラスコ',   glass:'assets_flask/sidearm2_crop.png',     mask:'assets_flask/sidearm2_mask.png',         surfaceBase: 0.6,   particleArea:{x:126,y:500,w:100,h:150}, imgW:600,  imgH:760, scale:0.43, dispScale:0.7 },
   { label:'リービッヒ冷却器', glass:'assets_flask/condenser_glass.png',   mask:'assets_flask/condenser_liquidmask_v2.png', surfaceBase:-1.0, particleArea:{x:600,y:180,w:300,h:130}, imgW:1429, imgH:520, scale:0.175, rotation:0 },
@@ -3045,10 +3044,10 @@ function renderRunnerPlayShell(){
         <span id="rnTimerNum" style="display:none">10</span>
         <button class="rn-ans-btn true-btn" id="rnBtnTrue">○</button>
         <button class="rn-ans-btn false-btn" id="rnBtnFalse">×</button>
-      </div>
-      <div class="rn-statement-panel">
-        <div class="rn-statement" id="rnStatement"></div>
-        <div class="rn-feedback" id="rnFeedback"></div>
+        <div class="rn-statement-panel">
+          <div class="rn-statement" id="rnStatement"></div>
+          <div class="rn-feedback" id="rnFeedback"></div>
+        </div>
       </div>
     </div>`;
   const rnTrackEl = document.querySelector('.rn-track');
@@ -3131,11 +3130,21 @@ function runnerNextQuestion(){
   const q=st.pool[st.idx];
   st.el.genreTag.textContent=q.genre;
   st.el.statement.innerHTML=(q.svg||'')+q.statement;
+  runnerSyncAnsBtn();
   pickRunnerFlask(st.flaskEngine);
   startRunnerTimer();
 }
 
 function runnerCurrentQ(){ return runnerState.pool[runnerState.idx]; }
+
+function runnerSyncAnsBtn(){
+  const st=runnerState;
+  const panel=document.querySelector('.rn-statement-panel');
+  if(!panel||!st||!st.el) return;
+  const bottom=panel.offsetHeight+14+12;
+  st.el.btnTrue.style.bottom=bottom+'px';
+  st.el.btnFalse.style.bottom=bottom+'px';
+}
 
 function runnerAnswer(userAnswer){
   const st=runnerState;
@@ -3165,6 +3174,7 @@ function runnerAnswer(userAnswer){
       ? `⏰ 時間切れ! 正解は「${q.answer?'正しい(○)':'誤り(×)'}」。 ${q.explanation}`
       : `❌ 残念、正解は「${q.answer?'正しい(○)':'誤り(×)'}」。 ${q.explanation}`;
   }
+  runnerSyncAnsBtn();
   runnerRenderHUD();
   if(st.lives<=0){
     setTimeout(finishRunner,1200);
