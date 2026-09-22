@@ -118,7 +118,7 @@ nav {
 /* ── Hero image ── */
 .hero-image {
   width: 100%;
-  height: 320px;
+  height: clamp(320px, 42vw, 580px);
   margin-top: 78px;
   overflow: hidden;
 }
@@ -126,7 +126,7 @@ nav {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 25%;
+  object-position: 25% 58%;
   display: block;
 }
 
@@ -368,13 +368,13 @@ section {
 
 .quest-thumb {
   display: block;
-  width: calc(100% + 56px);
-  height: 160px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 426;
   object-fit: cover;
-  object-position: top;
-  margin: -28px -28px 16px -28px;
-  border-radius: 12px 12px 0 0;
-  border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 12px 0 4px;
+  border: 1px solid var(--border);
 }
 
 .article-title {
@@ -651,23 +651,23 @@ footer {
       <div class="article-arrow">遊んでみる →</div>
     </a>
     <a class="article-card fade-in" href="games/inorganic-quest/index.html">
-      <img class="quest-thumb" src="images/thumb-inorganic.jpg" alt="無機化学クエストのプレイ画面" loading="lazy">
       <span class="article-tag">無機化学</span>
       <div class="article-title"><span class="quest-name">無機化学クエスト</span><span class="quest-sub">一問一答で覚える無機化学ゲーム</span></div>
+      <img class="quest-thumb" src="images/thumb-inorganic.jpg" alt="無機化学クエストのプレイ画面" loading="lazy">
       <div class="article-desc">アルカリ金属からハロゲンまで、単元別の一問一答とチャレンジモードで暗記事項を身につけます。</div>
       <div class="article-arrow">遊んでみる →</div>
     </a>
     <a class="article-card fade-in" href="games/aliphatic-quest/index.html">
-      <img class="quest-thumb" src="images/thumb-aliphatic.jpg" alt="脂肪族クエストのプレイ画面" loading="lazy">
       <span class="article-tag">有機化学</span>
       <div class="article-title"><span class="quest-name">脂肪族クエスト</span><span class="quest-sub">反応マップで覚える有機化学ゲーム</span></div>
+      <img class="quest-thumb" src="images/thumb-aliphatic.jpg" alt="脂肪族クエストのプレイ画面" loading="lazy">
       <div class="article-desc">エチレン・エタノールを中心に、脂肪族化合物の反応系統を遊んで身につけます。</div>
       <div class="article-arrow">遊んでみる →</div>
     </a>
     <a class="article-card fade-in" href="games/aromatic-quest/index.html">
-      <img class="quest-thumb" src="images/thumb-aromatic.jpg" alt="芳香族クエストのプレイ画面" loading="lazy">
       <span class="article-tag">有機化学</span>
       <div class="article-title"><span class="quest-name">芳香族クエスト</span><span class="quest-sub">反応マップで覚える有機化学ゲーム</span></div>
+      <img class="quest-thumb" src="images/thumb-aromatic.jpg" alt="芳香族クエストのプレイ画面" loading="lazy">
       <div class="article-desc">構造式・試薬・反応をつなげながら、芳香族化合物の反応系統を遊んで身につけます。</div>
       <div class="article-arrow">遊んでみる →</div>
     </a>
@@ -678,9 +678,9 @@ footer {
       <div class="article-arrow">遊んでみる →</div>
     </a>
     <a class="article-card fade-in" href="games/chembasics-quest/index.html#runner">
-      <img class="quest-thumb" src="images/thumb-runner.jpg" alt="化学RUSH！のプレイ画面" loading="lazy">
       <span class="article-tag">化学基礎</span>
       <div class="article-title"><span class="quest-name">化学RUSH！</span><span class="quest-sub">正誤判定で覚える一問一答ゲーム</span></div>
+      <img class="quest-thumb" src="images/thumb-runner.jpg" alt="化学RUSH！のプレイ画面" loading="lazy">
       <div class="article-desc">流れてくる文章が正しいか誤りかを瞬時に判定。テンポよく問題を解いて知識を定着させます。</div>
       <div class="article-arrow">遊んでみる →</div>
     </a>
