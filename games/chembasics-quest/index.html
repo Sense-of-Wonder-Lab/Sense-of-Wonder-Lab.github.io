@@ -96,6 +96,11 @@ nav button.active{color:var(--blue);font-weight:700}
 /* quiz */
 .qprompt{font-size:15px;font-weight:700;margin-bottom:14px;line-height:1.6;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px}
 .choices{display:flex;flex-direction:column;gap:9px}
+.qsub{display:block;font-size:11.5px;font-weight:600;color:#64748b;margin-bottom:4px}
+.card-tag{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:#8b5cf6;border-radius:8px;padding:1px 8px;margin-bottom:6px}
+.card-ans{font-size:15px;font-weight:700;line-height:1.7;border:2px dashed #8b5cf6;border-radius:14px;padding:14px;margin:4px 0 12px;background:#faf5ff;color:var(--ink)}
+html[data-theme="navy"] .card-ans{background:rgba(139,92,246,.12)}
+html[data-theme="navy"] .qsub{color:#94a3b8}
 .choice{border:2px solid #e2e8f0;border-radius:14px;background:#fff;padding:12px 14px;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.5;text-align:left}
 .choice:active{background:#f8fafc}
 .choice.correct{border-color:var(--green);background:#f0fdf4}
@@ -300,6 +305,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js?v=34"></script>
+<script src="memo_units.js?v=1"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -351,7 +357,7 @@ const DATA = {
   },
   {
    "name": "No.3 イオン式 基本編(後半)",
-   "count": 14
+   "count": 16
   },
   {
    "name": "No.4 イオン式 多原子イオン編",
@@ -1670,6 +1676,30 @@ const DATA = {
    "id": "q109"
   },
   {
+   "q": "「鉄(Ⅲ)イオン」のイオン式は?",
+   "correct": "Fe³⁺",
+   "wrongs": [
+    "Fe²⁺",
+    "Fe⁺",
+    "F³⁺",
+    "Fe³⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q135"
+  },
+  {
+   "q": "「鉛(Ⅱ)イオン」のイオン式は?",
+   "correct": "Pb²⁺",
+   "wrongs": [
+    "Pb⁺",
+    "Pd²⁺",
+    "P²⁺",
+    "Pb²⁻"
+   ],
+   "cat": "No.3 イオン式 基本編(後半)",
+   "id": "q136"
+  },
+  {
    "q": "「アンモニウムイオン」のイオン式は?",
    "correct": "NH₄⁺",
    "wrongs": [
@@ -1971,8 +2001,10 @@ const DATA = {
   }
  ]
 };
-const CATEGORIES = DATA.categories;
-const ITEMS = DATA.items;
+// 暗記事項一覧から生成した追加単元(memo_units.js)。ID は u01-001 形式で既存の q1〜 と重ならない
+const EXTRA = (typeof MEMO_UNITS!=='undefined')?MEMO_UNITS:{categories:[],items:[]};
+const CATEGORIES = DATA.categories.concat(EXTRA.categories);
+const ITEMS = DATA.items.concat(EXTRA.items);
 const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
 
 /* ================= 状態 ================= */
@@ -2004,14 +2036,40 @@ function buildChoices(it){
   const choices=[{text:it.correct,ok:true},...it.wrongs.map(w=>({text:w,ok:false}))];
   return shuffle(choices);
 }
+// 問題文。追加単元は小分類を見出しとして添える(「水」だけでは何を問うか分からないため)
+function qHTML(it){
+  return (it.sub?`<span class="qsub">${it.sub}</span>`:'')+it.q;
+}
+// フラッシュカード(答えを見て「覚えた／まだ」を自己申告)。onDone(覚えた?)
+function renderCard(el,it,onDone,progressText,fixedNext){
+  el.innerHTML=`
+    ${progressText?`<div class="chal-head">${progressText}</div>`:''}
+    <div class="qprompt"><span class="card-tag">カード</span>${qHTML(it)}</div>
+    <button class="bigbtn" id="cardFlip">答えを見る</button>
+    <div class="card-ans" id="cardAns" style="display:none">${it.correct}</div>
+    <div class="card-judge" id="cardJudge" style="display:none">
+      <button class="bigbtn" id="cardOk">⭕ 覚えた</button>
+      <button class="bigbtn secondary" id="cardNg">🔁 まだ</button>
+    </div>${fixedNext?'<div style="height:80px"></div>':''}`;
+  el.querySelector('#cardFlip').onclick=()=>{
+    el.querySelector('#cardFlip').style.display='none';
+    el.querySelector('#cardAns').style.display='block';
+    el.querySelector('#cardJudge').style.display='block';
+  };
+  let done=false;
+  const fin=ok=>{if(done)return;done=true;onDone(ok);};
+  el.querySelector('#cardOk').onclick=()=>fin(true);
+  el.querySelector('#cardNg').onclick=()=>fin(false);
+}
 function renderQuiz(el,it,onDone,progressText){
+  if(it.type==='card')return renderCard(el,it,onDone,progressText);
   const choices=buildChoices(it);
   let ch='<div class="choices">';
   choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
   ch+='</div>';
   el.innerHTML=`
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
-    <div class="qprompt">${it.q}</div>
+    <div class="qprompt">${qHTML(it)}</div>
     ${ch}
     <div class="explain" id="explainBox"></div>
     <button class="bigbtn" id="nextBtn" style="display:none">つぎへ</button>`;
@@ -2072,13 +2130,14 @@ function showAnswerFxPopup(ok){
   showAnswerFxPopup._t=setTimeout(()=>el.classList.remove('show'),ANSWER_FX_DURATION);
 }
 function renderMemoQ(el,it,onDone,progressText){
+  if(it.type==='card')return renderCard(el,it,onDone,progressText,true);
   const choices=buildChoices(it);
   let ch='<div class="choices">';
   choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
   ch+='</div>';
   el.innerHTML=`
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
-    <div class="qprompt">${it.q}</div>
+    <div class="qprompt">${qHTML(it)}</div>
     ${ch}
     <div style="height:80px"></div>
     <button class="bigbtn fixed-next" id="memoNextBtn" style="display:none">次へ</button>`;
@@ -2099,12 +2158,18 @@ function renderMemoQ(el,it,onDone,progressText){
   });
 }
 function reviewRetry(it){
+  if(it.type==='card'){
+    infoSheet.innerHTML=`<h3>もう一度<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
+      <div class="qprompt">${qHTML(it)}</div><div class="card-ans">${it.correct}</div>`;
+    infoModal.classList.add('open');
+    return;
+  }
   const choices=buildChoices(it);
   let ch='<div class="choices">';
   choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${c.text}</button>`;});
   ch+='</div>';
   infoSheet.innerHTML=`<h3>もう一度<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
-    <div class="qprompt">${it.q}</div>
+    <div class="qprompt">${qHTML(it)}</div>
     ${ch}`;
   infoModal.classList.add('open');
   let answered=false;
@@ -2232,7 +2297,7 @@ function catResult(){
   save();
   let review='';
   catDrill.results.forEach((x,i)=>{
-    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.it.q} → ${x.it.correct}</div>`;
+    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${qHTML(x.it)} → ${x.it.correct}</div>`;
   });
   homePanel.innerHTML=`
     <h2>結果発表</h2>
@@ -2318,7 +2383,7 @@ function renderChallengeHome(){
   refreshLbBox(chalKind);
 }
 function buildChalQueue(){
-  return shuffle(ITEMS.slice());
+  return shuffle(ITEMS.filter(it=>!EXTRA.items.includes(it)));  // ランキングの公平のため、チャレンジは従来の134問＋追加イオン式のみ
 }
 function startChallenge(){
   chal={kind:chalKind,queue:buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
@@ -2428,7 +2493,7 @@ function renderWeakHome(){
   for(const id in state.weak){
     const it=IMAP[id];
     if(!it){delete state.weak[id];continue;}
-    list+=`<div class="review-item">🎯 ${it.q} <b>${it.correct}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
+    list+=`<div class="review-item">🎯 ${qHTML(it)} <b>${it.correct}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
   }
   weakPanel.innerHTML=`
     <h2>🎯 弱点特訓</h2>
