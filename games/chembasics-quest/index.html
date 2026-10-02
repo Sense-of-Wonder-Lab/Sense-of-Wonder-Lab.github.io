@@ -63,6 +63,39 @@ nav button.active{color:var(--blue);font-weight:700}
 .deckbtn-score{flex:none;text-align:right;font-size:19px;font-weight:800;color:var(--blue);white-space:nowrap}
 .deckbtn.perfect .deckbtn-score{color:var(--green)}
 .deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
+/* 単元の枠：上段に名前とスコア、下段に「順番どおり／ランダム」の2つの入口 */
+div.deckbtn{display:block}
+.deck-main{display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* レベルの色：レベル1＝さくら、レベル2＝むらさき（満点の単元は従来どおり緑） */
+.lvwrap.lv1{--lvm:#fb7185;--lvs:#ffe4e6;--lvt:#be123c}
+.lvwrap.lv2{--lvm:#8b5cf6;--lvs:#ede9fe;--lvt:#6d28d9}
+.lvwrap .deckbtn{border-color:var(--lvs)}
+.lvwrap .deckbtn.perfect{border-color:#86efac}
+.lvwrap .deckbtn-score{color:var(--lvt)}
+.lvwrap .deckbtn.perfect .deckbtn-score{color:var(--green)}
+.deck-no{display:inline-block;min-width:30px;margin-right:6px;padding:0 6px;border-radius:7px;background:var(--lvs,#ede9fe);color:var(--lvt,var(--blue));font-size:12px;font-weight:800;text-align:center}
+.deck-modes{display:flex;gap:6px;margin-top:9px}
+.deck-mode{flex:1;padding:8px 6px;border-radius:10px;border:1.5px solid var(--lvm,var(--blue));background:#fff;color:var(--lvt,var(--blue));font-size:12.5px;font-weight:700;font-family:inherit}
+.deck-mode:active{background:var(--lvs,#f5f3ff)}
+.deck-mode small{font-size:10.5px;font-weight:600;margin-left:5px;opacity:.85}
+/* レベルの切り替えタブ */
+.lv-tabs{display:flex;gap:6px;margin-bottom:12px}
+.unit-group{display:flex;justify-content:space-between;align-items:center;width:100%;padding:11px 12px;border-radius:12px;border:none;background:#f1f5f9;color:var(--ink);font-size:14px;font-weight:800;font-family:inherit;text-align:left}
+.unit-group small{font-size:11px;font-weight:600;color:#64748b;margin-left:2px}
+.unit-group.open{background:var(--lvs,#ede9fe);color:var(--lvt,var(--ink))}
+.unit-group-body{display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 8px;border-left:3px solid var(--lvs,#ede9fe);margin-left:6px}
+html[data-theme="navy"] .unit-group{background:rgba(255,255,255,.07)}
+html[data-theme="navy"] .unit-group.open{background:rgba(139,92,246,.22)}
+.lv-tab{flex:1;padding:8px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;color:#64748b;font-size:13.5px;font-weight:800;font-family:inherit;line-height:1.3}
+.lv-tab small{display:block;font-size:10px;font-weight:600}
+.lv-tab.sel[data-lv="1"]{border-color:#fb7185;background:#fb7185;color:#fff}
+.lv-tab.sel[data-lv="2"]{border-color:#8b5cf6;background:#8b5cf6;color:#fff}
+html[data-theme="navy"] .lv-tab{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .deck-mode{background:transparent}
+/* ダークモード：文字は明るく、薄い面は半透明に */
+html[data-theme="navy"] .lvwrap.lv1{--lvt:#fda4af;--lvs:rgba(251,113,133,.2)}
+html[data-theme="navy"] .lvwrap.lv2{--lvt:#c4b5fd;--lvs:rgba(139,92,246,.25)}
+html[data-theme="navy"] .lvwrap .unit-group.open{background:var(--lvs)}
 /* 正誤ポップアップ・自動送り */
 .viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
@@ -304,8 +337,8 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=34"></script>
-<script src="memo_units.js?v=1"></script>
+<script src="../shared/leaderboard.js?v=35"></script>
+<script src="memo_units.js?v=5"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -340,31 +373,38 @@ LB.onAuth(()=>{
 const DATA = {
  "categories": [
   {
-   "name": "No.1 元素記号 初級編(ランダム)",
+   "name": "Lv1 5-1 イオン式（単原子イオン）",
+   "level": 1,
+   "no": "5-1",
+   "title": "イオン式（単原子イオン）",
+   "count": 24
+  },
+  {
+   "name": "Lv1 5-2 イオン式（多原子イオン）",
+   "level": 1,
+   "no": "5-2",
+   "title": "イオン式（多原子イオン）",
+   "count": 11
+  },
+  {
+   "name": "Lv1 7-1 元素記号（初級）",
+   "level": 1,
+   "no": "7-1",
+   "title": "元素記号（初級）",
    "count": 20
   },
   {
-   "name": "No.1 元素記号 初級編(原子番号順)",
+   "name": "Lv1 7-2 元素記号（中級）",
+   "level": 1,
+   "no": "7-2",
+   "title": "元素記号（中級）",
    "count": 20
   },
   {
-   "name": "No.2 元素記号 中級編",
-   "count": 40
-  },
-  {
-   "name": "No.3 イオン式 基本編(前半)",
-   "count": 15
-  },
-  {
-   "name": "No.3 イオン式 基本編(後半)",
-   "count": 16
-  },
-  {
-   "name": "No.4 イオン式 多原子イオン編",
-   "count": 12
-  },
-  {
-   "name": "No.5 結晶の性質",
+   "name": "Lv3 15 結晶の性質",
+   "level": 3,
+   "no": "15",
+   "title": "結晶の性質",
    "count": 13
   }
  ],
@@ -378,7 +418,7 @@ const DATA = {
     "S",
     "O"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q1"
   },
   {
@@ -390,7 +430,7 @@ const DATA = {
     "Hl",
     "Hm"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q2"
   },
   {
@@ -402,7 +442,7 @@ const DATA = {
     "R",
     "Lt"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q3"
   },
   {
@@ -414,7 +454,7 @@ const DATA = {
     "Ve",
     "Vr"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q4"
   },
   {
@@ -426,7 +466,7 @@ const DATA = {
     "Bo",
     "F"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q5"
   },
   {
@@ -438,7 +478,7 @@ const DATA = {
     "Ca",
     "K"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q6"
   },
   {
@@ -450,7 +490,7 @@ const DATA = {
     "Ni",
     "Ci"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q7"
   },
   {
@@ -462,7 +502,7 @@ const DATA = {
     "Ox",
     "C"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q8"
   },
   {
@@ -474,7 +514,7 @@ const DATA = {
     "B",
     "H"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q9"
   },
   {
@@ -486,7 +526,7 @@ const DATA = {
     "No",
     "He"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q10"
   },
   {
@@ -498,7 +538,7 @@ const DATA = {
     "N",
     "Ne"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q11"
   },
   {
@@ -510,7 +550,7 @@ const DATA = {
     "Au",
     "Ag"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q12"
   },
   {
@@ -522,7 +562,7 @@ const DATA = {
     "Au",
     "Ag"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q13"
   },
   {
@@ -534,7 +574,7 @@ const DATA = {
     "Ke",
     "S"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q14"
   },
   {
@@ -546,7 +586,7 @@ const DATA = {
     "Ln",
     "Pn"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q15"
   },
   {
@@ -558,7 +598,7 @@ const DATA = {
     "I",
     "Si"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q16"
   },
   {
@@ -570,7 +610,7 @@ const DATA = {
     "Cr",
     "Kl"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q17"
   },
   {
@@ -582,7 +622,7 @@ const DATA = {
     "Au",
     "Er"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q18"
   },
   {
@@ -594,7 +634,7 @@ const DATA = {
     "Ca",
     "Kr"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q19"
   },
   {
@@ -606,488 +646,8 @@ const DATA = {
     "C",
     "Cr"
    ],
-   "cat": "No.1 元素記号 初級編(ランダム)",
+   "cat": "Lv1 7-1 元素記号（初級）",
    "id": "q20"
-  },
-  {
-   "q": "「水素」の元素記号は?",
-   "correct": "H",
-   "wrongs": [
-    "Su",
-    "He",
-    "S",
-    "O"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q21"
-  },
-  {
-   "q": "「ヘリウム」の元素記号は?",
-   "correct": "He",
-   "wrongs": [
-    "H",
-    "Hr",
-    "Hl",
-    "Hm"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q22"
-  },
-  {
-   "q": "「リチウム」の元素記号は?",
-   "correct": "Li",
-   "wrongs": [
-    "Ri",
-    "L",
-    "R",
-    "Lt"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q23"
-  },
-  {
-   "q": "「ベリリウム」の元素記号は?",
-   "correct": "Be",
-   "wrongs": [
-    "B",
-    "Br",
-    "Ve",
-    "Vr"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q24"
-  },
-  {
-   "q": "「ホウ素」の元素記号は?",
-   "correct": "B",
-   "wrongs": [
-    "H",
-    "Ho",
-    "Bo",
-    "F"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q25"
-  },
-  {
-   "q": "「炭素」の元素記号は?",
-   "correct": "C",
-   "wrongs": [
-    "T",
-    "Ta",
-    "Ca",
-    "K"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q26"
-  },
-  {
-   "q": "「窒素」の元素記号は?",
-   "correct": "N",
-   "wrongs": [
-    "T",
-    "Ti",
-    "Ni",
-    "Ci"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q27"
-  },
-  {
-   "q": "「酸素」の元素記号は?",
-   "correct": "O",
-   "wrongs": [
-    "Sa",
-    "Sn",
-    "Ox",
-    "C"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q28"
-  },
-  {
-   "q": "「フッ素」の元素記号は?",
-   "correct": "F",
-   "wrongs": [
-    "Hu",
-    "Fu",
-    "B",
-    "H"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q29"
-  },
-  {
-   "q": "「ネオン」の元素記号は?",
-   "correct": "Ne",
-   "wrongs": [
-    "N",
-    "Na",
-    "No",
-    "He"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q30"
-  },
-  {
-   "q": "「ナトリウム」の元素記号は?",
-   "correct": "Na",
-   "wrongs": [
-    "Nt",
-    "Nr",
-    "N",
-    "Ne"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q31"
-  },
-  {
-   "q": "「マグネシウム」の元素記号は?",
-   "correct": "Mg",
-   "wrongs": [
-    "Ma",
-    "Mn",
-    "Au",
-    "Ag"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q32"
-  },
-  {
-   "q": "「アルミニウム」の元素記号は?",
-   "correct": "Al",
-   "wrongs": [
-    "Ar",
-    "Am",
-    "Au",
-    "Ag"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q33"
-  },
-  {
-   "q": "「ケイ素」の元素記号は?",
-   "correct": "Si",
-   "wrongs": [
-    "Ka",
-    "Ki",
-    "Ke",
-    "S"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q34"
-  },
-  {
-   "q": "「リン」の元素記号は?",
-   "correct": "P",
-   "wrongs": [
-    "Li",
-    "Ri",
-    "Ln",
-    "Pn"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q35"
-  },
-  {
-   "q": "「硫黄」の元素記号は?",
-   "correct": "S",
-   "wrongs": [
-    "Yo",
-    "Io",
-    "I",
-    "Si"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q36"
-  },
-  {
-   "q": "「塩素」の元素記号は?",
-   "correct": "Cl",
-   "wrongs": [
-    "En",
-    "E",
-    "Cr",
-    "Kl"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q37"
-  },
-  {
-   "q": "「アルゴン」の元素記号は?",
-   "correct": "Ar",
-   "wrongs": [
-    "Al",
-    "Ag",
-    "Au",
-    "Er"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q38"
-  },
-  {
-   "q": "「カリウム」の元素記号は?",
-   "correct": "K",
-   "wrongs": [
-    "C",
-    "Ka",
-    "Ca",
-    "Kr"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q39"
-  },
-  {
-   "q": "「カルシウム」の元素記号は?",
-   "correct": "Ca",
-   "wrongs": [
-    "Ka",
-    "K",
-    "C",
-    "Cr"
-   ],
-   "cat": "No.1 元素記号 初級編(原子番号順)",
-   "id": "q40"
-  },
-  {
-   "q": "「水素」の元素記号は?",
-   "correct": "H",
-   "wrongs": [
-    "Su",
-    "He",
-    "S",
-    "O"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q41"
-  },
-  {
-   "q": "「ヘリウム」の元素記号は?",
-   "correct": "He",
-   "wrongs": [
-    "H",
-    "Hr",
-    "Hl",
-    "Hm"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q42"
-  },
-  {
-   "q": "「リチウム」の元素記号は?",
-   "correct": "Li",
-   "wrongs": [
-    "Ri",
-    "L",
-    "R",
-    "Lt"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q43"
-  },
-  {
-   "q": "「ベリリウム」の元素記号は?",
-   "correct": "Be",
-   "wrongs": [
-    "B",
-    "Br",
-    "Ve",
-    "Vr"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q44"
-  },
-  {
-   "q": "「ホウ素」の元素記号は?",
-   "correct": "B",
-   "wrongs": [
-    "H",
-    "Ho",
-    "Bo",
-    "F"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q45"
-  },
-  {
-   "q": "「炭素」の元素記号は?",
-   "correct": "C",
-   "wrongs": [
-    "T",
-    "Ta",
-    "Ca",
-    "K"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q46"
-  },
-  {
-   "q": "「窒素」の元素記号は?",
-   "correct": "N",
-   "wrongs": [
-    "T",
-    "Ti",
-    "Ni",
-    "Ci"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q47"
-  },
-  {
-   "q": "「酸素」の元素記号は?",
-   "correct": "O",
-   "wrongs": [
-    "Sa",
-    "Sn",
-    "Ox",
-    "C"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q48"
-  },
-  {
-   "q": "「フッ素」の元素記号は?",
-   "correct": "F",
-   "wrongs": [
-    "Hu",
-    "Fu",
-    "B",
-    "H"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q49"
-  },
-  {
-   "q": "「ネオン」の元素記号は?",
-   "correct": "Ne",
-   "wrongs": [
-    "N",
-    "Na",
-    "No",
-    "He"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q50"
-  },
-  {
-   "q": "「ナトリウム」の元素記号は?",
-   "correct": "Na",
-   "wrongs": [
-    "Nt",
-    "Nr",
-    "N",
-    "Ne"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q51"
-  },
-  {
-   "q": "「マグネシウム」の元素記号は?",
-   "correct": "Mg",
-   "wrongs": [
-    "Ma",
-    "Mn",
-    "Au",
-    "Ag"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q52"
-  },
-  {
-   "q": "「アルミニウム」の元素記号は?",
-   "correct": "Al",
-   "wrongs": [
-    "Ar",
-    "Am",
-    "Au",
-    "Ag"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q53"
-  },
-  {
-   "q": "「ケイ素」の元素記号は?",
-   "correct": "Si",
-   "wrongs": [
-    "Ka",
-    "Ki",
-    "Ke",
-    "S"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q54"
-  },
-  {
-   "q": "「リン」の元素記号は?",
-   "correct": "P",
-   "wrongs": [
-    "Li",
-    "Ri",
-    "Ln",
-    "Pn"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q55"
-  },
-  {
-   "q": "「硫黄」の元素記号は?",
-   "correct": "S",
-   "wrongs": [
-    "Yo",
-    "Io",
-    "I",
-    "Si"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q56"
-  },
-  {
-   "q": "「塩素」の元素記号は?",
-   "correct": "Cl",
-   "wrongs": [
-    "En",
-    "E",
-    "Cr",
-    "Kl"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q57"
-  },
-  {
-   "q": "「アルゴン」の元素記号は?",
-   "correct": "Ar",
-   "wrongs": [
-    "Al",
-    "Ag",
-    "Au",
-    "Er"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q58"
-  },
-  {
-   "q": "「カリウム」の元素記号は?",
-   "correct": "K",
-   "wrongs": [
-    "C",
-    "Ka",
-    "Ca",
-    "Kr"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q59"
-  },
-  {
-   "q": "「カルシウム」の元素記号は?",
-   "correct": "Ca",
-   "wrongs": [
-    "Ka",
-    "K",
-    "C",
-    "Cr"
-   ],
-   "cat": "No.2 元素記号 中級編",
-   "id": "q60"
   },
   {
    "q": "「チタン」の元素記号は?",
@@ -1098,7 +658,7 @@ const DATA = {
     "Th",
     "T"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q61"
   },
   {
@@ -1110,7 +670,7 @@ const DATA = {
     "Va",
     "Bn"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q62"
   },
   {
@@ -1122,7 +682,7 @@ const DATA = {
     "Cl",
     "C"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q63"
   },
   {
@@ -1134,7 +694,7 @@ const DATA = {
     "Zn",
     "Sn"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q64"
   },
   {
@@ -1146,7 +706,7 @@ const DATA = {
     "Fa",
     "Te"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q65"
   },
   {
@@ -1158,7 +718,7 @@ const DATA = {
     "Nl",
     "Cu"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q66"
   },
   {
@@ -1170,7 +730,7 @@ const DATA = {
     "Do",
     "Br"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q67"
   },
   {
@@ -1182,7 +742,7 @@ const DATA = {
     "A",
     "Sn"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q68"
   },
   {
@@ -1194,7 +754,7 @@ const DATA = {
     "Gr",
     "Gl"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q69"
   },
   {
@@ -1206,7 +766,7 @@ const DATA = {
     "B",
     "I"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q70"
   },
   {
@@ -1218,7 +778,7 @@ const DATA = {
     "Kp",
     "Kt"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q71"
   },
   {
@@ -1230,7 +790,7 @@ const DATA = {
     "S",
     "Sn"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q72"
   },
   {
@@ -1242,7 +802,7 @@ const DATA = {
     "Sl",
     "Au"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q73"
   },
   {
@@ -1254,7 +814,7 @@ const DATA = {
     "Ti",
     "Th"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q74"
   },
   {
@@ -1266,7 +826,7 @@ const DATA = {
     "Io",
     "Br"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q75"
   },
   {
@@ -1278,7 +838,7 @@ const DATA = {
     "Br",
     "Va"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q76"
   },
   {
@@ -1290,7 +850,7 @@ const DATA = {
     "Ag",
     "Kn"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q77"
   },
   {
@@ -1302,7 +862,7 @@ const DATA = {
     "Sg",
     "Me"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q78"
   },
   {
@@ -1314,7 +874,7 @@ const DATA = {
     "Le",
     "Pl"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q79"
   },
   {
@@ -1326,7 +886,7 @@ const DATA = {
     "Nn",
     "Ne"
    ],
-   "cat": "No.2 元素記号 中級編",
+   "cat": "Lv1 7-2 元素記号（中級）",
    "id": "q80"
   },
   {
@@ -1337,19 +897,8 @@ const DATA = {
     "H₂²⁺",
     "H²⁺"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q81"
-  },
-  {
-   "q": "「ヘリウムイオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "He",
-    "He⁺",
-    "He⁻"
-   ],
-   "cat": "No.3 イオン式 基本編(前半)",
-   "id": "q82"
   },
   {
    "q": "「リチウムイオン」のイオン式は?",
@@ -1360,7 +909,7 @@ const DATA = {
     "Li²⁺",
     "Ri²⁺"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q83"
   },
   {
@@ -1372,32 +921,8 @@ const DATA = {
     "Be³⁺",
     "Ve²⁺"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q84"
-  },
-  {
-   "q": "「炭素イオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "C²⁺",
-    "C⁴⁺",
-    "C⁴⁻",
-    "C²⁻"
-   ],
-   "cat": "No.3 イオン式 基本編(前半)",
-   "id": "q85"
-  },
-  {
-   "q": "「窒化物イオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "N⁺",
-    "N³⁺",
-    "N⁻",
-    "N²⁻"
-   ],
-   "cat": "No.3 イオン式 基本編(前半)",
-   "id": "q86"
   },
   {
    "q": "「酸化物イオン」のイオン式は?",
@@ -1408,7 +933,7 @@ const DATA = {
     "O₂²⁻",
     "O₂⁻"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q87"
   },
   {
@@ -1420,20 +945,8 @@ const DATA = {
     "Hu²⁻",
     "Hu⁻"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q88"
-  },
-  {
-   "q": "「ネオンイオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "Ne⁺",
-    "Ne³⁺",
-    "Ne³⁻",
-    "N⁺"
-   ],
-   "cat": "No.3 イオン式 基本編(前半)",
-   "id": "q89"
   },
   {
    "q": "「ナトリウムイオン」のイオン式は?",
@@ -1444,7 +957,7 @@ const DATA = {
     "N⁺",
     "Na²⁻"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q90"
   },
   {
@@ -1456,7 +969,7 @@ const DATA = {
     "Mg²⁻",
     "Mg⁻"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q91"
   },
   {
@@ -1468,32 +981,8 @@ const DATA = {
     "Ar²⁺",
     "Ar³⁺"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q92"
-  },
-  {
-   "q": "「ケイ素イオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "Si²⁺",
-    "Si⁴⁺",
-    "Si⁴⁻",
-    "Si²⁻"
-   ],
-   "cat": "No.3 イオン式 基本編(前半)",
-   "id": "q93"
-  },
-  {
-   "q": "「リンイオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "Li⁺",
-    "Li³⁻",
-    "P³⁻",
-    "P³⁺"
-   ],
-   "cat": "No.3 イオン式 基本編(前半)",
-   "id": "q94"
   },
   {
    "q": "「硫化物イオン」のイオン式は?",
@@ -1504,7 +993,7 @@ const DATA = {
     "I²⁻",
     "I⁻"
    ],
-   "cat": "No.3 イオン式 基本編(前半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q95"
   },
   {
@@ -1516,20 +1005,8 @@ const DATA = {
     "Cr⁻",
     "Kl⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q96"
-  },
-  {
-   "q": "「アルゴンイオン」のイオン式は?",
-   "correct": "高校化学の範囲ではイオンは考えない",
-   "wrongs": [
-    "Al⁺",
-    "Al³⁺",
-    "Ar²⁺",
-    "Ar³⁺"
-   ],
-   "cat": "No.3 イオン式 基本編(後半)",
-   "id": "q97"
   },
   {
    "q": "「カリウムイオン」のイオン式は?",
@@ -1540,7 +1017,7 @@ const DATA = {
     "Ca²⁺",
     "K²⁺"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q98"
   },
   {
@@ -1552,7 +1029,7 @@ const DATA = {
     "K⁺",
     "K²⁺"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q99"
   },
   {
@@ -1564,7 +1041,7 @@ const DATA = {
     "Cr²⁺",
     "K⁺"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q100"
   },
   {
@@ -1576,7 +1053,7 @@ const DATA = {
     "Mg²⁺",
     "Mg³⁺"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q101"
   },
   {
@@ -1588,8 +1065,20 @@ const DATA = {
     "Ir²⁺",
     "Fe²⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q102"
+  },
+  {
+   "q": "「鉄(Ⅲ)イオン」のイオン式は?",
+   "correct": "Fe³⁺",
+   "wrongs": [
+    "Fe²⁺",
+    "Fe⁺",
+    "F³⁺",
+    "Fe³⁻"
+   ],
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
+   "id": "q135"
   },
   {
    "q": "「ニッケル(Ⅱ)イオン」のイオン式は?",
@@ -1600,7 +1089,7 @@ const DATA = {
     "Nk²⁺",
     "N²⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q103"
   },
   {
@@ -1612,7 +1101,7 @@ const DATA = {
     "Br⁻",
     "Cu²⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q104"
   },
   {
@@ -1624,7 +1113,7 @@ const DATA = {
     "Pb²⁺",
     "Pb+"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q105"
   },
   {
@@ -1636,7 +1125,7 @@ const DATA = {
     "Su⁺",
     "Sh⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q106"
   },
   {
@@ -1648,7 +1137,7 @@ const DATA = {
     "Ag²⁺",
     "Gi³⁺"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q107"
   },
   {
@@ -1660,7 +1149,7 @@ const DATA = {
     "Yo⁺",
     "Yo⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q108"
   },
   {
@@ -1672,20 +1161,8 @@ const DATA = {
     "V²⁺",
     "Va³⁺"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q109"
-  },
-  {
-   "q": "「鉄(Ⅲ)イオン」のイオン式は?",
-   "correct": "Fe³⁺",
-   "wrongs": [
-    "Fe²⁺",
-    "Fe⁺",
-    "F³⁺",
-    "Fe³⁻"
-   ],
-   "cat": "No.3 イオン式 基本編(後半)",
-   "id": "q135"
   },
   {
    "q": "「鉛(Ⅱ)イオン」のイオン式は?",
@@ -1696,7 +1173,7 @@ const DATA = {
     "P²⁺",
     "Pb²⁻"
    ],
-   "cat": "No.3 イオン式 基本編(後半)",
+   "cat": "Lv1 5-1 イオン式（単原子イオン）",
    "id": "q136"
   },
   {
@@ -1708,7 +1185,7 @@ const DATA = {
     "NH₃⁺",
     "NH₃"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q110"
   },
   {
@@ -1720,7 +1197,7 @@ const DATA = {
     "SO₄²⁺",
     "NO₃⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q111"
   },
   {
@@ -1732,20 +1209,8 @@ const DATA = {
     "SO₄²⁺",
     "SO₄²⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q112"
-  },
-  {
-   "q": "「硝酸イオン」のイオン式は?",
-   "correct": "NO₃⁻",
-   "wrongs": [
-    "NO₄²⁻",
-    "CO₃²⁻",
-    "SO₄²⁻",
-    "NO₃²⁻"
-   ],
-   "cat": "No.4 イオン式 多原子イオン編",
-   "id": "q113"
   },
   {
    "q": "「炭酸イオン」のイオン式は?",
@@ -1756,7 +1221,7 @@ const DATA = {
     "PO₄³⁻",
     "CO₃⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q114"
   },
   {
@@ -1768,7 +1233,7 @@ const DATA = {
     "SO₄²⁻",
     "NH₄⁺"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q115"
   },
   {
@@ -1780,7 +1245,7 @@ const DATA = {
     "PO₄²⁻",
     "NO₃⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q116"
   },
   {
@@ -1792,7 +1257,7 @@ const DATA = {
     "CH₃COOH⁻",
     "MnO₄⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q117"
   },
   {
@@ -1804,7 +1269,7 @@ const DATA = {
     "MnO₃⁻",
     "MnO₄²⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q118"
   },
   {
@@ -1816,7 +1281,7 @@ const DATA = {
     "H₃O⁻",
     "NH₃⁺"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q119"
   },
   {
@@ -1828,7 +1293,7 @@ const DATA = {
     "CH₃COOH⁻",
     "C₂O₄⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q120"
   },
   {
@@ -1840,7 +1305,7 @@ const DATA = {
     "CO₃²⁻",
     "HCO₃²⁻"
    ],
-   "cat": "No.4 イオン式 多原子イオン編",
+   "cat": "Lv1 5-2 イオン式（多原子イオン）",
    "id": "q121"
   },
   {
@@ -1852,7 +1317,7 @@ const DATA = {
     "Cu",
     "C"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q122"
   },
   {
@@ -1864,7 +1329,7 @@ const DATA = {
     "NaOH",
     "AgNO₃"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q123"
   },
   {
@@ -1876,7 +1341,7 @@ const DATA = {
     "Si",
     "NH₄Cl"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q124"
   },
   {
@@ -1888,7 +1353,7 @@ const DATA = {
     "SiO₂",
     "KF"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q125"
   },
   {
@@ -1900,7 +1365,7 @@ const DATA = {
     "SO₂",
     "Al"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q126"
   },
   {
@@ -1912,7 +1377,7 @@ const DATA = {
     "NH₃",
     "CH₄"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q127"
   },
   {
@@ -1924,7 +1389,7 @@ const DATA = {
     "O₂",
     "H₂O₂"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q128"
   },
   {
@@ -1936,7 +1401,7 @@ const DATA = {
     "Cl₂",
     "CO₂"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q129"
   },
   {
@@ -1948,7 +1413,7 @@ const DATA = {
     "H₂",
     "H₂SO₄"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q130"
   },
   {
@@ -1960,7 +1425,7 @@ const DATA = {
     "O₃",
     "Na"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q131"
   },
   {
@@ -1972,7 +1437,7 @@ const DATA = {
     "Cl₂",
     "CO₂"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q132"
   },
   {
@@ -1984,7 +1449,7 @@ const DATA = {
     "Cu",
     "H₂SO₄"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q133"
   },
   {
@@ -1996,7 +1461,7 @@ const DATA = {
     "SiO₂",
     "Si"
    ],
-   "cat": "No.5 結晶の性質",
+   "cat": "Lv3 15 結晶の性質",
    "id": "q134"
   }
  ]
@@ -2010,7 +1475,25 @@ const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
 /* ================= 状態 ================= */
 let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
 function save(){try{localStorage.setItem('inorganicQuest1',JSON.stringify(state));}catch(e){}LB.pushState('inorganicQuest1',state);}
-function load(){try{const s=localStorage.getItem('inorganicQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+function load(){try{const s=localStorage.getItem('inorganicQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}migrateCatNames();}
+// 2026-10 単元の再編：旧単元名の記録（最高・今回）を新しい単元へ引き継ぐ。旧単元の「途中」は問題の構成が変わったので破棄
+const OLD_CAT_MAP={
+  'No.1 元素記号 初級編(ランダム)':'Lv1 7-1 元素記号（初級）',
+  'No.1 元素記号 初級編(原子番号順)':'Lv1 7-1 元素記号（初級）',
+  'No.2 元素記号 中級編':'Lv1 7-2 元素記号（中級）',
+  'No.3 イオン式 基本編(前半)':'Lv1 5-1 イオン式（単原子イオン）',
+  'No.3 イオン式 基本編(後半)':'Lv1 5-1 イオン式（単原子イオン）',
+  'No.4 イオン式 多原子イオン編':'Lv1 5-2 イオン式（多原子イオン）',
+  'No.5 結晶の性質':'Lv3 15 結晶の性質',
+};
+function migrateCatNames(){
+  for(const [o,n] of Object.entries(OLD_CAT_MAP)){
+    const s=state.catStats[o];
+    if(s){const t=state.catStats[n];if(!t||(s.best||0)>(t.best||0))state.catStats[n]=s;delete state.catStats[o];}
+    delete state.inProgress[o];
+  }
+  for(const k of Object.keys(state.inProgress))if(!CATEGORIES.some(c=>c.name===k))delete state.inProgress[k];
+}
 LB.attachStateSync('inorganicQuest1',()=>localStorage.getItem('inorganicQuest1'));
 LB.maybeShowOnboarding('inorganicQuest1');
 function isMastered(id){return state.mastered.includes(id);}
@@ -2034,11 +1517,12 @@ function toast(msg){
 }
 function buildChoices(it){
   const choices=[{text:it.correct,ok:true},...it.wrongs.map(w=>({text:w,ok:false}))];
+  if(it.fixedOrder)return choices.sort((a,b)=>(b.text[0]==='○')-(a.text[0]==='○'));  // ○×は「○ 正しい」「× 誤り」の順で固定
   return shuffle(choices);
 }
-// 問題文。追加単元は小分類を見出しとして添える(「水」だけでは何を問うか分からないため)
+// 問題文(追加単元も問題文だけで意味が通るように書いてあるので、小分類は表示しない)
 function qHTML(it){
-  return (it.sub?`<span class="qsub">${it.sub}</span>`:'')+it.q;
+  return it.q;
 }
 // フラッシュカード(答えを見て「覚えた／まだ」を自己申告)。onDone(覚えた?)
 function renderCard(el,it,onDone,progressText,fixedNext){
@@ -2139,6 +1623,7 @@ function renderMemoQ(el,it,onDone,progressText){
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
     <div class="qprompt">${qHTML(it)}</div>
     ${ch}
+    <div class="explain" id="memoExp" style="display:none"></div>
     <div style="height:80px"></div>
     <button class="bigbtn fixed-next" id="memoNextBtn" style="display:none">次へ</button>`;
   let answered=false;
@@ -2148,12 +1633,17 @@ function renderMemoQ(el,it,onDone,progressText){
       const c=choices[+btn.dataset.i];
       btn.classList.add(c.ok?'correct':'wrong');
       if(state.answerFx!=='simple')showAnswerFxPopup(c.ok);
+      if(it.exp){  // 解説つきの問題（化学RUSH！由来）は解説を表示
+        const ex=el.querySelector('#memoExp');
+        ex.className='explain '+(c.ok?'ok':'ng'); ex.style.display='block';
+        ex.innerHTML=`<div class="rname">${c.ok?'⭕ 正解!':'❌ 不正解… 正解は「'+it.correct+'」'}</div><div class="note">${it.exp}</div>`;
+      }
       const nb=el.querySelector('#memoNextBtn');
       nb.style.display='block';
       let advanced=false;
       const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok);};
       nb.onclick=advance;
-      if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
+      if(state.answerAuto&&!it.exp)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));  // 解説つきは読めるよう自動送りしない
     });
   });
 }
@@ -2198,42 +1688,88 @@ function memoClearAdvanceTimer(){ if(memoAdvanceTimer){clearTimeout(memoAdvanceT
 function catStats(cat){
   return state.catStats[cat]||null;
 }
+// 記録のキー：順番どおり＝単元名そのまま／ランダム＝単元名＋「｜ランダム」
+const statKey=(cat,order)=>order==='rand'?cat+'｜ランダム':cat;
 let catSort={field:'no',dir:'asc'};
+const LEVELS=[
+  {lv:1,name:'レベル1',sub:'基本の暗記'},
+  {lv:2,name:'レベル2',sub:'暗記を使って考える'},
+];
+const CMAP=Object.fromEntries(CATEGORIES.map(c=>[c.name,c]));
+function catLabel(name){const c=CMAP[name];return c?`${c.no} ${c.title}`:name;}
+// 番号順の並べ替えキー（"5-2"→[5,2]、"R1-3"などRUSHは数字の単元の後ろ）
+function noKey(no){const m=String(no).match(/^(\d+)(?:-(\d+))?/);return m?[0,+m[1],+(m[2]||0)]:[1,...String(no).replace(/\D+/g,' ').trim().split(' ').map(Number)];}
+function cmpNo(a,b){const x=noKey(a),y=noKey(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d;}return 0;}
 function sortedCategories(){
-  const arr=CATEGORIES.map((c,i)=>({c,i}));
+  const lv=state.memoLevel||1;
+  const arr=CATEGORIES.filter(c=>c.level===lv);
   arr.sort((a,b)=>{
-    let av,bv;
+    let d;
     if(catSort.field==='pct'){
-      const sa=catStats(a.c.name), sb=catStats(b.c.name);
-      av=sa?(sa.best||0):0; bv=sb?(sb.best||0):0;
-    }else{ av=a.i; bv=b.i; }
-    return catSort.dir==='asc'?av-bv:bv-av;
+      const sa=catStats(a.name), sb=catStats(b.name);
+      d=(sa?(sa.best||0):0)-(sb?(sb.best||0):0);
+    }else d=cmpNo(a.no,b.no);
+    return catSort.dir==='asc'?d:-d;
   });
-  return arr.map(x=>x.c);
+  return arr;
 }
+// 分野の見出し（カンペ項目Noの範囲／化学RUSH!は分野番号）。見出しを押すと開閉
+const UNIT_GROUPS=[
+  {key:'g1',name:'物質の構成',range:'1〜10',test:c=>/^\d/.test(c.no)&&parseInt(c.no)<=10},
+  {key:'g2',name:'化学結合',range:'11〜15',test:c=>/^\d/.test(c.no)&&parseInt(c.no)>=11&&parseInt(c.no)<=15},
+  {key:'g3',name:'物質量',range:'16〜17',test:c=>/^\d/.test(c.no)&&parseInt(c.no)>=16&&parseInt(c.no)<=20},
+  {key:'g4',name:'酸と塩基',range:'21〜29',test:c=>/^\d/.test(c.no)&&parseInt(c.no)>=21&&parseInt(c.no)<=29},
+  {key:'g5',name:'酸化還元',range:'30〜36',test:c=>/^\d/.test(c.no)&&parseInt(c.no)>=30&&parseInt(c.no)<=36},
+  {key:'g6',name:'状態変化・気体・結晶',range:'37〜39',test:c=>/^\d/.test(c.no)&&parseInt(c.no)>=37},
+  {key:'r1',name:'化学RUSH！ 物質の構成',range:'',test:c=>c.no.startsWith('R1-')},
+  {key:'r2',name:'化学RUSH！ 化学結合と物質量',range:'',test:c=>c.no.startsWith('R2-')},
+  {key:'r3',name:'化学RUSH！ 酸と塩基・酸化還元',range:'',test:c=>c.no.startsWith('R3-')},
+  {key:'r4',name:'化学RUSH！ 状態変化・気体の法則・結晶格子',range:'',test:c=>c.no.startsWith('R4-')},
+];
 function renderHome(){
   memoClearAdvanceTimer();
   if(!memoLikesLoaded && LB.currentUser()){
     memoLikesLoaded=true;
     LB.fetchLikes('inorganic').then(likes=>{ memoLikes=likes||{}; if(!catDrill) renderHome(); });
   }
+  const lv=state.memoLevel||1;
   let list='';
-  for(const c of sortedCategories()){
+  const deckHTML=c=>{
     const s=catStats(c.name);
     const lastPct=s?Math.round(100*s.correct/s.total):0;
     const bestPct=s?(s.best||lastPct):0;
     const ip=state.inProgress[c.name];
-    list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-cat="${c.name}">
-      <span>${c.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.ids.length})・`:''}${c.count}問</span></span>
-      <span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[c.name]?' 👍':''}</span></span>
-      </button>`;
+    return `<div class="deckbtn${bestPct===100?' perfect':''}">
+      <div class="deck-main">
+        <span><span class="deck-no">${c.no}</span>${c.title}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.ids.length})・`:''}${c.count}問</span></span>
+        <span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[c.name]?' 👍':''}</span></span>
+      </div>
+      <div class="deck-modes">
+        <button class="deck-mode" data-cat="${c.name}" data-order="seq">▶ 順番どおり</button>
+        <button class="deck-mode" data-cat="${c.name}" data-order="rand">🔀 ランダム${(()=>{const r=catStats(statKey(c.name,'rand'));return r?`<small>最高 ${r.best||0}%</small>`:'';})()}</button>
+      </div>
+    </div>`;
+  };
+  const cats=sortedCategories();
+  if(catSort.field==='pct'){
+    list=cats.map(deckHTML).join('');  // 正答率順は見出しなしで並べる
+  }else{
+    const open=state.memoOpen||{};
+    for(const g of UNIT_GROUPS){
+      const gc=cats.filter(g.test); if(!gc.length)continue;
+      const key=`${lv}-${g.key}`, isOpen=!!open[key];
+      const done=gc.filter(c=>{const s=catStats(c.name);return s&&(s.best||0)===100;}).length;
+      list+=`<button class="unit-group${isOpen?' open':''}" data-g="${key}"><span>${isOpen?'▼':'▶'} ${g.name}${g.range?`<small>（${g.range}）</small>`:''}</span><span class="muted">${gc.length}単元${done?`・満点${done}`:''}</span></button>`;
+      if(isOpen)list+=`<div class="unit-group-body">${gc.map(deckHTML).join('')}</div>`;
+    }
+    const rest=cats.filter(c=>!UNIT_GROUPS.some(g=>g.test(c)));
+    list+=rest.map(deckHTML).join('');
   }
   const arrow=catSort.dir==='asc'?'▲':'▼';
-  homePanel.innerHTML=`
+  const tabs=LEVELS.map(L=>`<button class="lv-tab${L.lv===lv?' sel':''}" data-lv="${L.lv}">${L.name}<small>${L.sub}</small></button>`).join('');
+  homePanel.innerHTML=`<div class="lvwrap lv${lv}">
     <h2>🧠 暗記モード</h2>
-    <div class="card-ui">
-      <div style="font-size:13.5px;line-height:1.8">単元を選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
-    </div>
+    <div class="lv-tabs">${tabs}</div>
     <div class="card-ui">
       <div class="decklist-head">
         <b>単元を選ぶ</b>
@@ -2242,8 +1778,15 @@ function renderHome(){
           <button id="sortPct" class="sortmini ${catSort.field==='pct'?'sel':''}">正答率順${catSort.field==='pct'?' '+arrow:''}</button>
         </div>
       </div>
+      <div class="muted" style="margin-top:4px"><b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
       <div class="decklist">${list}</div>
-    </div>`;
+    </div></div>`;
+  homePanel.querySelectorAll('.unit-group').forEach(el=>{
+    el.onclick=()=>{state.memoOpen=state.memoOpen||{};state.memoOpen[el.dataset.g]=!state.memoOpen[el.dataset.g];save();renderHome();};
+  });
+  homePanel.querySelectorAll('.lv-tab').forEach(el=>{
+    el.onclick=()=>{state.memoLevel=+el.dataset.lv;save();renderHome();homePanel.scrollTop=0;};
+  });
   document.getElementById('sortNo').onclick=()=>{
     if(catSort.field==='no')catSort.dir=catSort.dir==='asc'?'desc':'asc';
     else{catSort.field='no';catSort.dir='asc';}
@@ -2254,31 +1797,33 @@ function renderHome(){
     else{catSort.field='pct';catSort.dir='desc';}
     renderHome();
   };
-  homePanel.querySelectorAll('.deckbtn').forEach(el=>{
-    el.addEventListener('click',()=>startCatDrill(el.dataset.cat));
+  homePanel.querySelectorAll('.deck-mode').forEach(el=>{
+    el.addEventListener('click',()=>startCatDrill(el.dataset.cat,null,el.dataset.order));
   });
 }
-function startCatDrill(cat,mode){
+// order: 'seq'＝エクセル（データ）の順番どおり／'rand'＝ランダム
+function startCatDrill(cat,mode,order){
   memoClearAdvanceTimer();
+  order=order||'seq';
   const ip=state.inProgress[cat];
   if(ip&&!mode){
     homePanel.innerHTML=`<div class="card-ui" style="text-align:center">
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${cat}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${catLabel(cat)}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
       <button class="bigbtn" id="resumeBtn">続きから</button>
-      <button class="bigbtn secondary" id="restartBtn">最初から</button>
+      <button class="bigbtn secondary" id="restartBtn">最初から（${order==='rand'?'ランダム':'順番どおり'}）</button>
       <button class="backbtn" id="chooseBack" style="margin-top:8px">← 単元一覧に戻る</button>
     </div>`;
     document.getElementById('resumeBtn').onclick=()=>startCatDrill(cat,'resume');
-    document.getElementById('restartBtn').onclick=()=>startCatDrill(cat,'restart');
+    document.getElementById('restartBtn').onclick=()=>startCatDrill(cat,'restart',order);
     document.getElementById('chooseBack').onclick=()=>renderHome();
     return;
   }
   if(mode==='resume'){
-    catDrill={cat,its:ip.ids.map(id=>IMAP[id]),i:ip.i,results:ip.results||[]};
+    catDrill={cat,its:ip.ids.map(id=>IMAP[id]).filter(Boolean),i:ip.i,results:(ip.results||[]).filter(x=>x.it&&IMAP[x.it.id]),order:ip.order};
   }else{
     delete state.inProgress[cat]; save();
     const catItems=ITEMS.filter(it=>it.cat===cat);
-    catDrill={cat,its:cat.endsWith('(原子番号順)')?catItems.slice():shuffle(catItems),i:0,results:[]};
+    catDrill={cat,its:order==='rand'?shuffle(catItems):catItems.slice(),i:0,results:[],order};
   }
   nextCatQ();
 }
@@ -2287,13 +1832,14 @@ function catResult(){
   const correct=catDrill.results.filter(x=>x.ok).length;
   const total=catDrill.results.length;
   const pct=Math.round(100*correct/total);
-  const prev=state.catStats[catDrill.cat];
+  const sk=statKey(catDrill.cat,catDrill.order);
+  const prev=state.catStats[sk];
   const prevBest=prev?prev.best:0;
   const best=Math.max(prevBest,pct);
-  state.catStats[catDrill.cat]={correct,total,best};
+  state.catStats[sk]={correct,total,best};
   delete state.inProgress[catDrill.cat];
   LB.recordQuizResults('inorganic', catDrill.results.map(x=>({id:x.it.id, ok:x.ok})));
-  if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'化学基礎', setName:catDrill.cat});
+  if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'化学基礎', setName:catLabel(catDrill.cat)});
   save();
   let review='';
   catDrill.results.forEach((x,i)=>{
@@ -2311,7 +1857,7 @@ function catResult(){
   homePanel.querySelectorAll('.review-tap').forEach(el=>{
     el.onclick=()=>reviewRetry(catDrill.results[+el.dataset.i].it);
   });
-  document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat);
+  document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat,null,catDrill.order);
   document.getElementById('catHome').onclick=()=>{catDrill=null;renderHome();};
   homePanel.scrollTop=0;
 }
@@ -2321,7 +1867,7 @@ function nextCatQ(){
   homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← 単元選択</button>';
   document.getElementById('catBack').onclick=()=>{
     memoClearAdvanceTimer();
-    state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results};
+    state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results,order:catDrill.order};
     save();
     catDrill=null; renderHome();
   };
@@ -2331,7 +1877,7 @@ function nextCatQ(){
     if(ok)markMastered(it.id);
     else{state.weak[it.id]=2;save();updateWeakBadge();}
     catDrill.i++; nextCatQ();
-  },`${catDrill.cat}　${catDrill.i+1} / ${catDrill.its.length}`);
+  },`${catLabel(catDrill.cat)}　${catDrill.i+1} / ${catDrill.its.length}`);
   homePanel.scrollTop=0;
 }
 
@@ -2339,15 +1885,25 @@ function nextCatQ(){
 const chalPanel=document.getElementById('chalPanel');
 let chal=null, chalKind='score', chalTimerIv=null;
 function stopChalTimer(){if(chalTimerIv){clearInterval(chalTimerIv);chalTimerIv=null;}}
+// 2026-10 リニューアル：レベル1・2から出題（カード除外）。正解が進むほどレベル2が増える（CHAL_PATTERN、以降はレベル2のみ）
+// ランキングは新しい種目（scoreV2/timeV2）。旧ランキング（score/time）は「旧バージョンの記録」として表示のみ（2026年11月ごろ削除予定）
+const CHAL_PATTERN='1111211112111211121112112112112112121212121212';
+const lbKind=k=>k+'V2';
 const CHAL_DESC={
-  score:'ランダム出題。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!',
-  time:'制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!'
+  score:'レベル1・2から出題。進むほど難しくなる。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!',
+  time:'レベル1・2から出題。進むほど難しくなる。制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!'
 };
 const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
 const CHAL_TIME_LIMIT=60;
 function chalRank(kind,correct){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
   return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+}
+function refreshOldLbBox(kind){
+  const box=document.getElementById('oldLbBody');
+  if(!box)return;
+  box.innerHTML='<div class="lb-loading">読み込み中...</div>';
+  LB.fetchTop(kind,10).then(list=>{const b=document.getElementById('oldLbBody');if(b)b.innerHTML=LB.renderBoardHTML(list,LB.currentUser()?LB.currentUser().uid:null,kind);});
 }
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
@@ -2364,7 +1920,7 @@ function refreshLbBox(kind){
   }
 }
 function renderChallengeHome(){
-  const list=(state.bestList&&state.bestList[chalKind])||[];
+  const list=(state.bestList&&state.bestList[lbKind(chalKind)])||[];
   chalPanel.innerHTML=`
     <h2>${PODIUM_ICON} チャレンジモード</h2>
     <div class="card-ui">
@@ -2376,14 +1932,25 @@ function renderChallengeHome(){
       <button class="bigbtn" id="chalStart">スタート!</button>
     </div>
     <div class="card-ui" id="lbBox"></div>
-    ${list.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(list,chalKind)}</div>`:''}`;
+    ${list.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(list,chalKind)}</div>`:''}
+    <details class="card-ui" id="oldLb"><summary><b>📜 旧バージョンの記録（〜2026年10月）</b></summary><div class="muted">問題がリニューアルされる前の全国ランキングです（新しい記録は加わりません）。</div><div id="oldLbBody"></div></details>`;
+  document.getElementById('oldLb').addEventListener('toggle',e=>{if(e.target.open)refreshOldLbBox(chalKind);});
   document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
   document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
   document.getElementById('chalStart').onclick=startChallenge;
-  refreshLbBox(chalKind);
+  refreshLbBox(lbKind(chalKind));
 }
 function buildChalQueue(){
-  return shuffle(ITEMS.filter(it=>!EXTRA.items.includes(it)));  // ランキングの公平のため、チャレンジは従来の134問＋追加イオン式のみ
+  const pool={1:[],2:[]};
+  for(const it of ITEMS){const c=CMAP[it.cat];if(c&&(c.level===1||c.level===2)&&it.type!=='card')pool[c.level].push(it);}
+  shuffle(pool[1]); shuffle(pool[2]);
+  const q=[];
+  for(let i=0;pool[1].length||pool[2].length;i++){
+    let lv=i<CHAL_PATTERN.length?+CHAL_PATTERN[i]:2;
+    if(!pool[lv].length)lv=3-lv;
+    q.push(pool[lv].pop());
+  }
+  return q;
 }
 function startChallenge(){
   chal={kind:chalKind,queue:buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
@@ -2397,7 +1964,7 @@ function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
   el.innerHTML=`
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
     ${timeLimitSec?`<div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>`:''}
-    <div class="qprompt">${it.q}</div>
+    <div class="qprompt">${qHTML(it)}</div>
     ${ch}`;
   let answered=false;
   function finish(ok,timedOut){
@@ -2458,13 +2025,14 @@ function chalResult(reachedEnd){
   const correct=chal.correct;
   const sec=Math.floor((Date.now()-chal.t0)/1000);
   const rank=chalRank(chal.kind,correct);
-  if(!state.bestList)state.bestList={score:[],time:[]};
-  const list=state.bestList[chal.kind]||[];
+  if(!state.bestList)state.bestList={};
+  const bk=lbKind(chal.kind);
+  const list=state.bestList[bk]||[];
   list.push({correct,sec,rank});
   list.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
-  state.bestList[chal.kind]=list.slice(0,3);
+  state.bestList[bk]=list.slice(0,3);
   save();
-  const lbSubmit=LB.currentUser()?LB.submitScore(chal.kind,correct,sec,rank):Promise.resolve();
+  const lbSubmit=LB.currentUser()?LB.submitScore(bk,correct,sec,rank):Promise.resolve();
   const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
   chalPanel.innerHTML=`
     <h2>結果発表</h2>
@@ -2479,8 +2047,8 @@ function chalResult(reachedEnd){
     <div class="card-ui" id="lbBox"></div>`;
   document.getElementById('chalAgain').onclick=startChallenge;
   document.getElementById('chalHome').onclick=renderChallengeHome;
-  refreshLbBox(chal.kind);
-  lbSubmit.then(()=>refreshLbBox(chal.kind));
+  refreshLbBox(lbKind(chal.kind));
+  lbSubmit.then(()=>refreshLbBox(lbKind(chal.kind)));
   chalPanel.scrollTop=0;
 }
 
