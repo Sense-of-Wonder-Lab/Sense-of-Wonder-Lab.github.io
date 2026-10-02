@@ -97,7 +97,10 @@ html[data-theme="navy"] .lvwrap.lv1{--lvt:#fda4af;--lvs:rgba(251,113,133,.2)}
 html[data-theme="navy"] .lvwrap.lv2{--lvt:#c4b5fd;--lvs:rgba(139,92,246,.25)}
 html[data-theme="navy"] .lvwrap .unit-group.open{background:var(--lvs)}
 /* 正誤ポップアップ・自動送り */
-.viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
+/* 自動・ポップアップ切替：画面上部に固定し、問題の進捗表示（1/13 など）と重ならないよう専用の行をとる */
+.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;gap:6px;padding:8px 10px 0;pointer-events:none}
+.viewfx-toggles .viewfx-toggle{pointer-events:auto}
+#view-home .panel{padding-top:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
