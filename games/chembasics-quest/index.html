@@ -149,6 +149,15 @@ html[data-theme="navy"] .qsub{color:#94a3b8}
 .explain .rname{font-weight:800;font-size:13.5px;margin-bottom:3px}
 .explain .note{margin-top:4px}
 /* challenge/drill common */
+.rl-search{width:100%;margin-top:8px;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+.rl-head{font-size:12.5px;font-weight:800;color:#64748b;margin:14px 2px 6px}
+.rl-item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:6px}
+.rl-ans{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff}
+.rl-ans.t{background:var(--green)} .rl-ans.f{background:var(--red)}
+.rl-st{font-size:13.5px;font-weight:700;line-height:1.6}
+.rl-ex{font-size:12px;color:#64748b;line-height:1.6;margin-top:3px}
+html[data-theme="navy"] .rl-item,html[data-theme="navy"] .rl-search{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
+html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
 .chal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:#475569}
 .chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
 .chal-timer.urgent{color:var(--red)}
@@ -2646,12 +2655,49 @@ function renderRunnerHome(){
       <div class="eg-levelgrid" style="margin-top:14px">${diffRows}</div>
     </div>
     <div class="card-ui" id="lbBox"></div>
-    ${selfBestList.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(selfBestList,curScope.kind)}</div>`:''}`;
+    ${selfBestList.length?`<div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(selfBestList,curScope.kind)}</div>`:''}
+    <button class="bigbtn secondary" id="runnerListBtn">📋 問題と答えの一覧</button>`;
+  document.getElementById('runnerListBtn').onclick=()=>renderRunnerList();
   document.getElementById('runnerGenreSelect').addEventListener('change',e=>{ selectedRunnerGenre=e.target.value; renderRunnerHome(); });
   runnerPanel.querySelectorAll('.eg-levelbtn').forEach(b=>{
     b.addEventListener('click',()=>startRunner(b.dataset.diff));
   });
   refreshRunnerLbBox(curScope.kind);
+}
+
+/* 化学RUSH！の問題と答えの一覧（分野で絞り込み・言葉で検索） */
+let runnerListGenre='', runnerListQuery='';
+function renderRunnerList(){
+  runnerState=null;
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const yr=q=>/^\d+$/.test(q.year)?+q.year:9999;
+  const opts=['<option value="">すべての分野</option>'].concat(RUNNER_GENRES.map(g=>`<option value="${esc(g)}" ${g===runnerListGenre?'selected':''}>${esc(g)}</option>`)).join('');
+  runnerPanel.innerHTML=`
+    <button class="backbtn" id="rlBack">← 化学RUSH！に戻る</button>
+    <h2>📋 問題と答えの一覧</h2>
+    <div class="card-ui">
+      <select class="genreSelect" id="rlGenre">${opts}</select>
+      <input class="rl-search" id="rlQuery" type="search" placeholder="言葉で検索（例：酸化数、凝縮）" value="${esc(runnerListQuery)}">
+      <div class="muted" id="rlCount" style="margin-top:6px"></div>
+    </div>
+    <div id="rlList"></div>`;
+  const draw=()=>{
+    const qs=RUNNER_QUESTIONS.filter(q=>(!runnerListGenre||q.genre===runnerListGenre)&&(!runnerListQuery||(q.statement+q.explanation).includes(runnerListQuery)))
+      .sort((a,b)=>RUNNER_GENRES.indexOf(a.genre)-RUNNER_GENRES.indexOf(b.genre)||yr(a)-yr(b)||a.id.localeCompare(b.id));
+    document.getElementById('rlCount').textContent=`${qs.length}問`;
+    let html='', last='';
+    for(const q of qs){
+      const head=`${q.genre}　${q.year}${/^\d+$/.test(q.year)?'年':''}`;
+      if(head!==last){html+=`<div class="rl-head">${esc(head)}</div>`;last=head;}
+      html+=`<div class="rl-item"><span class="rl-ans ${q.answer?'t':'f'}">${q.answer?'○':'×'}</span><div><div class="rl-st">${esc(q.statement)}</div><div class="rl-ex">${esc(q.explanation||'')}</div></div></div>`;
+    }
+    document.getElementById('rlList').innerHTML=html||'<div class="card-ui muted">該当する問題はありません</div>';
+  };
+  document.getElementById('rlBack').onclick=()=>renderRunnerHome();
+  document.getElementById('rlGenre').onchange=e=>{runnerListGenre=e.target.value;draw();};
+  document.getElementById('rlQuery').oninput=e=>{runnerListQuery=e.target.value.trim();draw();};
+  draw();
+  runnerPanel.scrollTop=0;
 }
 
 function startRunner(diffKey){
