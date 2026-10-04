@@ -63,42 +63,53 @@ nav button.active{color:var(--blue);font-weight:700}
 .deckbtn-score{flex:none;text-align:right;font-size:19px;font-weight:800;color:var(--blue);white-space:nowrap}
 .deckbtn.perfect .deckbtn-score{color:var(--green)}
 .deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
-/* 単元の枠：上段に名前とスコア、下段に「順番どおり／ランダム」の2つの入口 */
+/* 単元の枠：上段に名前とスコア、下段に「ノーマル／ランダム」の2つの入口 */
 div.deckbtn{display:block}
 .deck-main{display:flex;align-items:center;justify-content:space-between;gap:10px}
 /* レベルの色：レベル1＝さくら、レベル2＝むらさき（満点の単元は従来どおり緑） */
-.lvwrap.lv1{--lvm:#fb7185;--lvs:#ffe4e6;--lvt:#be123c}
-.lvwrap.lv2{--lvm:#8b5cf6;--lvs:#ede9fe;--lvt:#6d28d9}
-.lvwrap .deckbtn{border-color:var(--lvs)}
+/* 文字は黒（--lvt）、色はふち・面だけに使う（2026-10-04 先生：赤文字は0%のみ） */
+.lvwrap.lv1{--lvm:#fb7185;--lvs:#ffe4e6;--lvb:#fecdd3;--lvf:#fff1f2;--lvt:var(--ink)}
+.lvwrap.lv2{--lvm:#8b5cf6;--lvs:#ede9fe;--lvb:#ddd6fe;--lvf:#f5f3ff;--lvt:var(--ink)}
+.lvwrap .deckbtn{border-color:var(--lvb)}
 .lvwrap .deckbtn.perfect{border-color:#86efac}
-.lvwrap .deckbtn-score{color:var(--lvt)}
-.lvwrap .deckbtn.perfect .deckbtn-score{color:var(--green)}
+.lvwrap .deckbtn-score{color:var(--ink)}
+.lvwrap .deckbtn-pct{color:#475569}
+.pct0{color:var(--red)}
+.pct100{color:var(--green)}
 .deck-no{display:inline-block;min-width:30px;margin-right:6px;padding:0 6px;border-radius:7px;background:var(--lvs,#ede9fe);color:var(--lvt,var(--blue));font-size:12px;font-weight:800;text-align:center}
 .deck-modes{display:flex;gap:6px;margin-top:9px}
-.deck-mode{flex:1;padding:8px 6px;border-radius:10px;border:1.5px solid var(--lvm,var(--blue));background:#fff;color:var(--lvt,var(--blue));font-size:12.5px;font-weight:700;font-family:inherit}
+.deck-mode{flex:1;padding:8px 6px;border-radius:10px;border:1.5px solid var(--lvm,var(--blue));background:var(--lvf,#fff);color:var(--lvt,var(--blue));font-size:12.5px;font-weight:700;font-family:inherit}
 .deck-mode:active{background:var(--lvs,#f5f3ff)}
+.deckbtn.perfect .deck-mode{border-color:#86efac;background:#fff}
 .deck-mode small{font-size:10.5px;font-weight:600;margin-left:5px;opacity:.85}
 /* レベルの切り替えタブ */
 .lv-tabs{display:flex;gap:6px;margin-bottom:12px}
 .unit-group{display:flex;justify-content:space-between;align-items:center;width:100%;padding:11px 12px;border-radius:12px;border:none;background:#f1f5f9;color:var(--ink);font-size:14px;font-weight:800;font-family:inherit;text-align:left}
 .unit-group small{font-size:11px;font-weight:600;color:#64748b;margin-left:2px}
 .unit-group.open{background:var(--lvs,#ede9fe);color:var(--lvt,var(--ink))}
+.unit-group .ug-count{flex:none;font-size:12px;font-weight:700;color:#475569}
+.unit-group.perfect,.lvwrap .unit-group.perfect.open{background:#dcfce7;color:#166534;box-shadow:inset 0 0 0 2px #86efac}
+.unit-group.perfect .ug-count{color:#166534}
 .unit-group-body{display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 8px;border-left:3px solid var(--lvs,#ede9fe);margin-left:6px}
 html[data-theme="navy"] .unit-group{background:rgba(255,255,255,.07)}
 html[data-theme="navy"] .unit-group.open{background:rgba(139,92,246,.22)}
 .lv-tab{flex:1;padding:8px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;color:#64748b;font-size:13.5px;font-weight:800;font-family:inherit;line-height:1.3}
 .lv-tab small{display:block;font-size:10px;font-weight:600}
-.lv-tab.sel[data-lv="1"]{border-color:#fb7185;background:#fb7185;color:#fff}
-.lv-tab.sel[data-lv="2"]{border-color:#8b5cf6;background:#8b5cf6;color:#fff}
+.lv-tab.sel[data-lv="1"]{border-color:#e11d48;background:#e11d48;color:#fff}
+.lv-tab.sel[data-lv="2"]{border-color:#7c3aed;background:#7c3aed;color:#fff}
 html[data-theme="navy"] .lv-tab{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
 html[data-theme="navy"] .deck-mode{background:transparent}
 /* ダークモード：文字は明るく、薄い面は半透明に */
-html[data-theme="navy"] .lvwrap.lv1{--lvt:#fda4af;--lvs:rgba(251,113,133,.2)}
-html[data-theme="navy"] .lvwrap.lv2{--lvt:#c4b5fd;--lvs:rgba(139,92,246,.25)}
+html[data-theme="navy"] .lvwrap.lv1{--lvt:var(--ink);--lvs:rgba(251,113,133,.2);--lvb:rgba(251,113,133,.35);--lvf:transparent}
+html[data-theme="navy"] .lvwrap.lv2{--lvt:var(--ink);--lvs:rgba(139,92,246,.25);--lvb:rgba(139,92,246,.4);--lvf:transparent}
+html[data-theme="navy"] .lvwrap .deckbtn-pct,html[data-theme="navy"] .unit-group .ug-count{color:#93a4a2}
+html[data-theme="navy"] .unit-group.perfect,html[data-theme="navy"] .lvwrap .unit-group.perfect.open{background:rgba(62,232,165,.15);color:var(--green);box-shadow:inset 0 0 0 2px rgba(62,232,165,.5)}
+html[data-theme="navy"] .unit-group.perfect .ug-count{color:var(--green)}
+html[data-theme="navy"] .deckbtn.perfect .deck-mode{background:transparent}
 html[data-theme="navy"] .lvwrap .unit-group.open{background:var(--lvs)}
 /* 正誤ポップアップ・自動送り */
 /* 自動・ポップアップ切替：画面上部に固定し、問題の進捗表示（1/13 など）と重ならないよう専用の行をとる */
-.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;gap:6px;padding:8px 10px 0;pointer-events:none}
+.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;gap:6px;padding:8px 10px 6px;background:var(--bg);pointer-events:none}
 .viewfx-toggles .viewfx-toggle{pointer-events:auto}
 #view-home .panel{padding-top:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
@@ -350,7 +361,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js?v=35"></script>
-<script src="memo_units.js?v=5"></script>
+<script src="memo_units.js?v=6"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -1497,6 +1508,8 @@ const OLD_CAT_MAP={
   'No.3 イオン式 基本編(後半)':'Lv1 5-1 イオン式（単原子イオン）',
   'No.4 イオン式 多原子イオン編':'Lv1 5-2 イオン式（多原子イオン）',
   'No.5 結晶の性質':'Lv3 15 結晶の性質',
+  'Lv1 30 酸化数の決定方法':'Lv1 30 酸化・還元、酸化数の定義',
+  'Lv1 30 酸化数の決定方法｜ランダム':'Lv1 30 酸化・還元、酸化数の定義｜ランダム',
 };
 function migrateCatNames(){
   for(const [o,n] of Object.entries(OLD_CAT_MAP)){
@@ -1530,6 +1543,7 @@ function toast(msg){
 function buildChoices(it){
   const choices=[{text:it.correct,ok:true},...it.wrongs.map(w=>({text:w,ok:false}))];
   if(it.fixedOrder)return choices.sort((a,b)=>(b.text[0]==='○')-(a.text[0]==='○'));  // ○×は「○ 正しい」「× 誤り」の順で固定
+  if(it.order)return choices.sort((a,b)=>it.order.indexOf(a.text)-it.order.indexOf(b.text));  // 数値・繰り返し出る選択肢は決まった順（make_game_data.py が付ける）
   return shuffle(choices);
 }
 // 問題文(追加単元も問題文だけで意味が通るように書いてあるので、小分類は表示しない)
@@ -1700,7 +1714,7 @@ function memoClearAdvanceTimer(){ if(memoAdvanceTimer){clearTimeout(memoAdvanceT
 function catStats(cat){
   return state.catStats[cat]||null;
 }
-// 記録のキー：順番どおり＝単元名そのまま／ランダム＝単元名＋「｜ランダム」
+// 記録のキー：ノーマル（順番どおり）＝単元名そのまま／ランダム＝単元名＋「｜ランダム」
 const statKey=(cat,order)=>order==='rand'?cat+'｜ランダム':cat;
 let catSort={field:'no',dir:'asc'};
 const LEVELS=[
@@ -1746,6 +1760,7 @@ function renderHome(){
   }
   const lv=state.memoLevel||1;
   let list='';
+  const pctCls=p=>p===0?'pct0':p===100?'pct100':'';  // 文字は黒。0%だけ赤、100%は緑
   const deckHTML=c=>{
     const s=catStats(c.name);
     const lastPct=s?Math.round(100*s.correct/s.total):0;
@@ -1754,11 +1769,11 @@ function renderHome(){
     return `<div class="deckbtn${bestPct===100?' perfect':''}">
       <div class="deck-main">
         <span><span class="deck-no">${c.no}</span>${c.title}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.ids.length})・`:''}${c.count}問</span></span>
-        <span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[c.name]?' 👍':''}</span></span>
+        <span class="deckbtn-score">今回 <span class="${pctCls(lastPct)}">${lastPct}%</span><span class="deckbtn-pct">最高 <span class="${pctCls(bestPct)}">${bestPct}%</span>${memoLikes[c.name]?' 👍':''}</span></span>
       </div>
       <div class="deck-modes">
-        <button class="deck-mode" data-cat="${c.name}" data-order="seq">▶ 順番どおり</button>
-        <button class="deck-mode" data-cat="${c.name}" data-order="rand">🔀 ランダム${(()=>{const r=catStats(statKey(c.name,'rand'));return r?`<small>最高 ${r.best||0}%</small>`:'';})()}</button>
+        <button class="deck-mode" data-cat="${c.name}" data-order="seq">▶ ノーマル</button>
+        <button class="deck-mode" data-cat="${c.name}" data-order="rand">🔀 ランダム${(()=>{const r=catStats(statKey(c.name,'rand'));return r?`<small>最高 <span class="${pctCls(r.best||0)}">${r.best||0}%</span></small>`:'';})()}</button>
       </div>
     </div>`;
   };
@@ -1771,7 +1786,8 @@ function renderHome(){
       const gc=cats.filter(g.test); if(!gc.length)continue;
       const key=`${lv}-${g.key}`, isOpen=!!open[key];
       const done=gc.filter(c=>{const s=catStats(c.name);return s&&(s.best||0)===100;}).length;
-      list+=`<button class="unit-group${isOpen?' open':''}" data-g="${key}"><span>${isOpen?'▼':'▶'} ${g.name}${g.range?`<small>（${g.range}）</small>`:''}</span><span class="muted">${gc.length}単元${done?`・満点${done}`:''}</span></button>`;
+      const all=done===gc.length;
+      list+=`<button class="unit-group${isOpen?' open':''}${all?' perfect':''}" data-g="${key}"><span>${isOpen?'▼':'▶'} ${g.name}${g.range?`<small>（${g.range}）</small>`:''}</span><span class="ug-count">${all?'🏆 ':''}満点 ${done}/${gc.length}単元</span></button>`;
       if(isOpen)list+=`<div class="unit-group-body">${gc.map(deckHTML).join('')}</div>`;
     }
     const rest=cats.filter(c=>!UNIT_GROUPS.some(g=>g.test(c)));
@@ -1797,7 +1813,7 @@ function renderHome(){
     el.onclick=()=>{state.memoOpen=state.memoOpen||{};state.memoOpen[el.dataset.g]=!state.memoOpen[el.dataset.g];save();renderHome();};
   });
   homePanel.querySelectorAll('.lv-tab').forEach(el=>{
-    el.onclick=()=>{state.memoLevel=+el.dataset.lv;save();renderHome();homePanel.scrollTop=0;};
+    el.onclick=()=>{state.memoLevel=+el.dataset.lv;save();renderHome();homePanel.parentElement.scrollTop=0;};
   });
   document.getElementById('sortNo').onclick=()=>{
     if(catSort.field==='no')catSort.dir=catSort.dir==='asc'?'desc':'asc';
@@ -1822,7 +1838,7 @@ function startCatDrill(cat,mode,order){
     homePanel.innerHTML=`<div class="card-ui" style="text-align:center">
       <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${catLabel(cat)}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
       <button class="bigbtn" id="resumeBtn">続きから</button>
-      <button class="bigbtn secondary" id="restartBtn">最初から（${order==='rand'?'ランダム':'順番どおり'}）</button>
+      <button class="bigbtn secondary" id="restartBtn">最初から（${order==='rand'?'ランダム':'ノーマル'}）</button>
       <button class="backbtn" id="chooseBack" style="margin-top:8px">← 単元一覧に戻る</button>
     </div>`;
     document.getElementById('resumeBtn').onclick=()=>startCatDrill(cat,'resume');
@@ -1871,7 +1887,7 @@ function catResult(){
   });
   document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat,null,catDrill.order);
   document.getElementById('catHome').onclick=()=>{catDrill=null;renderHome();};
-  homePanel.scrollTop=0;
+  homePanel.parentElement.scrollTop=0;
 }
 function nextCatQ(){
   if(catDrill.i>=catDrill.its.length)return catResult();
@@ -1890,7 +1906,7 @@ function nextCatQ(){
     else{state.weak[it.id]=2;save();updateWeakBadge();}
     catDrill.i++; nextCatQ();
   },`${catLabel(catDrill.cat)}　${catDrill.i+1} / ${catDrill.its.length}`);
-  homePanel.scrollTop=0;
+  homePanel.parentElement.scrollTop=0;
 }
 
 /* ================= チャレンジモード(1問ミスでゲームオーバー・芳香族クエストと共通仕様) ================= */
@@ -2028,7 +2044,7 @@ function nextChalQ(){
       chalResult(false);
     }
   });
-  chalPanel.scrollTop=0;
+  chalPanel.parentElement.scrollTop=0;
 }
 function chalResult(reachedEnd){
   if(!chal||chal.over)return;
@@ -2061,7 +2077,7 @@ function chalResult(reachedEnd){
   document.getElementById('chalHome').onclick=renderChallengeHome;
   refreshLbBox(lbKind(chal.kind));
   lbSubmit.then(()=>refreshLbBox(lbKind(chal.kind)));
-  chalPanel.scrollTop=0;
+  chalPanel.parentElement.scrollTop=0;
 }
 
 /* ================= 弱点特訓 ================= */
@@ -2103,7 +2119,7 @@ function nextDrillQ(){
     save(); updateWeakBadge();
     drill.i++; nextDrillQ();
   },`弱点特訓　残り ${drill.ids.length-drill.i} 件`);
-  weakPanel.scrollTop=0;
+  weakPanel.parentElement.scrollTop=0;
 }
 
 /* ================= 元素グリッド(タイムアタック) ================= */
@@ -2697,7 +2713,7 @@ function renderRunnerList(){
   document.getElementById('rlGenre').onchange=e=>{runnerListGenre=e.target.value;draw();};
   document.getElementById('rlQuery').oninput=e=>{runnerListQuery=e.target.value.trim();draw();};
   draw();
-  runnerPanel.scrollTop=0;
+  runnerPanel.parentElement.scrollTop=0;
 }
 
 function startRunner(diffKey){
