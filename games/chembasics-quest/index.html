@@ -406,9 +406,9 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=36"></script>
+<script src="../shared/leaderboard.js?v=37"></script>
 <script src="memo_units.js?v=10"></script>
-<script src="lv3_multi.js?v=1"></script>
+<script src="lv3_multi.js?v=5"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -1968,14 +1968,15 @@ const CHAL_DESC={
   score:'レベル1・2から出題。進むほど難しくなる。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!<b>120問</b>でカンスト!',
   time:'レベル1・2から出題。進むほど難しくなる。制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!',
   lv3build:'レベル3：問題の物質やイオンを、パネルのタイルで<b>化学式に組み立てよう</b>。<b>1問20秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!<b>50問</b>でカンスト!',
-  lv3multi:'レベル3：選択肢の中から<b>正しいものをすべて選ぼう</b>（正解がいくつあるかは秘密）。<b>1問20秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!'
+  lv3multi:'レベル3：選択肢の中から<b>正しいものをすべて選ぼう</b>（正解がいくつあるかは秘密）。<b>1問20秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!<b>120問</b>でカンスト!',
+  lv3hard:'レベル3：覚えたことから<b>一歩考えて</b>、正しいものをすべて選ぼう（塩の液性、電子配置、結合の種類など）。<b>1問20秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!<b>120問</b>でカンスト!'
 };
 const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
 const CHAL_TIME_LIMIT=60;
 // 連続正解の種目は「カンスト」で打ち切る（2026-10 先生：受験生がやり続けても時間の無駄なので）。120問（組み立ては50問）か30分
 const CHAL_MAX_MIN=30;
 const chalMaxCorrect=kind=>kind==='lv3build'?50:120;
-const CHAL_MAX_MSG='すごいです😲。ですが、受験生的にはこれ以上やるのは時間の無駄。他の勉強をしなさい❤️';
+const CHAL_MAX_MSG='すごいです😲 が、受験生的にはこれ以上やるのは時間の無駄。他の勉強をしなさい❤️';
 function chalRank(kind,correct,maxed){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
   if(kind==='lv3build')return maxed?'SS':correct>=31?'S':correct>=21?'A':correct>=11?'B':'C';  // 組み立ては50問でカンスト＝SS
@@ -2010,7 +2011,8 @@ function renderChallengeHome(){
         <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
         <button id="kTime" class="${chalKind==='time'?'sel':''}">⏱ 1分間タイムアタック</button>
         <button id="kLv3b" class="${chalKind==='lv3build'?'sel':''}">🧩 化学式組み立て</button>
-        ${LV3_MULTI_OPEN?`<button id="kLv3m" class="${chalKind==='lv3multi'?'sel':''}">☑️ 一問多答</button>`:''}
+        <button id="kLv3m" class="${chalKind==='lv3multi'?'sel':''}">☑️ 一問多答（ノーマル）</button>
+        <button id="kLv3h" class="${chalKind==='lv3hard'?'sel':''}">🔥 一問多答（ハード）</button>
       </div>
       <div style="font-size:13.5px;line-height:1.8;margin-top:10px">${CHAL_DESC[chalKind]}</div>
       <button class="bigbtn" id="chalStart">スタート!</button>
@@ -2022,7 +2024,8 @@ function renderChallengeHome(){
   document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
   document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
   document.getElementById('kLv3b').onclick=()=>{chalKind='lv3build';renderChallengeHome();};
-  if(LV3_MULTI_OPEN)document.getElementById('kLv3m').onclick=()=>{chalKind='lv3multi';renderChallengeHome();};
+  document.getElementById('kLv3m').onclick=()=>{chalKind='lv3multi';renderChallengeHome();};
+  document.getElementById('kLv3h').onclick=()=>{chalKind='lv3hard';renderChallengeHome();};
   document.getElementById('chalStart').onclick=startChallenge;
   refreshLbBox(lbKind(chalKind));
 }
@@ -2039,7 +2042,7 @@ function buildChalQueue(){
   return q;
 }
 function startChallenge(){
-  chal={kind:chalKind,queue:chalKind==='lv3build'?shuffle(lv3BuildPool()):chalKind==='lv3multi'?buildLv3MultiQueue():buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
+  chal={kind:chalKind,queue:chalKind==='lv3build'?shuffle(lv3BuildPool()):chalKind==='lv3multi'?buildLv3MultiQueue('normal'):chalKind==='lv3hard'?buildLv3MultiQueue('hard'):buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
   nextChalQ();
 }
 function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
@@ -2081,11 +2084,10 @@ function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
   });
 }
 /* ================= レベル3チャレンジ(2026-10 新設：化学式の組み立て＋一問多答) =================
-   入り口は「化学式組み立て」「一問多答」の2つ。組み立ては暗記モードの行（ITEMS）から、一問多答は lv3_multi.js から、その場で問題を作る。
+   入り口は「化学式組み立て」「一問多答（ノーマル）」「一問多答（ハード）」の3つ。組み立ては暗記モードの行（ITEMS）から、一問多答は lv3_multi.js から、その場で問題を作る。
    ・組立：イオン式・組成式・分子式・酸と塩基・塩の化学式。答えをタイルに分け、元素タイル＋まぎらわしいダミーを並べる
-   ・一問多答：単体/化合物/混合物、極性、酸・塩基の強弱、結晶の種類（lv3_multi.js）。正解の数は伏せる */
+   ・一問多答：分類ごとにノーマル／ハード（lv3_multi.js）。正解の数は伏せる */
 const LV3_TIME=20;
-const LV3_MULTI_OPEN=false;  // 一問多答は問題の中身を検討中（2026-10-05）。公開するときに true
 function lv3Tokens(s){return s.match(/[A-Z][a-z]?|[₀-₉]+|[⁰¹²³⁴-⁹]*[⁺⁻]|[()]/g)||[];}
 // 見た目や名前がまぎらわしい元素（ダミーのタイルに使う）
 const LV3_SIMILAR={H:['He','Hg'],He:['H'],Li:['Na','K'],B:['Br','Be'],C:['Ca','Cl','Co','Cu'],N:['Na','Ne','Ni'],O:['S','Os'],F:['Fe','Fr'],Na:['N','Ne','K','Mg'],Mg:['Mn','Na'],Al:['Ag','Au'],Si:['S','Sn'],P:['Pb','K'],S:['Si','Sn','Se'],Cl:['C','Ca','Cr','Br'],K:['Ca','Na','Kr'],Ca:['C','Cl','Cu','Co','K'],Cr:['Cl','Cu'],Mn:['Mg','Ni'],Fe:['F','Pb','Cu'],Ni:['N','Mn'],Cu:['Ca','C','Cr'],Zn:['Sn','Na'],Br:['B','Cl','Ba'],Ag:['Al','Au','Hg'],I:['K','Br'],Ba:['Br','Be','Na'],Be:['Ba','B'],Pb:['P','Fe']};
@@ -2104,15 +2106,19 @@ function lv3BuildPool(){
   }
   return out;
 }
-// 一問多答の物質は lv3_multi.js（暗記事項一覧/Lv3_一問多答.xlsx から生成）。酸・塩基は酸どうし／塩基どうしで出す
-const LV3_ROWS=(typeof LV3_MULTI_ROWS!=='undefined'?LV3_MULTI_ROWS:[]).map(r=>({...r,group:/塩基$/.test(r.cls)?'塩基':/酸$/.test(r.cls)?'酸':''}));
-const LV3_MULTI_TOPICS=[...new Set(LV3_ROWS.map(r=>r.t))];
+// 一問多答の分類と物質は lv3_multi.js（暗記事項一覧/Lv3_一問多答.xlsx から生成）。分類ごとにノーマル／ハード・問題文・問わない区分が決まっている
+// 酸・塩基の強弱は酸どうし／塩基どうしで出す
+const LV3_CONF=typeof LV3_MULTI_TOPIC_CONF!=='undefined'?LV3_MULTI_TOPIC_CONF:{};
+const LV3_ROWS=(typeof LV3_MULTI_ROWS!=='undefined'?LV3_MULTI_ROWS:[]).map(r=>({...r,group:r.t==='酸・塩基の強弱'?(/塩基$/.test(r.cls)?'塩基':'酸'):''}));
+const lv3Topics=level=>Object.keys(LV3_CONF).filter(t=>LV3_CONF[t].level===level&&LV3_ROWS.some(r=>r.t===t));
 const LV3_ALL_OK_FROM=9, LV3_ALL_OK_RATE=.1;  // 10問目以降、1割ほど「全部正解」を出す
 function lv3MakeMulti(t,allOk){
+  const conf=LV3_CONF[t]||{q:'次のうち、{区分}はどれか。',skip:[]};
   const rows=LV3_ROWS.filter(r=>r.t===t);
-  if(rows.length<5)return null;
+  const targets=rows.filter(r=>!conf.skip.includes(r.cls));  // 「非該当」などダミー専用の区分は問わない
+  if(rows.length<5||!targets.length)return null;
   for(let tries=0;tries<20;tries++){
-    const target=rows[Math.floor(Math.random()*rows.length)];
+    const target=targets[Math.floor(Math.random()*targets.length)];
     const fam=rows.filter(r=>r.group===target.group);
     const pos=fam.filter(r=>r.cls===target.cls), neg=fam.filter(r=>r.cls!==target.cls);
     let k,total;
@@ -2127,15 +2133,17 @@ function lv3MakeMulti(t,allOk){
       k=kMin+Math.floor(Math.random()*(kMax-kMin+1));
     }
     const opts=shuffle(sample(pos,k).map(r=>({...r,ok:true})).concat(sample(neg,total-k).map(r=>({...r,ok:false}))));
-    return {lv3:'multi',q:`次のうち、<b>${target.cls}</b>はどれか。`,opts};
+    return {lv3:'multi',q:conf.q.replace('{区分}',`<b>${target.cls}</b>`),opts};
   }
   return allOk?lv3MakeMulti(t,false):null;
 }
-function buildLv3MultiQueue(){
-  const topics=[], q=[];
-  for(let guard=0;q.length<80&&guard<400;guard++){  // 4つの分類を順番に回す（同じ分類が続かない）
-    if(!topics.length)topics.push(...shuffle(LV3_MULTI_TOPICS.slice()));
-    const m=lv3MakeMulti(topics.pop(),q.length>=LV3_ALL_OK_FROM&&Math.random()<LV3_ALL_OK_RATE);
+function buildLv3MultiQueue(level){
+  const all=lv3Topics(level), topics=[], q=[];
+  let last=null;
+  for(let guard=0;q.length<130&&guard<600;guard++){  // 分類を順番に回す（同じ分類が続かない）。130問＝カンスト120問より多め
+    if(!topics.length){topics.push(...shuffle(all.slice()));if(topics.length>1&&topics[topics.length-1]===last)topics.unshift(topics.pop());}
+    const t=topics.pop(); last=t;
+    const m=lv3MakeMulti(t,q.length>=LV3_ALL_OK_FROM&&Math.random()<LV3_ALL_OK_RATE);
     if(m)q.push(m);
   }
   return q;
