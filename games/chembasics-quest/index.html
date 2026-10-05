@@ -203,6 +203,8 @@ html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
 .eg-lv-sub{display:block;font-size:11.5px;color:#64748b;margin-top:2px}
 .eg-lv-best{text-align:right;font-size:11px;color:#64748b;flex:none}
 .eg-lv-best b{display:block;font-size:16px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+.eg-top-label{margin:12px 0 4px;font-size:13px;font-weight:800;color:var(--ink)}
+.eg-top-label span{margin-left:6px;font-size:11px;font-weight:500;color:#64748b}
 .eg-legend{display:flex;gap:14px;margin-top:12px;font-size:12px;color:#64748b}
 .eg-legend span{display:inline-flex;align-items:center;gap:5px}
 .eg-legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
@@ -367,7 +369,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js?v=35"></script>
-<script src="memo_units.js?v=8"></script>
+<script src="memo_units.js?v=10"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -2227,9 +2229,23 @@ function renderGridHome(){
       <div class="muted">マスに並んだ元素記号を、<b>原子番号の小さい順</b>にタップしていくタイムアタック。レベルが上がるほどマスと元素の数が増えるよ。</div>
       <div class="eg-levelgrid">${rows}</div>
       <div class="eg-legend"><span><i style="background:var(--eg-metal)"></i>金属</span><span><i style="background:var(--eg-nonmetal)"></i>非金属</span></div>
-    </div>`;
+    </div>
+    <div class="card-ui" id="egTopBox"><b>🌏 全国ランキング 各モード1位</b><div class="lb-loading">読み込み中...</div></div>`;
   gridPanel.querySelectorAll('.eg-levelbtn').forEach(btn=>{
     btn.addEventListener('click',()=>startGridLevel(btn.dataset.lv));
+  });
+  refreshGridTopBox();
+}
+function refreshGridTopBox(){
+  const lvs=Object.keys(GRID_LEVELS);
+  Promise.all(lvs.map(lv=>LB.fetchTop(GRID_LEVELS[lv].kind,1))).then(results=>{
+    const box=document.getElementById('egTopBox');
+    if(!box)return;
+    const uid=LB.currentUser()?LB.currentUser().uid:null;
+    box.innerHTML=`<b>🌏 全国ランキング 各モード1位</b>`+lvs.map((lv,i)=>{
+      const def=GRID_LEVELS[lv];
+      return `<div class="eg-top-label">${def.label}<span>${def.cols}×${def.rows}</span></div>`+LB.renderBoardHTML(results[i],uid,def.kind);
+    }).join('');
   });
 }
 function stopGridLevel(){
