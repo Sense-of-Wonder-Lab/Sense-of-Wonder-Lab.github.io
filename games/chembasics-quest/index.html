@@ -178,7 +178,44 @@ html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
 .chal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:#475569}
 .chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
 .chal-timer.urgent{color:var(--red)}
+/* レベル3チャレンジ（パネル組み立て・一問多答） */
+.l3-ans{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:60px;padding:10px 8px;margin-bottom:6px;border-radius:14px;background:#0f172a;box-shadow:inset 0 2px 8px rgba(0,0,0,.35)}
+.l3-slot{min-width:34px;height:40px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;color:#0f172a;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;animation:l3pop .15s ease-out}
+.l3-slot.sub{min-width:24px;height:28px;align-self:flex-end;font-size:20px;margin-bottom:-2px}
+.l3-slot.sup{min-width:24px;height:28px;align-self:flex-start;font-size:18px}
+.l3-slot.cursor{background:transparent;border:2px dashed rgba(255,255,255,.45);animation:l3blink 1s steps(2) infinite}
+.l3-ans.ok .l3-slot{background:#bbf7d0;box-shadow:0 0 10px #4ade80}
+.l3-ans.ng{animation:shake .3s}.l3-ans.ng .l3-slot{background:#fecaca}
+@keyframes l3pop{from{transform:scale(.6)}to{transform:none}}
+@keyframes l3blink{50%{opacity:.2}}
+.l3-msg{min-height:22px;text-align:center;font-size:14px;font-weight:800;margin:2px 0 8px}
+.l3-msg.ok{color:var(--green)}.l3-msg.ng{color:var(--red)}
+.l3-legend{display:block;font-size:11px;font-weight:600;color:#64748b;margin-top:2px}
+.l3-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
+.l3-keys{display:flex;gap:6px;margin-bottom:8px}
+.l3-tile{flex:1;min-width:0;height:52px;border-radius:12px;border:none;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:#fff;background:linear-gradient(#3b82f6,#1d4ed8);box-shadow:0 4px 0 #1e3a8a;touch-action:manipulation}
+.l3-tile:active{transform:translateY(3px);box-shadow:0 1px 0 #1e3a8a}
+.l3-tile.num{height:46px;background:linear-gradient(#64748b,#475569);box-shadow:0 4px 0 #334155}
+.l3-tile.ion{height:46px;font-size:19px;background:linear-gradient(#f59e0b,#d97706);box-shadow:0 4px 0 #92400e}
+.l3-tile:disabled{opacity:.55}
+.l3-actions{display:flex;gap:8px;margin-top:4px}
+.l3-back,.l3-ok{flex:1;height:50px;border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;touch-action:manipulation}
+.l3-back{flex:.7;border:2px solid #cbd5e1;background:#fff;color:#475569}
+.l3-ok{border:none;background:#e11d48;color:#fff;box-shadow:0 4px 0 #9f1239}
+.l3-ok:disabled{opacity:.4}
+.l3-note{display:block;font-size:11.5px;font-weight:600;color:#64748b;margin-top:4px}
+.l3-multi{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.l3-opt{text-align:center;padding:12px 6px;font-size:13.5px}
+.l3-opt.sel{border-color:var(--blue);background:#dbeafe;box-shadow:inset 0 0 0 1px var(--blue)}
+.l3-opt.missed{border:2px dashed var(--green);background:#f0fdf4}
+html[data-theme="navy"] .l3-back{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.2);color:var(--ink)}
+html[data-theme="navy"] .l3-opt.sel{background:rgba(59,130,246,.22)}
+html[data-theme="navy"] .l3-opt.missed{background:rgba(62,232,165,.1)}
+html[data-theme="navy"] .l3-note,html[data-theme="navy"] .l3-legend{color:#93a4a2}
 .rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
+.rank-SSS,.rank-SS{background:linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chal-maxmsg{margin:8px 0 4px;padding:12px;border-radius:14px;background:#fff7ed;border:2px solid #fdba74;font-size:14.5px;font-weight:800;line-height:1.7;color:var(--ink)}
+html[data-theme="navy"] .chal-maxmsg{background:rgba(253,186,116,.12)}
 .rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
 .score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
 .review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
@@ -220,6 +257,7 @@ html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
 .eg-fieldwrap{position:relative;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:10px}
 .eg-field{display:grid;gap:8px}
 .eg-tile{aspect-ratio:1;border-radius:12px;border:2px solid var(--tile-color,var(--blue));background:#fff;color:var(--ink);font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,opacity .3s ease,box-shadow .15s ease;touch-action:manipulation}
+.eg-field.eg-cols-3 .eg-tile{font-size:24px}
 .eg-field.eg-pre-start .eg-tile{opacity:0}
 .eg-tile:active{transform:scale(.9)}
 .eg-tile.eg-correct{animation:eg-pop .4s ease forwards;pointer-events:none}
@@ -368,8 +406,9 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=35"></script>
+<script src="../shared/leaderboard.js?v=36"></script>
 <script src="memo_units.js?v=10"></script>
+<script src="lv3_multi.js?v=1"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -1926,14 +1965,21 @@ function stopChalTimer(){if(chalTimerIv){clearInterval(chalTimerIv);chalTimerIv=
 const CHAL_PATTERN='1111211112111211121112112112112112121212121212';
 const lbKind=k=>k+'V2';
 const CHAL_DESC={
-  score:'レベル1・2から出題。進むほど難しくなる。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!',
-  time:'レベル1・2から出題。進むほど難しくなる。制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!'
+  score:'レベル1・2から出題。進むほど難しくなる。<b>1問10秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!<b>120問</b>でカンスト!',
+  time:'レベル1・2から出題。進むほど難しくなる。制限時間<b>1分</b>で何問正解できるか挑戦!<b>1問でも間違えたらゲームオーバー</b>、時間内に正解できた数でランクが決まる!',
+  lv3build:'レベル3：問題の物質やイオンを、パネルのタイルで<b>化学式に組み立てよう</b>。<b>1問20秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!<b>50問</b>でカンスト!',
+  lv3multi:'レベル3：選択肢の中から<b>正しいものをすべて選ぼう</b>（正解がいくつあるかは秘密）。<b>1問20秒</b>以内に正解し続けよう。<b>1問でも間違えたらゲームオーバー</b>、そこまでの連続正解数でランクが決まる!'
 };
 const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
 const CHAL_TIME_LIMIT=60;
-function chalRank(kind,correct){
+// 連続正解の種目は「カンスト」で打ち切る（2026-10 先生：受験生がやり続けても時間の無駄なので）。120問（組み立ては50問）か30分
+const CHAL_MAX_MIN=30;
+const chalMaxCorrect=kind=>kind==='lv3build'?50:120;
+const CHAL_MAX_MSG='すごいです😲。ですが、受験生的にはこれ以上やるのは時間の無駄。他の勉強をしなさい❤️';
+function chalRank(kind,correct,maxed){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
-  return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+  if(kind==='lv3build')return maxed?'SS':correct>=31?'S':correct>=21?'A':correct>=11?'B':'C';  // 組み立ては50問でカンスト＝SS
+  return maxed?'SSS':correct>=100?'SS':correct>=51?'S':correct>=26?'A':correct>=11?'B':'C';
 }
 function refreshOldLbBox(kind){
   const box=document.getElementById('oldLbBody');
@@ -1963,6 +2009,8 @@ function renderChallengeHome(){
       <div class="scopebtns">
         <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
         <button id="kTime" class="${chalKind==='time'?'sel':''}">⏱ 1分間タイムアタック</button>
+        <button id="kLv3b" class="${chalKind==='lv3build'?'sel':''}">🧩 化学式組み立て</button>
+        ${LV3_MULTI_OPEN?`<button id="kLv3m" class="${chalKind==='lv3multi'?'sel':''}">☑️ 一問多答</button>`:''}
       </div>
       <div style="font-size:13.5px;line-height:1.8;margin-top:10px">${CHAL_DESC[chalKind]}</div>
       <button class="bigbtn" id="chalStart">スタート!</button>
@@ -1973,6 +2021,8 @@ function renderChallengeHome(){
   document.getElementById('oldLb').addEventListener('toggle',e=>{if(e.target.open)refreshOldLbBox(chalKind);});
   document.getElementById('kScore').onclick=()=>{chalKind='score';renderChallengeHome();};
   document.getElementById('kTime').onclick=()=>{chalKind='time';renderChallengeHome();};
+  document.getElementById('kLv3b').onclick=()=>{chalKind='lv3build';renderChallengeHome();};
+  if(LV3_MULTI_OPEN)document.getElementById('kLv3m').onclick=()=>{chalKind='lv3multi';renderChallengeHome();};
   document.getElementById('chalStart').onclick=startChallenge;
   refreshLbBox(lbKind(chalKind));
 }
@@ -1989,7 +2039,7 @@ function buildChalQueue(){
   return q;
 }
 function startChallenge(){
-  chal={kind:chalKind,queue:buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
+  chal={kind:chalKind,queue:chalKind==='lv3build'?shuffle(lv3BuildPool()):chalKind==='lv3multi'?buildLv3MultiQueue():buildChalQueue(),idx:0,correct:0,t0:Date.now(),over:false};
   nextChalQ();
 }
 function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
@@ -2030,37 +2080,197 @@ function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
     });
   });
 }
+/* ================= レベル3チャレンジ(2026-10 新設：化学式の組み立て＋一問多答) =================
+   入り口は「化学式組み立て」「一問多答」の2つ。組み立ては暗記モードの行（ITEMS）から、一問多答は lv3_multi.js から、その場で問題を作る。
+   ・組立：イオン式・組成式・分子式・酸と塩基・塩の化学式。答えをタイルに分け、元素タイル＋まぎらわしいダミーを並べる
+   ・一問多答：単体/化合物/混合物、極性、酸・塩基の強弱、結晶の種類（lv3_multi.js）。正解の数は伏せる */
+const LV3_TIME=20;
+const LV3_MULTI_OPEN=false;  // 一問多答は問題の中身を検討中（2026-10-05）。公開するときに true
+function lv3Tokens(s){return s.match(/[A-Z][a-z]?|[₀-₉]+|[⁰¹²³⁴-⁹]*[⁺⁻]|[()]/g)||[];}
+// 見た目や名前がまぎらわしい元素（ダミーのタイルに使う）
+const LV3_SIMILAR={H:['He','Hg'],He:['H'],Li:['Na','K'],B:['Br','Be'],C:['Ca','Cl','Co','Cu'],N:['Na','Ne','Ni'],O:['S','Os'],F:['Fe','Fr'],Na:['N','Ne','K','Mg'],Mg:['Mn','Na'],Al:['Ag','Au'],Si:['S','Sn'],P:['Pb','K'],S:['Si','Sn','Se'],Cl:['C','Ca','Cr','Br'],K:['Ca','Na','Kr'],Ca:['C','Cl','Cu','Co','K'],Cr:['Cl','Cu'],Mn:['Mg','Ni'],Fe:['F','Pb','Cu'],Ni:['N','Mn'],Cu:['Ca','C','Cr'],Zn:['Sn','Na'],Br:['B','Cl','Ba'],Ag:['Al','Au','Hg'],I:['K','Br'],Ba:['Br','Be','Na'],Be:['Ba','B'],Pb:['P','Fe']};
+const LV3_COMMON=['H','O','C','N','S','Cl','Na','K','Ca','Mg','Al','Cu','Fe','Zn','Ag','Ba','P','F'];
+const LV3_KEYS_NUM=['₂','₃','₄','(',')'], LV3_KEYS_ION=['⁺','⁻','²⁺','²⁻','³⁺','³⁻'];
+const LV3_BUILD_CAT=/^Lv1 5-[12] |^Lv2 11-[12] |^Lv2 27-1 |^Lv1 21-2 /;
+function lv3BuildPool(){
+  const seen=new Set(), out=[];
+  for(const it of ITEMS){
+    if(!(LV3_BUILD_CAT.test(it.cat)||(/^Lv1 11 /.test(it.cat)&&it.sub==='分子式')))continue;
+    const ans=it.correct;
+    if(seen.has(ans)||lv3Tokens(ans).join('')!==ans)continue;
+    seen.add(ans);
+    const q=it.q.replace(/^「(.+)」の(.+)は\?$/,'$1の$2を答えよ。').replace(/は(何か|どれか)。$/,'を答えよ。');
+    out.push({lv3:'build',id:it.id,q,ans});
+  }
+  return out;
+}
+// 一問多答の物質は lv3_multi.js（暗記事項一覧/Lv3_一問多答.xlsx から生成）。酸・塩基は酸どうし／塩基どうしで出す
+const LV3_ROWS=(typeof LV3_MULTI_ROWS!=='undefined'?LV3_MULTI_ROWS:[]).map(r=>({...r,group:/塩基$/.test(r.cls)?'塩基':/酸$/.test(r.cls)?'酸':''}));
+const LV3_MULTI_TOPICS=[...new Set(LV3_ROWS.map(r=>r.t))];
+const LV3_ALL_OK_FROM=9, LV3_ALL_OK_RATE=.1;  // 10問目以降、1割ほど「全部正解」を出す
+function lv3MakeMulti(t,allOk){
+  const rows=LV3_ROWS.filter(r=>r.t===t);
+  if(rows.length<5)return null;
+  for(let tries=0;tries<20;tries++){
+    const target=rows[Math.floor(Math.random()*rows.length)];
+    const fam=rows.filter(r=>r.group===target.group);
+    const pos=fam.filter(r=>r.cls===target.cls), neg=fam.filter(r=>r.cls!==target.cls);
+    let k,total;
+    if(allOk){
+      total=Math.min(pos.length,Math.random()<.5?5:6);
+      if(total<4)continue;  // 選択肢が少なすぎると「全部」が見え見えなので、正解が4つ以上ある区分だけ
+      k=total;
+    }else{
+      total=Math.min(fam.length,Math.random()<.5?5:6);
+      const kMin=Math.max(1,total-neg.length), kMax=Math.min(4,pos.length,total-1);
+      if(kMin>kMax)continue;
+      k=kMin+Math.floor(Math.random()*(kMax-kMin+1));
+    }
+    const opts=shuffle(sample(pos,k).map(r=>({...r,ok:true})).concat(sample(neg,total-k).map(r=>({...r,ok:false}))));
+    return {lv3:'multi',q:`次のうち、<b>${target.cls}</b>はどれか。`,opts};
+  }
+  return allOk?lv3MakeMulti(t,false):null;
+}
+function buildLv3MultiQueue(){
+  const topics=[], q=[];
+  for(let guard=0;q.length<80&&guard<400;guard++){  // 4つの分類を順番に回す（同じ分類が続かない）
+    if(!topics.length)topics.push(...shuffle(LV3_MULTI_TOPICS.slice()));
+    const m=lv3MakeMulti(topics.pop(),q.length>=LV3_ALL_OK_FROM&&Math.random()<LV3_ALL_OK_RATE);
+    if(m)q.push(m);
+  }
+  return q;
+}
+function lv3StartTimer(el,timeLimitSec,onTimeout){
+  const t0=Date.now();
+  const timerEl=el.querySelector('#chalTimer');
+  chalTimerIv=setInterval(()=>{
+    const left=timeLimitSec-(Date.now()-t0)/1000;
+    if(left<=0)onTimeout();
+    else{timerEl.textContent=`⏱ ${Math.ceil(left)}秒`;timerEl.classList.toggle('urgent',left<=5);}
+  },100);
+}
+function renderLv3Quiz(el,it,progressText,timeLimitSec,onDone){
+  (it.lv3==='multi'?renderLv3Multi:renderLv3Build)(el,it,progressText,timeLimitSec,onDone);
+}
+function renderLv3Build(el,it,progressText,timeLimitSec,onDone){
+  const toks=lv3Tokens(it.ans);
+  const els=[...new Set(toks.filter(t=>/^[A-Z]/.test(t)))];
+  const tiles=els.slice();
+  for(const e of shuffle(els.flatMap(e=>LV3_SIMILAR[e]||[]))){if(tiles.length>=8)break;if(!tiles.includes(e))tiles.push(e);}
+  for(const e of shuffle(LV3_COMMON.slice())){if(tiles.length>=8)break;if(!tiles.includes(e))tiles.push(e);}
+  shuffle(tiles);
+  const isIon=/[⁺⁻]$/.test(it.ans);
+  const keys=LV3_KEYS_NUM.slice();
+  toks.forEach(t=>{if(/^[₀-₉]+$/.test(t)&&!keys.includes(t))keys.splice(keys.indexOf('('),0,t);});
+  const btn=(t,cls)=>`<button class="l3-tile ${cls}" data-t="${t}">${t}</button>`;
+  el.innerHTML=`
+    <div class="chal-head">${progressText}</div>
+    <div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>
+    <div class="qprompt">${it.q}</div>
+    <div class="l3-ans" id="l3Ans"></div>
+    <div class="l3-msg" id="l3Msg"></div>
+    <div class="l3-pad">${tiles.map(t=>btn(t,'el')).join('')}</div>
+    <div class="l3-keys">${keys.map(t=>btn(t,'num')).join('')}</div>
+    ${isIon?`<div class="l3-keys">${LV3_KEYS_ION.map(t=>btn(t,'ion')).join('')}</div>`:''}
+    <div class="l3-actions"><button class="l3-back" id="l3Back">⌫ 1つ戻す</button><button class="l3-ok" id="l3Ok">決定</button></div>`;
+  const input=[];
+  const ansEl=el.querySelector('#l3Ans');
+  const draw=()=>{ansEl.innerHTML=input.map(t=>`<span class="l3-slot${/^[₀-₉]/.test(t)?' sub':/[⁺⁻]$/.test(t)?' sup':''}">${t}</span>`).join('')+'<span class="l3-slot cursor"></span>';};
+  draw();
+  let answered=false;
+  function finish(timedOut){
+    if(answered)return; answered=true;
+    stopChalTimer();
+    const ok=!timedOut&&input.join('')===it.ans;
+    el.querySelectorAll('button').forEach(b=>b.disabled=true);
+    const cur=ansEl.querySelector('.cursor'); if(cur)cur.remove();
+    ansEl.classList.add(ok?'ok':'ng');
+    const msg=el.querySelector('#l3Msg');
+    msg.innerHTML=ok?'⭕ 正解!':`${timedOut?'⏰ 時間切れ':'❌ 不正解'}　正解は <b>${it.ans}</b>`;
+    msg.className='l3-msg '+(ok?'ok':'ng');
+    setTimeout(()=>onDone(ok,timedOut),ok?700:2200);
+  }
+  el.querySelectorAll('.l3-tile').forEach(b=>b.addEventListener('click',()=>{
+    if(answered||input.length>=16)return;
+    input.push(b.dataset.t); draw();
+  }));
+  el.querySelector('#l3Back').onclick=()=>{if(!answered&&input.length){input.pop();draw();}};
+  el.querySelector('#l3Ok').onclick=()=>{if(!answered&&input.length)finish(false);};
+  lv3StartTimer(el,timeLimitSec,()=>finish(true));
+}
+function renderLv3Multi(el,it,progressText,timeLimitSec,onDone){
+  el.innerHTML=`
+    <div class="chal-head">${progressText}</div>
+    <div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>
+    <div class="qprompt">${it.q}<span class="l3-note">正しいものを<b>すべて</b>選んで「決定」（いくつあるかは秘密）</span></div>
+    <div class="l3-multi">${it.opts.map((o,i)=>`<button class="choice l3-opt" data-i="${i}">${o.name}</button>`).join('')}</div>
+    <div class="l3-msg" id="l3Msg"></div>
+    <div class="l3-actions"><button class="l3-ok" id="l3Ok" disabled>決定</button></div>`;
+  const okBtn=el.querySelector('#l3Ok');
+  const sel=new Set();
+  let answered=false;
+  el.querySelectorAll('.l3-opt').forEach(b=>b.addEventListener('click',()=>{
+    if(answered)return;
+    const i=+b.dataset.i;
+    sel.has(i)?sel.delete(i):sel.add(i);
+    b.classList.toggle('sel',sel.has(i));
+    okBtn.disabled=!sel.size;
+  }));
+  function finish(timedOut){
+    if(answered)return; answered=true;
+    stopChalTimer();
+    const miss=[];
+    el.querySelectorAll('.l3-opt').forEach(b=>{
+      const o=it.opts[+b.dataset.i], s=sel.has(+b.dataset.i);
+      b.disabled=true; b.classList.remove('sel');
+      if(o.ok&&s)b.classList.add('correct');
+      else if(o.ok){b.classList.add('missed');miss.push(o.id);}
+      else if(s){b.classList.add('wrong');miss.push(o.id);}
+      else b.classList.add('dim');
+    });
+    okBtn.disabled=true;
+    const ok=!timedOut&&!miss.length;
+    const msg=el.querySelector('#l3Msg');
+    msg.innerHTML=ok?'⭕ 正解!':(timedOut?'⏰ 時間切れ':'❌ 不正解')+'<span class="l3-legend">緑＝正解 ／ 緑の点線＝選び忘れ ／ 赤＝まちがい</span>';
+    msg.className='l3-msg '+(ok?'ok':'ng');
+    setTimeout(()=>onDone(ok,timedOut,miss),ok?700:2600);
+  }
+  okBtn.onclick=()=>{if(sel.size)finish(false);};
+  lv3StartTimer(el,timeLimitSec,()=>finish(true));
+}
 function nextChalQ(){
   if(chal.kind==='time'){
     const left=CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000;
     if(left<=0)return chalResult(true);
   }
-  if(chal.idx>=chal.queue.length)return chalResult(true);
+  if(chal.kind!=='time'&&(chal.correct>=chalMaxCorrect(chal.kind)||Date.now()-chal.t0>=CHAL_MAX_MIN*60000))return chalResult(true,true);
+  if(chal.idx>=chal.queue.length)return chalResult(true,true);
   const it=chal.queue[chal.idx];
   const session=chal;
-  const timeLimitSec=chal.kind==='score'?10:Math.max(1,Math.ceil(CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000));
-  const progressText=chal.kind==='score'?`連続正解 ${chal.correct}問`:`正解 ${chal.correct}問`;
+  const timeLimitSec=chal.kind.startsWith('lv3')?LV3_TIME:chal.kind==='score'?10:Math.max(1,Math.ceil(CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000));
+  const progressText=chal.kind!=='time'?`連続正解 ${chal.correct}問`:`正解 ${chal.correct}問`;
   chalPanel.innerHTML='<div id="cq"></div>';
-  renderChalQuiz(document.getElementById('cq'),it,progressText,timeLimitSec,(ok,timedOut)=>{
+  const render=it.lv3?renderLv3Quiz:renderChalQuiz;
+  render(document.getElementById('cq'),it,progressText,timeLimitSec,(ok,timedOut,weakIds)=>{
     if(chal!==session||chal.over)return;
     if(chal.kind==='time'&&timedOut){chalResult(true);return;}
     if(ok){
-      if(ok)markMastered(it.id);
+      if(it.id)markMastered(it.id);
       chal.correct++; chal.idx++; nextChalQ();
     }else{
-      state.weak[it.id]=2; save(); updateWeakBadge();
+      (weakIds||[it.id]).forEach(id=>{if(IMAP[id])state.weak[id]=2;}); save(); updateWeakBadge();
       chalResult(false);
     }
   });
   chalPanel.parentElement.scrollTop=0;
 }
-function chalResult(reachedEnd){
+function chalResult(reachedEnd,maxed){
   if(!chal||chal.over)return;
   chal.over=true;
   stopChalTimer();
   const correct=chal.correct;
   const sec=Math.floor((Date.now()-chal.t0)/1000);
-  const rank=chalRank(chal.kind,correct);
+  const rank=chalRank(chal.kind,correct,maxed);
   if(!state.bestList)state.bestList={};
   const bk=lbKind(chal.kind);
   const list=state.bestList[bk]||[];
@@ -2069,14 +2279,15 @@ function chalResult(reachedEnd){
   state.bestList[bk]=list.slice(0,3);
   save();
   const lbSubmit=LB.currentUser()?LB.submitScore(bk,correct,sec,rank):Promise.resolve();
-  const headline=reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
+  const headline=maxed?'🏆 カンスト!':reachedEnd?(chal.kind==='time'?'⏰ タイムアップ!':'🎉 コンプリート!'):'💥 ゲームオーバー';
+  const RANK_MSG={SS:'すばらしい!カンストまであと少し!',S:'完璧!化学基礎マスター!',A:'あと一歩で完全制覇!',B:'かなり定着してきた!',C:'弱点特訓で復習しよう!',D:'暗記モードで基礎から固めよう!'};
   chalPanel.innerHTML=`
     <h2>結果発表</h2>
     <div class="card-ui" style="text-align:center">
       <div class="score-line" style="font-size:17px">${headline}</div>
       <div class="rankbig rank-${rank}">${rank}</div>
       <div class="score-line">正解 ${correct}問　⏱ ${sec}秒</div>
-      <div class="muted">${rank==='S'?'完璧!化学基礎マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'弱点特訓で復習しよう!':'暗記モードで基礎から固めよう!'}</div>
+      ${maxed?`<div class="chal-maxmsg">${CHAL_MAX_MSG}</div>`:`<div class="muted">${RANK_MSG[rank]}</div>`}
       <button class="bigbtn" id="chalAgain">もう一度</button>
       <button class="bigbtn secondary" id="chalHome">トップへ</button>
     </div>
@@ -2265,7 +2476,7 @@ function startGridLevel(lv){
       <div class="eg-target-z">原子番号<b id="egZ">-</b></div>
     </div>
     <div class="eg-fieldwrap">
-      <div class="eg-field eg-pre-start" id="egField" style="grid-template-columns:repeat(${def.cols},1fr)"></div>
+      <div class="eg-field eg-pre-start eg-cols-${def.cols}" id="egField" style="grid-template-columns:repeat(${def.cols},1fr)"></div>
       <div class="eg-countdown active" id="egCountdown"><div class="eg-countdown-num" id="egCountNum">3</div></div>
     </div>
     <button class="bigbtn secondary" id="egQuit" style="margin-top:12px">やめる</button>`;
