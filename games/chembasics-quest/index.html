@@ -7,7 +7,7 @@
 <title>化学基礎クエスト 〜暗記事項マスター〜</title>
 <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('swTheme')||'default');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@700;800&family=JetBrains+Mono:wght@500;700&family=Inter:wght@700;800&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
 <style>
 :root{
@@ -179,10 +179,10 @@ html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
 .chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
 .chal-timer.urgent{color:var(--red)}
 /* レベル3チャレンジ（パネル組み立て・一問多答） */
-.l3-ans{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:60px;padding:10px 8px;margin-bottom:6px;border-radius:14px;background:#0f172a;box-shadow:inset 0 2px 8px rgba(0,0,0,.35)}
-.l3-slot{min-width:34px;height:40px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;color:#0f172a;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;animation:l3pop .15s ease-out}
-.l3-slot.sub{min-width:24px;height:28px;align-self:flex-end;font-size:20px;margin-bottom:-2px}
-.l3-slot.sup{min-width:24px;height:28px;align-self:flex-start;font-size:18px}
+.l3-ans{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;min-height:60px;padding:10px 8px;margin-bottom:6px;border-radius:14px;background:#0f172a;box-shadow:inset 0 2px 8px rgba(0,0,0,.35)}
+.l3-slot{min-width:34px;height:40px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;font-size:22px;font-weight:800;animation:l3pop .15s ease-out}
+.l3-slot.sub{min-width:20px;height:27px;padding:0 3px;align-self:flex-end;font-size:19px;margin:0 0 -3px -1px}
+.l3-slot.sup{min-width:24px;height:25px;padding:0 3px;align-self:flex-start;font-size:16px;margin:-3px 0 0 -1px}
 .l3-slot.cursor{background:transparent;border:2px dashed rgba(255,255,255,.45);animation:l3blink 1s steps(2) infinite}
 .l3-ans.ok .l3-slot{background:#bbf7d0;box-shadow:0 0 10px #4ade80}
 .l3-ans.ng{animation:shake .3s}.l3-ans.ng .l3-slot{background:#fecaca}
@@ -193,11 +193,16 @@ html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
 .l3-legend{display:block;font-size:11px;font-weight:600;color:#64748b;margin-top:2px}
 .l3-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
 .l3-keys{display:flex;gap:6px;margin-bottom:8px}
-.l3-tile{flex:1;min-width:0;height:52px;border-radius:12px;border:none;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:#fff;background:linear-gradient(#3b82f6,#1d4ed8);box-shadow:0 4px 0 #1e3a8a;touch-action:manipulation}
+.l3-tile{flex:1;min-width:0;height:52px;border-radius:12px;border:none;font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#fff;background:linear-gradient(#3b82f6,#1d4ed8);box-shadow:0 4px 0 #1e3a8a;touch-action:manipulation}
 .l3-tile:active{transform:translateY(3px);box-shadow:0 1px 0 #1e3a8a}
 .l3-tile.num{height:46px;background:linear-gradient(#64748b,#475569);box-shadow:0 4px 0 #334155}
 .l3-tile.ion{height:46px;font-size:19px;background:linear-gradient(#f59e0b,#d97706);box-shadow:0 4px 0 #92400e}
 .l3-tile:disabled{opacity:.55}
+.l3-tile .lb{position:relative;display:inline-block}
+.l3-tile.sub .lb{top:8px;font-size:21px}
+.l3-tile.ion .lb{top:-7px;font-size:18px}
+.l3-formula{font-family:'Inter',sans-serif;font-size:16px}
+.l3-formula sub,.l3-formula sup{font-size:.72em}
 .l3-actions{display:flex;gap:8px;margin-top:4px}
 .l3-back,.l3-ok{flex:1;height:50px;border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;touch-action:manipulation}
 .l3-back{flex:.7;border:2px solid #cbd5e1;background:#fff;color:#475569}
@@ -1765,8 +1770,8 @@ function catStats(cat){
 const statKey=(cat,order)=>order==='rand'?cat+'｜ランダム':cat;
 let catSort={field:'no',dir:'asc'};
 const LEVELS=[
-  {lv:1,name:'レベル1',sub:'基本の暗記'},
-  {lv:2,name:'レベル2',sub:'暗記を使って考える'},
+  {lv:1,name:'レベル1',sub:'基本知識'},
+  {lv:2,name:'レベル2',sub:'知識の活用'},
 ];
 const CMAP=Object.fromEntries(CATEGORIES.map(c=>[c.name,c]));
 function catLabel(name){const c=CMAP[name];return c?`${c.no} ${c.title}`:name;}
@@ -2010,7 +2015,7 @@ function renderChallengeHome(){
       <div class="scopebtns">
         <button id="kScore" class="${chalKind==='score'?'sel':''}">🎯 連続正解チャレンジ</button>
         <button id="kTime" class="${chalKind==='time'?'sel':''}">⏱ 1分間タイムアタック</button>
-        <button id="kLv3b" class="${chalKind==='lv3build'?'sel':''}">🧩 化学式組み立て</button>
+        <button id="kLv3b" class="${chalKind==='lv3build'?'sel':''}">🧩 化学式特訓</button>
         <button id="kLv3m" class="${chalKind==='lv3multi'?'sel':''}">☑️ 一問多答（ノーマル）</button>
         <button id="kLv3h" class="${chalKind==='lv3hard'?'sel':''}">🔥 一問多答（ハード）</button>
       </div>
@@ -2084,10 +2089,14 @@ function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
   });
 }
 /* ================= レベル3チャレンジ(2026-10 新設：化学式の組み立て＋一問多答) =================
-   入り口は「化学式組み立て」「一問多答（ノーマル）」「一問多答（ハード）」の3つ。組み立ては暗記モードの行（ITEMS）から、一問多答は lv3_multi.js から、その場で問題を作る。
+   入り口は「化学式特訓」「一問多答（ノーマル）」「一問多答（ハード）」の3つ。組み立ては暗記モードの行（ITEMS）から、一問多答は lv3_multi.js から、その場で問題を作る。
    ・組立：イオン式・組成式・分子式・酸と塩基・塩の化学式。答えをタイルに分け、元素タイル＋まぎらわしいダミーを並べる
    ・一問多答：分類ごとにノーマル／ハード（lv3_multi.js）。正解の数は伏せる */
 const LV3_TIME=20;
+// 画面表示用：下付き・上付きの文字（₂ ²⁺）はとても小さいので、普通の数字にして CSS で大きさと位置を決める（判定は元の文字のまま）
+const LV3_SUBS='₀₁₂₃₄₅₆₇₈₉', LV3_SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹';
+function lv3Plain(t){return [...t].map(c=>LV3_SUBS.includes(c)?LV3_SUBS.indexOf(c):LV3_SUPS.includes(c)?LV3_SUPS.indexOf(c):c==='⁺'?'+':c==='⁻'?'−':c).join('');}
+function lv3FormulaHTML(f){return lv3Tokens(f).map(t=>/^[₀-₉]/.test(t)?`<sub>${lv3Plain(t)}</sub>`:/[⁺⁻]$/.test(t)?`<sup>${lv3Plain(t)}</sup>`:t).join('');}
 function lv3Tokens(s){return s.match(/[A-Z][a-z]?|[₀-₉]+|[⁰¹²³⁴-⁹]*[⁺⁻]|[()]/g)||[];}
 // 見た目や名前がまぎらわしい元素（ダミーのタイルに使う）
 const LV3_SIMILAR={H:['He','Hg'],He:['H'],Li:['Na','K'],B:['Br','Be'],C:['Ca','Cl','Co','Cu'],N:['Na','Ne','Ni'],O:['S','Os'],F:['Fe','Fr'],Na:['N','Ne','K','Mg'],Mg:['Mn','Na'],Al:['Ag','Au'],Si:['S','Sn'],P:['Pb','K'],S:['Si','Sn','Se'],Cl:['C','Ca','Cr','Br'],K:['Ca','Na','Kr'],Ca:['C','Cl','Cu','Co','K'],Cr:['Cl','Cu'],Mn:['Mg','Ni'],Fe:['F','Pb','Cu'],Ni:['N','Mn'],Cu:['Ca','C','Cr'],Zn:['Sn','Na'],Br:['B','Cl','Ba'],Ag:['Al','Au','Hg'],I:['K','Br'],Ba:['Br','Be','Na'],Be:['Ba','B'],Pb:['P','Fe']};
@@ -2167,10 +2176,9 @@ function renderLv3Build(el,it,progressText,timeLimitSec,onDone){
   for(const e of shuffle(els.flatMap(e=>LV3_SIMILAR[e]||[]))){if(tiles.length>=8)break;if(!tiles.includes(e))tiles.push(e);}
   for(const e of shuffle(LV3_COMMON.slice())){if(tiles.length>=8)break;if(!tiles.includes(e))tiles.push(e);}
   shuffle(tiles);
-  const isIon=/[⁺⁻]$/.test(it.ans);
   const keys=LV3_KEYS_NUM.slice();
   toks.forEach(t=>{if(/^[₀-₉]+$/.test(t)&&!keys.includes(t))keys.splice(keys.indexOf('('),0,t);});
-  const btn=(t,cls)=>`<button class="l3-tile ${cls}" data-t="${t}">${t}</button>`;
+  const btn=(t,cls)=>`<button class="l3-tile ${cls}${/^[₀-₉]/.test(t)?' sub':''}" data-t="${t}"><span class="lb">${lv3Plain(t)}</span></button>`;
   el.innerHTML=`
     <div class="chal-head">${progressText}</div>
     <div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>
@@ -2179,11 +2187,11 @@ function renderLv3Build(el,it,progressText,timeLimitSec,onDone){
     <div class="l3-msg" id="l3Msg"></div>
     <div class="l3-pad">${tiles.map(t=>btn(t,'el')).join('')}</div>
     <div class="l3-keys">${keys.map(t=>btn(t,'num')).join('')}</div>
-    ${isIon?`<div class="l3-keys">${LV3_KEYS_ION.map(t=>btn(t,'ion')).join('')}</div>`:''}
+    <div class="l3-keys">${LV3_KEYS_ION.map(t=>btn(t,'ion')).join('')}</div>
     <div class="l3-actions"><button class="l3-back" id="l3Back">⌫ 1つ戻す</button><button class="l3-ok" id="l3Ok">決定</button></div>`;
   const input=[];
   const ansEl=el.querySelector('#l3Ans');
-  const draw=()=>{ansEl.innerHTML=input.map(t=>`<span class="l3-slot${/^[₀-₉]/.test(t)?' sub':/[⁺⁻]$/.test(t)?' sup':''}">${t}</span>`).join('')+'<span class="l3-slot cursor"></span>';};
+  const draw=()=>{ansEl.innerHTML=input.map(t=>`<span class="l3-slot${/^[₀-₉]/.test(t)?' sub':/[⁺⁻]$/.test(t)?' sup':''}">${lv3Plain(t)}</span>`).join('')+'<span class="l3-slot cursor"></span>';};
   draw();
   let answered=false;
   function finish(timedOut){
@@ -2194,7 +2202,7 @@ function renderLv3Build(el,it,progressText,timeLimitSec,onDone){
     const cur=ansEl.querySelector('.cursor'); if(cur)cur.remove();
     ansEl.classList.add(ok?'ok':'ng');
     const msg=el.querySelector('#l3Msg');
-    msg.innerHTML=ok?'⭕ 正解!':`${timedOut?'⏰ 時間切れ':'❌ 不正解'}　正解は <b>${it.ans}</b>`;
+    msg.innerHTML=ok?'⭕ 正解!':`${timedOut?'⏰ 時間切れ':'❌ 不正解'}　正解は <b class="l3-formula">${lv3FormulaHTML(it.ans)}</b>`;
     msg.className='l3-msg '+(ok?'ok':'ng');
     setTimeout(()=>onDone(ok,timedOut),ok?700:2200);
   }
@@ -2927,7 +2935,6 @@ let runnerListGenre='', runnerListQuery='';
 function renderRunnerList(){
   runnerState=null;
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const yr=q=>/^\d+$/.test(q.year)?+q.year:9999;
   const opts=['<option value="">すべての分野</option>'].concat(RUNNER_GENRES.map(g=>`<option value="${esc(g)}" ${g===runnerListGenre?'selected':''}>${esc(g)}</option>`)).join('');
   runnerPanel.innerHTML=`
     <button class="backbtn" id="rlBack">← 化学RUSH！に戻る</button>
@@ -2940,11 +2947,11 @@ function renderRunnerList(){
     <div id="rlList"></div>`;
   const draw=()=>{
     const qs=RUNNER_QUESTIONS.filter(q=>(!runnerListGenre||q.genre===runnerListGenre)&&(!runnerListQuery||(q.statement+q.explanation).includes(runnerListQuery)))
-      .sort((a,b)=>RUNNER_GENRES.indexOf(a.genre)-RUNNER_GENRES.indexOf(b.genre)||yr(a)-yr(b)||a.id.localeCompare(b.id));
+      .sort((a,b)=>RUNNER_GENRES.indexOf(a.genre)-RUNNER_GENRES.indexOf(b.genre)||a.id.localeCompare(b.id));
     document.getElementById('rlCount').textContent=`${qs.length}問`;
     let html='', last='';
     for(const q of qs){
-      const head=`${q.genre}　${q.year}${/^\d+$/.test(q.year)?'年':''}`;
+      const head=q.genre;
       if(head!==last){html+=`<div class="rl-head">${esc(head)}</div>`;last=head;}
       html+=`<div class="rl-item"><span class="rl-ans ${q.answer?'t':'f'}">${q.answer?'○':'×'}</span><div><div class="rl-st">${esc(q.statement)}</div><div class="rl-ex">${esc(q.explanation||'')}</div></div></div>`;
     }
