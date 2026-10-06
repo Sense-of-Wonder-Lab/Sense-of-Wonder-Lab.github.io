@@ -99,6 +99,10 @@ nav button.active{color:var(--blue);font-weight:700}
 .choice.correct{border-color:var(--green);background:#f0fdf4}
 .choice.wrong{border-color:var(--red);background:#fef2f2;animation:shake .3s}
 .choice.dim{opacity:.45}
+/* 一問多答 */
+.multi-hint{font-size:12px;font-weight:800;color:var(--blue);margin:-6px 0 8px}
+.choice.sel{border-color:var(--blue);background:#eff6ff;box-shadow:inset 0 0 0 2px var(--blue)}
+.choice.missed{border:2px dashed var(--green);background:#f0fdf4}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .explain{margin-top:12px;border-radius:14px;padding:12px;font-size:13px;line-height:1.7;display:none}
 .explain.ok{display:block;background:#f0fdf4;border:1.5px solid #86efac}
@@ -129,6 +133,8 @@ nav button.active{color:var(--blue);font-weight:700}
 .choices.imgs .choice.correct{background:#f0fdf4;box-shadow:inset 0 0 0 3px var(--green)}
 .choices.imgs .choice.wrong{background:#fef2f2;box-shadow:inset 0 0 0 3px var(--red)}
 html[data-theme="navy"] .choices.imgs .choice{background:#fff}
+.choices.imgs .choice.sel{background:#eff6ff;box-shadow:inset 0 0 0 4px var(--blue)}
+.choices.imgs .choice.missed{background:#f0fdf4;box-shadow:inset 0 0 0 3px var(--green)}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
@@ -149,6 +155,9 @@ html[data-theme="navy"] .qprompt{background:rgba(255,255,255,.05);border-color:r
 html[data-theme="navy"] .choice{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.16)}
 html[data-theme="navy"] .choice.correct{background:rgba(62,232,165,.15);border-color:var(--green)}
 html[data-theme="navy"] .choice.wrong{background:rgba(255,111,111,.15);border-color:var(--red)}
+html[data-theme="navy"] .choice.sel{background:rgba(45,212,255,.15);border-color:var(--accent)}
+html[data-theme="navy"] .choice.missed{background:rgba(62,232,165,.08);border-color:var(--green)}
+html[data-theme="navy"] .multi-hint{color:var(--accent)}
 html[data-theme="navy"] .explain.ok{background:rgba(62,232,165,.1);border-color:rgba(62,232,165,.4)}
 html[data-theme="navy"] .explain.ng{background:rgba(255,111,111,.1);border-color:rgba(255,111,111,.4)}
 html[data-theme="navy"] .scopebtns button,html[data-theme="navy"] .sortmini,html[data-theme="navy"] .deckbtn{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);color:var(--ink)}
@@ -252,12 +261,20 @@ function imgSrc(name){return 'assets/memo/'+encodeURIComponent(IMAGES[name]||nam
 function qHTML(it){return `${it.img?`<img class="qimg" src="${imgSrc(it.img)}" alt="構造式">`:''}<div>${it.q}</div>`;}
 function choiceHTML(it,c){return it.choiceImg?`<img src="${imgSrc(c.text)}" alt="選択肢">`:c.text;}
 function choicesClass(it){return it.choiceImg?'choices imgs':'choices';}
-function preloadImgs(its){its.forEach(it=>{[it.img,...(it.choiceImg?[it.correct,...it.wrongs]:[])].forEach(n=>{if(n){const im=new Image();im.src=imgSrc(n);}});});}
+function preloadImgs(its){its.forEach(it=>{[it.img,...(it.choiceImg?[...answersOf(it),...it.wrongs]:[])].forEach(n=>{if(n){const im=new Image();im.src=imgSrc(n);}});});}
 
 /* ================= 状態 ================= */
 let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
 function save(){try{localStorage.setItem('polymerQuest1',JSON.stringify(state));}catch(e){}LB.pushState('polymerQuest1',state);}
-function load(){try{const s=localStorage.getItem('polymerQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}}
+function load(){
+  try{const s=localStorage.getItem('polymerQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}
+  /* 問題の作り直し(2026-10-07)で消えた問題 id・旧デッキ名の記録を掃除 */
+  const cats=new Set(CATEGORIES.map(c=>c.name));
+  state.mastered=(state.mastered||[]).filter(id=>IMAP[id]);
+  for(const id in state.weak)if(!IMAP[id])delete state.weak[id];
+  for(const c in state.catStats)if(!cats.has(c))delete state.catStats[c];
+  for(const c in state.inProgress){const ip=state.inProgress[c];if(!cats.has(c)||!(ip.ids||[]).every(id=>IMAP[id]))delete state.inProgress[c];}
+}
 LB.attachStateSync('polymerQuest1',()=>localStorage.getItem('polymerQuest1'));
 LB.maybeShowOnboarding('polymerQuest1');
 function isMastered(id){return state.mastered.includes(id);}
@@ -279,40 +296,71 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
+/* 一問多答: it.answers(正解の配列)がある問題。選んで「決定」、正解を過不足なく選べたら正解 */
+function isMulti(it){return Array.isArray(it.answers);}
+function answersOf(it){return it.answers||[it.correct];}
 function buildChoices(it){
-  const choices=[{text:it.correct,ok:true},...it.wrongs.map(w=>({text:w,ok:false}))];
+  const choices=[...answersOf(it).map(t=>({text:t,ok:true})),...it.wrongs.map(w=>({text:w,ok:false}))];
   return shuffle(choices);
+}
+function choicesHTML(it,choices){
+  let ch=isMulti(it)?'<div class="multi-hint">☑ あてはまるものをすべて選んで「決定」</div>':'';
+  ch+=`<div class="${choicesClass(it)}">`;
+  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${choiceHTML(it,c)}</button>`;});
+  ch+='</div>';
+  if(isMulti(it))ch+='<button class="bigbtn decide" disabled>決定</button>';
+  return ch;
+}
+/* 回答の受け付け。単答はタップで即、多答は「決定」で cb(ok, 選んだ番号の配列) */
+function bindAnswer(root,it,choices,cb){
+  const btns=[...root.querySelectorAll('.choice')];
+  let done=false;
+  const fire=picked=>{
+    if(done)return; done=true;
+    cb(choices.every((c,i)=>c.ok===picked.includes(i)),picked);
+  };
+  if(!isMulti(it)){btns.forEach(b=>b.addEventListener('click',()=>fire([+b.dataset.i])));return;}
+  const dec=root.querySelector('.decide');
+  btns.forEach(b=>b.addEventListener('click',()=>{
+    if(done)return;
+    b.classList.toggle('sel');
+    dec.disabled=!btns.some(x=>x.classList.contains('sel'));
+  }));
+  dec.addEventListener('click',()=>{
+    const picked=btns.filter(x=>x.classList.contains('sel')).map(x=>+x.dataset.i);
+    if(!picked.length)return;
+    dec.style.display='none';
+    btns.forEach(x=>x.classList.remove('sel'));
+    fire(picked);
+  });
+}
+/* 正誤の色付け。reveal=false(暗記モード)は選んだものだけ、trueは選び漏れた正解も示す */
+function markChoices(root,it,choices,picked,reveal,dim){
+  root.querySelectorAll('.choice').forEach((b,j)=>{
+    const c=choices[j], p=picked.includes(j);
+    if(p)b.classList.add(c.ok?'correct':'wrong');
+    else if(c.ok&&reveal)b.classList.add(isMulti(it)?'missed':'correct');
+    else if(dim)b.classList.add('dim');
+  });
 }
 function renderQuiz(el,it,onDone,progressText){
   const choices=buildChoices(it);
-  let ch=`<div class="${choicesClass(it)}">`;
-  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${choiceHTML(it,c)}</button>`;});
-  ch+='</div>';
+  const ch=choicesHTML(it,choices);
   el.innerHTML=`
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
     <div class="qprompt">${qHTML(it)}</div>
     ${ch}
     <div class="explain" id="explainBox"></div>
     <button class="bigbtn" id="nextBtn" style="display:none">つぎへ</button>`;
-  let answered=false;
-  el.querySelectorAll('.choice').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      if(answered)return; answered=true;
-      const c=choices[+btn.dataset.i];
-      el.querySelectorAll('.choice').forEach((b,j)=>{
-        const cc=choices[j];
-        if(cc.ok)b.classList.add('correct');
-        else if(b===btn)b.classList.add('wrong');
-        else b.classList.add('dim');
-      });
-      const ex=el.querySelector('#explainBox');
-      ex.className='explain '+(c.ok?'ok':'ng');
-      ex.innerHTML=`<div class="rname">${c.ok?'⭕ 正解!':'❌ 不正解… 正解は「'+it.correct+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
-      const nb=el.querySelector('#nextBtn');
-      nb.style.display='block';
-      nb.onclick=()=>onDone(c.ok);
-      nb.scrollIntoView({behavior:'smooth',block:'nearest'});
-    });
+  bindAnswer(el,it,choices,(ok,picked)=>{
+    markChoices(el,it,choices,picked,true,true);
+    const ex=el.querySelector('#explainBox');
+    ex.className='explain '+(ok?'ok':'ng');
+    ex.innerHTML=`<div class="rname">${ok?'⭕ 正解!':'❌ 不正解… 正解は「'+it.correct+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
+    const nb=el.querySelector('#nextBtn');
+    nb.style.display='block';
+    nb.onclick=()=>onDone(ok);
+    nb.scrollIntoView({behavior:'smooth',block:'nearest'});
   });
 }
 
@@ -352,53 +400,32 @@ function showAnswerFxPopup(ok){
 }
 function renderMemoQ(el,it,onDone,progressText){
   const choices=buildChoices(it);
-  let ch=`<div class="${choicesClass(it)}">`;
-  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${choiceHTML(it,c)}</button>`;});
-  ch+='</div>';
+  const ch=choicesHTML(it,choices);
   el.innerHTML=`
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
     <div class="qprompt">${qHTML(it)}</div>
     ${ch}
     <div style="height:80px"></div>
     <button class="bigbtn fixed-next" id="memoNextBtn" style="display:none">次へ</button>`;
-  let answered=false;
-  el.querySelectorAll('.choice').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      if(answered)return; answered=true;
-      const c=choices[+btn.dataset.i];
-      btn.classList.add(c.ok?'correct':'wrong');
-      if(state.answerFx!=='simple')showAnswerFxPopup(c.ok);
-      const nb=el.querySelector('#memoNextBtn');
-      nb.style.display='block';
-      let advanced=false;
-      const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok);};
-      nb.onclick=advance;
-      if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
-    });
+  bindAnswer(el,it,choices,(ok,picked)=>{
+    markChoices(el,it,choices,picked,false,false);
+    if(state.answerFx!=='simple')showAnswerFxPopup(ok);
+    const nb=el.querySelector('#memoNextBtn');
+    nb.style.display='block';
+    let advanced=false;
+    const advance=()=>{if(advanced)return;advanced=true;onDone(ok);};
+    nb.onclick=advance;
+    if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(ok?0:1000));
   });
 }
 function reviewRetry(it){
   const choices=buildChoices(it);
-  let ch=`<div class="${choicesClass(it)}">`;
-  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${choiceHTML(it,c)}</button>`;});
-  ch+='</div>';
+  const ch=choicesHTML(it,choices);
   infoSheet.innerHTML=`<h3>もう一度<button class="closex" onclick="infoModal.classList.remove('open')">✕</button></h3>
     <div class="qprompt">${qHTML(it)}</div>
     ${ch}`;
   infoModal.classList.add('open');
-  let answered=false;
-  infoSheet.querySelectorAll('.choice').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      if(answered)return; answered=true;
-      const c=choices[+btn.dataset.i];
-      infoSheet.querySelectorAll('.choice').forEach((b,j)=>{
-        const cc=choices[j];
-        if(cc.ok)b.classList.add('correct');
-        else if(b===btn)b.classList.add('wrong');
-        else b.classList.add('dim');
-      });
-    });
-  });
+  bindAnswer(infoSheet,it,choices,(ok,picked)=>markChoices(infoSheet,it,choices,picked,true,true));
 }
 
 /* ================= 単元別ドリル(暗記モード) ================= */
@@ -606,24 +633,20 @@ function startChallenge(){
 }
 function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
   const choices=buildChoices(it);
-  let ch=`<div class="${choicesClass(it)}">`;
-  choices.forEach((c,i)=>{ch+=`<button class="choice" data-i="${i}">${choiceHTML(it,c)}</button>`;});
-  ch+='</div>';
+  const ch=choicesHTML(it,choices);
   el.innerHTML=`
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
     ${timeLimitSec?`<div class="chal-timer" id="chalTimer">⏱ ${timeLimitSec}秒</div>`:''}
     <div class="qprompt">${qHTML(it)}</div>
     ${ch}`;
   let answered=false;
-  function finish(ok,timedOut){
+  function finish(ok,timedOut,picked){
     if(answered)return; answered=true;
     stopChalTimer();
-    el.querySelectorAll('.choice').forEach(b=>{
-      const c=choices[+b.dataset.i];
-      if(c.ok)b.classList.add('correct');
-      else if(!timedOut&&b.dataset.clicked)b.classList.add('wrong');
-    });
-    setTimeout(()=>onDone(ok,timedOut),650);
+    const dec=el.querySelector('.decide'); if(dec)dec.style.display='none';
+    el.querySelectorAll('.choice').forEach(b=>b.classList.remove('sel'));
+    markChoices(el,it,choices,picked||[],true,false);
+    setTimeout(()=>onDone(ok,timedOut),ok?650:1100);
   }
   if(timeLimitSec){
     const t0=Date.now();
@@ -634,13 +657,7 @@ function renderChalQuiz(el,it,progressText,timeLimitSec,onDone){
       else{timerEl.textContent=`⏱ ${Math.ceil(left)}秒`;timerEl.classList.toggle('urgent',left<=3);}
     },100);
   }
-  el.querySelectorAll('.choice').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      if(answered)return;
-      btn.dataset.clicked='1';
-      finish(choices[+btn.dataset.i].ok,false);
-    });
-  });
+  bindAnswer(el,it,choices,(ok,picked)=>finish(ok,false,picked));
 }
 function nextChalQ(){
   if(chal.kind==='time'){
@@ -650,7 +667,7 @@ function nextChalQ(){
   if(chal.idx>=chal.queue.length)return chalResult(true);
   const it=chal.queue[chal.idx];
   const session=chal;
-  const timeLimitSec=chal.kind==='score'?10:Math.max(1,Math.ceil(CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000));
+  const timeLimitSec=chal.kind==='score'?(isMulti(it)?15:10):Math.max(1,Math.ceil(CHAL_TIME_LIMIT-(Date.now()-chal.t0)/1000));
   const progressText=chal.kind==='score'?`連続正解 ${chal.correct}問`:`正解 ${chal.correct}問`;
   chalPanel.innerHTML='<div id="cq"></div>';
   renderChalQuiz(document.getElementById('cq'),it,progressText,timeLimitSec,(ok,timedOut)=>{
