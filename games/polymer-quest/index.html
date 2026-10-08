@@ -259,7 +259,9 @@ const IMAGES = DATA.images||{};
 function imgSrc(name){return 'assets/memo/'+encodeURIComponent(IMAGES[name]||name);}
 /* 問題文（構造式画像つき）と選択肢（構造式画像のときは画像）。名前は正誤表示・復習リスト用にテキストで持つ */
 function qHTML(it){return `${it.img?`<img class="qimg" src="${imgSrc(it.img)}" alt="構造式">`:''}<div>${it.q}</div>`;}
-function choiceHTML(it,c){return it.choiceImg?`<img src="${imgSrc(c.text)}" alt="選択肢">`:c.text;}
+/* 画像名に付けた「(五員環)」「(鎖状構造)」などは生徒に見せない（構造式から判断させるため） */
+function lbl(t){return String(t).replace(/\((五員環|六員環|鎖状構造)\)/g,'');}
+function choiceHTML(it,c){return it.choiceImg?`<img src="${imgSrc(c.text)}" alt="選択肢">`:lbl(c.text);}
 function choicesClass(it){return it.choiceImg?'choices imgs':'choices';}
 function preloadImgs(its){its.forEach(it=>{[it.img,...(it.choiceImg?[...answersOf(it),...it.wrongs]:[])].forEach(n=>{if(n){const im=new Image();im.src=imgSrc(n);}});});}
 
@@ -356,7 +358,7 @@ function renderQuiz(el,it,onDone,progressText){
     markChoices(el,it,choices,picked,true,true);
     const ex=el.querySelector('#explainBox');
     ex.className='explain '+(ok?'ok':'ng');
-    ex.innerHTML=`<div class="rname">${ok?'⭕ 正解!':'❌ 不正解… 正解は「'+it.correct+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
+    ex.innerHTML=`<div class="rname">${ok?'⭕ 正解!':'❌ 不正解… 正解は「'+lbl(it.correct)+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
     const nb=el.querySelector('#nextBtn');
     nb.style.display='block';
     nb.onclick=()=>onDone(ok);
@@ -538,7 +540,7 @@ function catResult(){
   save();
   let review='';
   catDrill.results.forEach((x,i)=>{
-    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.it.q} → ${x.it.correct}</div>`;
+    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.it.q} → ${lbl(x.it.correct)}</div>`;
   });
   homePanel.innerHTML=`
     <h2>結果発表</h2>
@@ -725,7 +727,7 @@ function renderWeakHome(){
   for(const id in state.weak){
     const it=IMAP[id];
     if(!it){delete state.weak[id];continue;}
-    list+=`<div class="review-item">🎯 ${it.q} <b>${it.correct}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
+    list+=`<div class="review-item">🎯 ${it.q} <b>${lbl(it.correct)}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
   }
   weakPanel.innerHTML=`
     <h2>🎯 弱点特訓</h2>
