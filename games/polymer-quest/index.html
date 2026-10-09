@@ -303,6 +303,7 @@ function isMulti(it){return Array.isArray(it.answers);}
 function answersOf(it){return it.answers||[it.correct];}
 function buildChoices(it){
   const choices=[...answersOf(it).map(t=>({text:t,ok:true})),...it.wrongs.map(w=>({text:w,ok:false}))];
+  if(it.order)return choices.sort((a,b)=>it.order.indexOf(a.text)-it.order.indexOf(b.text));  // 一次〜四次構造・中性/酸性/塩基性などは決まった順（make_game_data.py が付ける。化学基礎クエストと同じ）
   return shuffle(choices);
 }
 function choicesHTML(it,choices){
