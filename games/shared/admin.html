@@ -76,6 +76,10 @@
   .qCell{white-space:normal;max-width:340px}
   .qCorrect{white-space:normal;max-width:200px;color:#15803d;font-weight:700}
   .qWrongs{white-space:normal;max-width:280px;color:#94a3b8;font-size:12px}
+  .qThumb{display:block;max-width:150px;max-height:80px;margin-top:4px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:2px}
+  .qThumbBox{display:inline-block;vertical-align:top;margin:0 6px 6px 0;font-size:11px;text-align:center}
+  .qThumbBox .qThumb{max-width:110px;max-height:64px;margin:0 auto 2px}
+  .qTag{display:inline-block;font-size:10.5px;font-weight:800;color:#2563eb;border:1px solid #93c5fd;border-radius:6px;padding:0 5px;margin-right:4px}
   .setFilterBtn{border:none;background:none;color:#94a3b8;font-size:9px;cursor:pointer;margin-left:4px;padding:2px 4px;border-radius:4px}
   .setFilterBtn:hover{background:#e2e8f0;color:#334155}
   .setFilterBtn.active{color:#2563eb}
@@ -172,6 +176,7 @@
         <option value="芳香族">芳香族</option>
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
+        <option value="高分子">高分子</option>
         <option value="化学RUSH！">化学RUSH！</option>
       </select></span>
       <span class="qGameFilter"><select id="qUserSelect">
@@ -217,7 +222,7 @@ const FIREBASE_CONFIG = {
   appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
 };
 const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
-const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学RUSH！'};
+const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学RUSH！', polymer:'高分子クエスト'};
 // leaderboard.js 側で、Firebase が禁止する文字(. # $ [ ] /)を含むキー(無機化学の単元名など)
 // を可逆エスケープして保存している。ここは別ファイルなのでロジックを複製して復元する。
 const FB_KEY_UNESCAPE = [['%2E','.'],['%23','#'],['%24','$'],['%5B','['],['%5D',']'],['%2F','/'],['%25','%']];
@@ -256,6 +261,8 @@ function getAllProgress(u){
   if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: bestPctOf(s)}); });
   const chemRunner = d.chemRunnerCat1 && d.chemRunnerCat1.catStats;
   if(chemRunner) Object.entries(chemRunner).forEach(([rawName,s])=>{ out.push({game:'化学RUSH！', name: unescapeFbKey(rawName), gameKey:'chemrunner', deckId:rawName, best: bestPctOf(s)}); });
+  const polymer = d.polymerQuest1 && d.polymerQuest1.catStats;
+  if(polymer) Object.entries(polymer).forEach(([rawName,s])=>{ out.push({game:'高分子', name: unescapeFbKey(rawName), gameKey:'polymer', deckId:rawName, best: bestPctOf(s)}); });
   return out;
 }
 
@@ -334,7 +341,7 @@ function render(){
   const active7d = rows.filter(r=>now-r.lastActive < 7*24*3600*1000).length;
   const newThisWeek = rows.filter(r=>now-r.ts < 7*24*3600*1000).length;
   const avgDays = total ? (rows.reduce((s,r)=>s+r.days,0)/total).toFixed(1) : '0';
-  const gameSet = {aromatic:new Set(), aliphatic:new Set(), inorganic:new Set(), chemrunner:new Set()};
+  const gameSet = {aromatic:new Set(), aliphatic:new Set(), inorganic:new Set(), chemrunner:new Set(), polymer:new Set()};
   rows.forEach(r=>{ r.progress.forEach(p=>{ if(p.best>0){ const gk = p.gameKey==='aroma'?'aromatic':p.gameKey; if(gameSet[gk]) gameSet[gk].add(r.uid); } }); });
 
   document.getElementById('stats').innerHTML = `
@@ -347,6 +354,7 @@ function render(){
     <div class="stat"><b>${gameSet.aliphatic.size}</b><span>脂肪族プレイ者</span></div>
     <div class="stat"><b>${gameSet.inorganic.size}</b><span>無機化学プレイ者</span></div>
     <div class="stat"><b>${gameSet.chemrunner.size}</b><span>化学RUSH！プレイ者</span></div>
+    <div class="stat"><b>${gameSet.polymer.size}</b><span>高分子プレイ者</span></div>
   `;
 
   if(q){
@@ -398,7 +406,7 @@ function renderDetail(uid){
   if(!u) return;
   const r = buildRows().find(x=>x.uid===uid);
   const av = r.avatar ? `<img class="avatar" src="${r.avatar}" style="width:32px;height:32px">` : `<span class="avatar" style="width:32px;height:32px;font-size:13px">${escapeHtml(r.nickname[0]||'?')}</span>`;
-  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[], '化学RUSH！':[]};
+  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[], '高分子':[], '化学RUSH！':[]};
   r.progress.forEach(p=>{ if(groups[p.game]) groups[p.game].push(p); });
   const likes = u.likes || {};
   const unlikedCount = r.progress.filter(p=>p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId])).length;
@@ -600,6 +608,7 @@ function loadAllQuestions(){
     {url:'../aromatic-quest/index.html', game:'芳香族', gameKey:'aromatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../aliphatic-quest/index.html', game:'脂肪族', gameKey:'aliphatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'},
+    {url:'../polymer-quest/data.js', game:'高分子', gameKey:'polymer', marker:'const DATA = ', open:'{', close:'}', kind:'polymer'},
     {url:'../chembasics-quest/index.html', game:'化学RUSH！', gameKey:'chemrunner', marker:'const RUNNER_QUESTIONS = ', open:'[', close:']', kind:'boolq'}
   ];
   return Promise.all(sources.map(s=>
@@ -619,6 +628,16 @@ function loadAllQuestions(){
         const stripTags = html => String(html||'').replace(/<[^>]+>/g, '');
         parsed.forEach(it=>{
           out.push({game:s.game, gameKey:s.gameKey, id:it.id, set: it.genre, q: stripTags(it.statement), correct: it.answer ? '正しい(○)' : '誤り(×)', wrongs: []});
+        });
+      } else if(s.kind==='polymer'){
+        // 構造式画像つきの問題は、管理画面でも小さな画像で表示する
+        const imgs = parsed.images||{};
+        const src = n => '../polymer-quest/assets/memo/'+encodeURIComponent(imgs[n]||n);
+        (parsed.items||[]).forEach(it=>{
+          const ans = it.answers||[it.correct];
+          out.push({game:s.game, gameKey:s.gameKey, id:it.id, set: it.cat, q: it.q, correct: it.correct, wrongs: it.wrongs||[],
+            multi: !!it.answers, qImg: it.img ? src(it.img) : null,
+            choiceImgs: it.choiceImg ? {ok: ans.map(n=>({n, src:src(n)})), ng: (it.wrongs||[]).map(n=>({n, src:src(n)}))} : null});
         });
       } else {
         (parsed.items||[]).forEach(it=>{
@@ -757,6 +776,9 @@ document.addEventListener('click', e=>{
     panel.style.display = 'none';
   }
 });
+function thumbList(list){
+  return list.map(c=>`<span class="qThumbBox"><img class="qThumb" src="${c.src}" alt="" loading="lazy"><span>${escapeHtml(c.n)}</span></span>`).join('');
+}
 function renderQuestions(){
   const q = (document.getElementById('qSearchBox').value||'').trim().toLowerCase();
   const gameFilter = document.getElementById('qGameSelect').value;
@@ -795,9 +817,9 @@ function renderQuestions(){
     <tr>
       <td>${escapeHtml(x.game)}</td>
       <td>${escapeHtml(x.set)}</td>
-      <td class="qCell">${escapeHtml(x.q)}</td>
-      <td class="qCorrect">${escapeHtml(String(x.correct))}</td>
-      <td class="qWrongs">${x.wrongs.map(w=>escapeHtml(String(w))).join(' / ')}</td>
+      <td class="qCell">${x.multi?'<span class="qTag">多答</span>':''}${escapeHtml(x.q)}${x.qImg?`<img class="qThumb" src="${x.qImg}" alt="" loading="lazy">`:''}</td>
+      <td class="qCorrect">${x.choiceImgs?thumbList(x.choiceImgs.ok):escapeHtml(String(x.correct))}</td>
+      <td class="qWrongs">${x.choiceImgs?thumbList(x.choiceImgs.ng):x.wrongs.map(w=>escapeHtml(String(w))).join(' / ')}</td>
       <td>${fmtPct(x.gStat)}</td>
       <td>${selUser ? fmtPct(x.uStat) : '<span class="noProg">-</span>'}</td>
     </tr>`).join('');
