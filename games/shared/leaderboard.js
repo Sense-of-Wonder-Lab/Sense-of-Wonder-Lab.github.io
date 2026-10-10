@@ -405,6 +405,15 @@ const LB = (function(){
       + (showSec?`<span class="lb-stat"><b>${e.sec}</b><small>秒</small></span>`:'');
   }
 
+  /* ランク表示の読みかえ：各ゲームが setRankFn(fn(kind, entry)) で今のランク基準を渡すと、
+     保存済みの記録（正解数・秒数はそのまま）を今の基準で振り分けなおして表示する。fn が null を返す種目は保存時のランクのまま */
+  let rankFn = null;
+  function setRankFn(fn){ rankFn = fn; }
+  function gradeOf(e, kind){
+    if(rankFn){ try{ const r = rankFn(kind, e); if(r) return r; }catch(err){ console.warn('[LB] rankFn', err); } }
+    return e.rank || '-';
+  }
+
   function renderBoardHTML(entries, myUid, kind){
     ensureStyle();
     if(!entries || !entries.length){
@@ -417,7 +426,7 @@ const LB = (function(){
       + `<span class="lb-pill-name">${escapeHtml(e.name)}</span>`
       + `<span class="lb-pill-stats">`
       +   statsHtml(e, kind)
-      +   `<span class="lb-grade">${escapeHtml(e.rank||'-')}</span>`
+      +   `<span class="lb-grade">${escapeHtml(gradeOf(e, kind))}</span>`
       + `</span>`
       + `</div>`
     ).join('') + '</div>';
@@ -437,7 +446,7 @@ const LB = (function(){
       + `<span class="lb-pill-name">${escapeHtml(myName)}</span>`
       + `<span class="lb-pill-stats">`
       +   statsHtml(b, kind)
-      +   `<span class="lb-grade">${escapeHtml(b.rank||'-')}</span>`
+      +   `<span class="lb-grade">${escapeHtml(gradeOf(b, kind))}</span>`
       + `</span>`
       + `</div>`
     ).join('') + '</div>';
@@ -725,7 +734,7 @@ const LB = (function(){
 
   return {
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
-    submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML,
+    submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML, setRankFn,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
     openAccountModal, ensureStyle, onMessages, fetchLikes, recordQuizResults, notifyAdmin
   };

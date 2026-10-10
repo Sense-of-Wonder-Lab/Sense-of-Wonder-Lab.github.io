@@ -24,7 +24,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overscroll-behavior:none}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  font-family:Century,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
   background:var(--bg);color:var(--ink);
   display:flex;flex-direction:column;height:100dvh;
 }
@@ -58,10 +58,14 @@ main{flex:1;position:relative;overflow:hidden}
 .modebtns{position:absolute;right:10px;top:8px;display:flex;gap:4px;z-index:5}
 .modebtns button{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:5px 8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .modebtns button.active{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
-.viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
+/* 自動・ポップアップ切替：画面上部に固定し、進捗表示と重ならないよう専用の行をとる（化学基礎クエストと共通）。セット選択画面では左に「🧠 暗記モード」 */
+.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;align-items:center;gap:6px;max-width:620px;margin:0 auto;padding:8px 14px 6px;background:var(--bg);pointer-events:none}
+.viewfx-toggles .viewfx-toggle{pointer-events:auto}
+.viewfx-title{margin-right:auto;font-size:17px;font-weight:700}
+#view-memo{overflow-y:auto}
+#view-memo .panel{height:auto;overflow:visible;padding-top:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
-#mq{padding-top:68px}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
 #fireworksOverlay{position:fixed;inset:0;pointer-events:none;z-index:65;overflow:hidden}
 .fw-launch{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff8dc;box-shadow:0 0 5px 1px #fff8dc}
@@ -194,7 +198,8 @@ nav button.active{color:var(--blue);font-weight:700}
 .chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
 .chal-timer.urgent{color:var(--red)}
 .rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
-.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.rank-SSS{background:linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rank-SS{color:#7c3aed}.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
 .score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
 .review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
 .review-item.review-tap{cursor:pointer;display:flex;align-items:center;gap:6px}
@@ -215,6 +220,9 @@ nav button.active{color:var(--blue);font-weight:700}
 .deckbtn-score{flex:none;text-align:right;font-size:19px;font-weight:800;color:var(--blue);white-space:nowrap}
 .deckbtn.perfect .deckbtn-score{color:var(--green)}
 .deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
+.pctv{color:var(--blue)}
+.pct0{color:var(--red)}
+.pct100{color:var(--green)}
 .memo-img{display:block;max-width:70%;max-height:150px;margin:0 auto 12px}
 .fixed-next{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:592px;margin:0 auto;z-index:60;box-shadow:0 4px 16px rgba(0,0,0,.18)}
 .fixed-back{position:fixed;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:60;padding:8px 14px;border-radius:99px;border:2px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15)}
@@ -230,15 +238,19 @@ nav button.active{color:var(--blue);font-weight:700}
 .detail-rxns div{font-size:12.5px;padding:7px 4px;border-bottom:1px solid #f1f5f9;line-height:1.6}
 .themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;display:flex;align-items:center;justify-content:center}
 header .accountBtnWrap{margin-left:0}
+/* ---- 深海ラボ・ネイビーテーマ（芳香族クエストと共通の配色） ---- */
 html[data-theme="navy"]{
-  --ink:#e8eefc;
-  --bg:#0a1120;
-  --board:#0e1830;
-  --grid:#16233f;
-  --card:#132038;
-  --line:#4a6386;
+  --ink:#eaf6ff; --bg:#0a1220; --board:#0e1b30; --grid:#1c2c48;
+  --accent:#4fd8ff; --accent-deep:#2dd4ff; --blue:#4fd8ff; --green:#3ee8a5;
+  --red:#ff6f6f; --gray:#7f97b3; --card:#132038; --line:#3a577f;
 }
-html[data-theme="navy"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="navy"] body{
+  background:
+    radial-gradient(900px 500px at 10% -10%,rgba(45,212,255,.14),transparent),
+    radial-gradient(700px 500px at 100% 15%,rgba(124,92,255,.12),transparent),
+    var(--bg);
+}
+html[data-theme="navy"] .viewfx-toggles{background:rgba(10,18,32,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 html[data-theme="navy"] header{background:linear-gradient(135deg,#0c1830,#122542);border-bottom:1px solid rgba(120,210,255,.25)}
 html[data-theme="navy"] .questSelect{background:rgba(255,255,255,.08);border-color:rgba(120,210,255,.3)}
 html[data-theme="navy"] #btnReset{border-color:rgba(255,255,255,.3)}
@@ -304,6 +316,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
         <option value="../aromatic-quest/index.html">芳香族クエスト</option>
         <option value="index.html" selected>脂肪族クエスト</option>
         <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+        <option value="../polymer-quest/index.html">高分子クエスト</option>
         <option value="../chembasics-quest/index.html">化学基礎クエスト</option>
       </select>
       <div class="title" id="hdrTitle" style="display:none">🧪 脂肪族クエスト</div>
@@ -356,6 +369,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 
   <div class="view" id="view-memo">
     <div class="viewfx-toggles">
+      <div class="viewfx-title" id="memoTitle">🧠 暗記モード</div>
       <button id="btnAnswerAuto" class="viewfx-toggle"></button>
       <button id="btnAnswerFx" class="viewfx-toggle"></button>
     </div>
@@ -391,7 +405,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=34"></script>
+<script src="../shared/leaderboard.js?v=39"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -1352,6 +1366,20 @@ function showCompleted(rids){
 
 /* ================= クイズ生成(チャレンジ・弱点特訓用) ================= */
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+/* 選択肢の並び（2026-10-11 全クエスト共通）：数字の選択肢（「3」「2価」「第1級アルコール」など、数字1つ以外が同じもの）と、
+   順序のある選択肢（ORDER_SEQS）だけ決まった順で出す。名前・分類だけの選択肢はランダム */
+const ORDER_SEQS=[
+  ['酸性','弱酸性','中性','弱塩基性','塩基性','両性'],['酸性酸化物','両性酸化物','塩基性酸化物'],['固体','液体','気体'],
+  ['F₂','Cl₂','Br₂','I₂'],['HF','HCl','HBr','HI'],
+];
+function naturalOrder(texts){
+  const NUMS=/\d+(?:\.\d+)?/g;
+  const ps=texts.map(t=>{const m=String(t).match(NUMS);return m&&m.length===1?{tpl:String(t).replace(NUMS,'#'),v:parseFloat(m[0])}:null;});
+  if(ps.every(Boolean)&&new Set(ps.map(p=>p.tpl)).size===1)return texts.map((t,i)=>[t,ps[i].v]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+  for(const seq of ORDER_SEQS)if(texts.every(t=>seq.includes(t)))return texts.slice().sort((a,b)=>seq.indexOf(a)-seq.indexOf(b));
+  return null;
+}
+function orderChoices(opts){const o=naturalOrder(opts.map(c=>c.text));return o?opts.sort((a,b)=>o.indexOf(a.text)-o.indexOf(b.text)):shuffle(opts);}
 function sample(a,n){return shuffle(a.slice()).slice(0,n);}
 function buildQuiz(r,mode){
   const q={r,mode,choices:[]};
@@ -1528,10 +1556,18 @@ const CHAL_DESC={
 };
 const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
 const CHAL_TIME_LIMIT=60;
-function chalRank(kind,correct){
+// 連続正解のランク（2026-10-11 全クエスト統一：化学基礎クエストの基準＋D）。SSS＝全問制覇
+function chalRank(kind,correct,reachedEnd){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
-  return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+  if(reachedEnd)return 'SSS';
+  return correct>=100?'SS':correct>=51?'S':correct>=26?'A':correct>=11?'B':correct>=6?'C':'D';
 }
+// 保存済みの記録（自己ベスト・全国ランキング）も今の基準で振り分けなおして表示する
+LB.setRankFn((kind,e)=>{
+  if(kind!=='score'&&kind!=='time')return null;
+  const n=e.correct||0;
+  return chalRank(kind,n,kind==='score'&&(e.rank==='SSS'||n>=REACTIONS.length*3));
+});
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
   if(!box)return;
@@ -1607,7 +1643,7 @@ function chalResult(reachedEnd){
   stopChalTimer();
   const correct=chal.correct;
   const sec=Math.floor((Date.now()-chal.t0)/1000);
-  const rank=chalRank(chal.kind,correct);
+  const rank=chalRank(chal.kind,correct,reachedEnd&&chal.kind==='score');
   if(!state.bestList)state.bestList={score:[],time:[]};
   const list=state.bestList[chal.kind]||[];
   list.push({correct,sec,rank});
@@ -1623,7 +1659,7 @@ function chalResult(reachedEnd){
       <div class="score-line" style="font-size:17px">${headline}</div>
       <div class="rankbig rank-${rank}">${rank}</div>
       <div class="score-line">正解 ${correct}問　⏱ ${sec}秒</div>
-      <div class="muted">${rank==='S'?'完璧!脂肪族マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'解説を読んで弱点特訓へ!':'マップモードで基礎から固めよう!'}</div>
+      <div class="muted">${rank==='SSS'?'全問制覇!伝説の脂肪族マスター!':rank==='SS'?'神域の連続正解!':rank==='S'?'完璧!脂肪族マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'解説を読んで弱点特訓へ!':'マップモードで基礎から固めよう!'}</div>
       <button class="bigbtn" id="chalAgain">もう一度</button>
       <button class="bigbtn secondary" id="chalHome">トップへ</button>
     </div>
@@ -1764,7 +1800,7 @@ function showAnswerFxPopup(ok){
   showAnswerFxPopup._t=setTimeout(()=>el.classList.remove('show'),ANSWER_FX_DURATION);
 }
 function renderMemoQ(el,item,onDone,progressText){
-  const opts=shuffle([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
+  const opts=orderChoices([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
   let ch=`<div class="choices textmode">`;
   opts.forEach((o,i)=>{ch+=`<button class="choice" data-i="${i}">${o.text}</button>`;});
   ch+='</div>';
@@ -1791,10 +1827,8 @@ function renderMemoQ(el,item,onDone,progressText){
     });
   });
 }
-function setMemoFxVisible(visible){
-  document.getElementById('btnAnswerFx').style.display=visible?'':'none';
-  document.getElementById('btnAnswerAuto').style.display=visible?'':'none';
-}
+/* 切替ボタンは常に表示（化学基礎クエストと共通）。セット選択画面だけ、上の行に「🧠 暗記モード」を出す */
+function setMemoTitle(on){document.getElementById('memoTitle').style.visibility=on?'':'hidden';}
 let memoSort={field:'no',dir:'asc'};
 function sortedMemoDecks(){
   const arr=MEMO_DECKS.map((d,i)=>({d,i}));
@@ -1811,12 +1845,13 @@ function sortedMemoDecks(){
 function renderMemoHome(){
   memoClearAdvanceTimer();
   memoHeaderUpdate('セットを選んでください');
-  setMemoFxVisible(false);
+  setMemoTitle(true);
   if(!memoLikesLoaded && LB.currentUser()){
     memoLikesLoaded=true;
     LB.fetchLikes('aliphatic').then(likes=>{ memoLikes=likes||{}; if(!memoQuiz) renderMemoHome(); });
   }
   let list='';
+  const pctCls=p=>p===0?'pct0':p===100?'pct100':'pctv';  // %の数字は青。0%だけ赤、100%は緑（全クエスト共通）
   sortedMemoDecks().forEach(d=>{
     const sc=state.memoScores[d.id];
     const lastPct=sc?Math.round(100*sc.correct/sc.total):0;
@@ -1824,12 +1859,11 @@ function renderMemoHome(){
     const ip=state.memoInProgress&&state.memoInProgress[d.id];
     list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-id="${d.id}">
       <span>${d.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.order.length})・`:''}${d.items.length}問</span></span>
-      ${sc?`<span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[d.id]?' 👍':''}</span></span>`:''}
+      <span class="deckbtn-score">今回 <span class="${pctCls(lastPct)}">${lastPct}%</span><span class="deckbtn-pct">最高 <span class="${pctCls(bestPct)}">${bestPct}%</span>${memoLikes[d.id]?' 👍':''}</span></span>
       </button>`;
   });
   const arrow=memoSort.dir==='asc'?'▲':'▼';
   memoPanel.innerHTML=`
-    <h2>🧠 暗記モード</h2>
     <div class="card-ui">
       <div style="font-size:13.5px;line-height:1.8">セットを選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
@@ -1862,13 +1896,13 @@ function startMemoQuiz(deckId,mode){
   const ip=state.memoInProgress[deckId];
   if(ip&&!mode){
     memoHeaderUpdate('再開しますか？');
-    setMemoFxVisible(false);
+    setMemoTitle(false);
     const deck=MEMO_DECKS.find(d=>d.id===deckId);
     memoPanel.innerHTML=`<div class="card-ui" style="text-align:center">
       <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${deck.name}」は ${ip.i} / ${ip.order.length} 問まで進んでいます</div>
       <button class="bigbtn" id="resumeBtn">続きから</button>
       <button class="bigbtn secondary" id="restartBtn">最初から</button>
-      <button class="backbtn" id="chooseBack" style="margin-top:8px">← セット選択に戻る</button>
+      <button class="backbtn" id="chooseBack" style="margin-top:8px">← セット選択にもどる</button>
     </div>`;
     document.getElementById('resumeBtn').onclick=()=>startMemoQuiz(deckId,'resume');
     document.getElementById('restartBtn').onclick=()=>startMemoQuiz(deckId,'restart');
@@ -1894,8 +1928,8 @@ function nextMemoQ(){
   const item=deck.items[idx];
   const key=`memo:${deck.id}:${idx}`;
   memoHeaderUpdate(`${deck.name}　${memoQuiz.i+1} / ${memoQuiz.order.length}`);
-  setMemoFxVisible(true);
-  memoPanel.innerHTML='<div id="mq"></div><button class="fixed-back" id="memoBackBtn">↩ セット選択</button>';
+  setMemoTitle(false);
+  memoPanel.innerHTML='<div id="mq"></div><button class="fixed-back" id="memoBackBtn">← セット選択にもどる</button>';
   document.getElementById('memoBackBtn').onclick=()=>{
     memoClearAdvanceTimer();
     state.memoInProgress[memoQuiz.deck.id]={order:memoQuiz.order,i:memoQuiz.i,results:memoQuiz.results};
@@ -1908,10 +1942,10 @@ function nextMemoQ(){
     if(!ok){state.weak[key]=2;save();updateWeakBadge();}
     memoQuiz.i++; nextMemoQ();
   });
-  memoPanel.scrollTop=0;
+  memoPanel.parentElement.scrollTop=0;
 }
 function reviewRetry(item){
-  const opts=shuffle([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
+  const opts=orderChoices([{text:item.a,ok:true},...item.wrongs.map(w=>({text:w,ok:false}))]);
   let ch=`<div class="choices textmode">`;
   opts.forEach((o,i)=>{ch+=`<button class="choice" data-i="${i}">${o.text}</button>`;});
   ch+='</div>';
@@ -1945,7 +1979,7 @@ function memoQuizResult(){
   state.memoScores[memoQuiz.deck.id]={correct,total,best};
   if(state.memoInProgress)delete state.memoInProgress[memoQuiz.deck.id];
   memoHeaderUpdate(`${memoQuiz.deck.name}　結果発表`);
-  setMemoFxVisible(false);
+  setMemoTitle(false);
   LB.recordQuizResults('aliphatic', memoQuiz.results.map(x=>({id:x.item.id, ok:x.ok})));
   if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'脂肪族', setName:memoQuiz.deck.name});
   save();
@@ -1959,7 +1993,7 @@ function memoQuizResult(){
       <div class="score-line" style="font-size:22px">正解 ${correct} / ${total}(${pct}%)</div>
       <div class="muted">${pct>=best?'自己ベスト更新!':`最高記録 ${best}%`}</div>
       <button class="bigbtn" id="memoAgain">もう一度</button>
-      <button class="bigbtn secondary" id="memoHome">セット選択に戻る</button>
+      <button class="bigbtn secondary" id="memoHome">セット選択にもどる</button>
     </div>
     <div class="card-ui"><b>復習リスト</b>${review}</div>`;
   memoPanel.querySelectorAll('.review-tap').forEach(el=>{
@@ -1967,7 +2001,7 @@ function memoQuizResult(){
   });
   document.getElementById('memoAgain').onclick=()=>startMemoQuiz(memoQuiz.deck.id);
   document.getElementById('memoHome').onclick=()=>{memoQuiz=null;renderMemoHome();};
-  memoPanel.scrollTop=0;
+  memoPanel.parentElement.scrollTop=0;
 }
 
 /* ================= 完成演出 ================= */

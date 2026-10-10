@@ -61,8 +61,15 @@ nav button.active{color:var(--blue);font-weight:700}
 .deckbtn-score{flex:none;text-align:right;font-size:19px;font-weight:800;color:var(--blue);white-space:nowrap}
 .deckbtn.perfect .deckbtn-score{color:var(--green)}
 .deckbtn-pct{display:block;font-size:11.5px;font-weight:600;color:#64748b}
+.pctv{color:var(--blue)}
+.pct0{color:var(--red)}
+.pct100{color:var(--green)}
 /* 正誤ポップアップ・自動送り */
-.viewfx-toggles{position:absolute;right:10px;top:8px;z-index:5;display:flex;gap:6px}
+/* 自動・ポップアップ切替：画面上部に固定し、進捗表示と重ならないよう専用の行をとる（化学基礎クエストと共通）。セット選択画面では左に「🧠 暗記モード」 */
+.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;align-items:center;gap:6px;max-width:620px;margin:0 auto;padding:8px 14px 6px;background:var(--bg);pointer-events:none}
+.viewfx-toggles .viewfx-toggle{pointer-events:auto}
+.viewfx-title{margin-right:auto;font-size:17px;font-weight:700}
+#view-home .panel{padding-top:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
@@ -114,7 +121,8 @@ nav button.active{color:var(--blue);font-weight:700}
 .chal-timer{text-align:center;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px}
 .chal-timer.urgent{color:var(--red)}
 .rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
-.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.rank-SSS{background:linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rank-SS{color:#7c3aed}.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
 .score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
 .review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
 .review-item .ok{color:var(--green);font-weight:700}
@@ -139,12 +147,19 @@ html[data-theme="navy"] .choices.imgs .choice{background:#fff}
 #toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
 #toast.show{opacity:1}
 .themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;display:flex;align-items:center;justify-content:center}
+/* ---- 深海ラボ・ネイビーテーマ（芳香族クエストと共通の配色） ---- */
 html[data-theme="navy"]{
-  --ink:#e8eefc;
-  --bg:#0a1120;
-  --card:#132038;
+  --ink:#eaf6ff; --bg:#0a1220;
+  --accent:#4fd8ff; --accent-deep:#2dd4ff; --blue:#4fd8ff; --green:#3ee8a5;
+  --red:#ff6f6f; --gray:#7f97b3; --card:#132038;
 }
-html[data-theme="navy"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="navy"] body{
+  background:
+    radial-gradient(900px 500px at 10% -10%,rgba(45,212,255,.14),transparent),
+    radial-gradient(700px 500px at 100% 15%,rgba(124,92,255,.12),transparent),
+    var(--bg);
+}
+html[data-theme="navy"] .viewfx-toggles{background:rgba(10,18,32,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 html[data-theme="navy"] header{background:linear-gradient(135deg,#0c1830,#122542);border-bottom:1px solid rgba(120,210,255,.25)}
 html[data-theme="navy"] .questSelect{background:rgba(255,255,255,.08);border-color:rgba(120,210,255,.3)}
 html[data-theme="navy"] .viewfx-toggle{background:rgba(19,32,56,.85);border-color:rgba(120,210,255,.25);color:#9db6d6}
@@ -197,6 +212,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <main>
   <div class="view active" id="view-home">
     <div class="viewfx-toggles">
+      <div class="viewfx-title" id="memoTitle">🧠 暗記モード</div>
       <button id="btnAnswerAuto" class="viewfx-toggle"></button>
       <button id="btnAnswerFx" class="viewfx-toggle"></button>
     </div>
@@ -219,8 +235,8 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=38"></script>
-<script src="data.js?v=1"></script>
+<script src="../shared/leaderboard.js?v=39"></script>
+<script src="data.js?v=2"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -258,9 +274,12 @@ const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
 const IMAGES = DATA.images||{};
 function imgSrc(name){return 'assets/memo/'+encodeURIComponent(IMAGES[name]||name);}
 /* 問題文（構造式画像つき）と選択肢（構造式画像のときは画像）。名前は正誤表示・復習リスト用にテキストで持つ */
-function qHTML(it){return `${it.img?`<img class="qimg" src="${imgSrc(it.img)}" alt="構造式">`:''}<div>${it.q}</div>`;}
+function qHTML(it){return `${it.img?`<img class="qimg" src="${imgSrc(it.img)}" alt="構造式">`:''}<div>${ital(it.q)}</div>`;}
 /* 画像名に付けた「(五員環)」「(鎖状構造)」などは生徒に見せない（構造式から判断させるため） */
-function lbl(t){return String(t).replace(/\((五員環|六員環|鎖状構造)\)/g,'');}
+function lbl(t){return ital(String(t).replace(/\((五員環|六員環|鎖状構造)\)/g,''));}
+/* 位置を表す o-/m-/p- は斜体（芳香族クエストと同じ数学用イタリック文字）。データ（画像名）は変えず、表示のときだけ置きかえる */
+const ITAL={o:'\u{1D45C}',m:'\u{1D45A}',p:'\u{1D45D}'};
+function ital(t){return String(t).replace(/(^|[^A-Za-z])([omp])-/g,(_,a,b)=>a+ITAL[b]+'-');}
 function choiceHTML(it,c){return it.choiceImg?`<img src="${imgSrc(c.text)}" alt="選択肢">`:lbl(c.text);}
 function choicesClass(it){return it.choiceImg?'choices imgs':'choices';}
 function preloadImgs(its){its.forEach(it=>{[it.img,...(it.choiceImg?[...answersOf(it),...it.wrongs]:[])].forEach(n=>{if(n){const im=new Image();im.src=imgSrc(n);}});});}
@@ -359,7 +378,7 @@ function renderQuiz(el,it,onDone,progressText){
     markChoices(el,it,choices,picked,true,true);
     const ex=el.querySelector('#explainBox');
     ex.className='explain '+(ok?'ok':'ng');
-    ex.innerHTML=`<div class="rname">${ok?'⭕ 正解!':'❌ 不正解… 正解は「'+lbl(it.correct)+'」'}</div>${it.exp?`<div class="note">${it.exp}</div>`:''}`;
+    ex.innerHTML=`<div class="rname">${ok?'⭕ 正解!':'❌ 不正解… 正解は「'+lbl(it.correct)+'」'}</div>${it.exp?`<div class="note">${ital(it.exp)}</div>`:''}`;
     const nb=el.querySelector('#nextBtn');
     nb.style.display='block';
     nb.onclick=()=>onDone(ok);
@@ -457,11 +476,13 @@ function sortedCategories(){
 }
 function renderHome(){
   memoClearAdvanceTimer();
+  setMemoTitle(true);
   if(!memoLikesLoaded && LB.currentUser()){
     memoLikesLoaded=true;
     LB.fetchLikes('polymer').then(likes=>{ memoLikes=likes||{}; if(!catDrill) renderHome(); });
   }
   let list='';
+  const pctCls=p=>p===0?'pct0':p===100?'pct100':'pctv';  // %の数字は青。0%だけ赤、100%は緑（全クエスト共通）
   for(const c of sortedCategories()){
     const s=catStats(c.name);
     const lastPct=s?Math.round(100*s.correct/s.total):0;
@@ -469,18 +490,17 @@ function renderHome(){
     const ip=state.inProgress[c.name];
     list+=`<button class="deckbtn${bestPct===100?' perfect':''}" data-cat="${c.name}">
       <span>${c.name}<span class="muted" style="display:block;font-weight:400;margin-top:2px">${ip?`⏸ 途中(${ip.i}/${ip.ids.length})・`:''}${c.count}問</span></span>
-      <span class="deckbtn-score">今回 ${lastPct}%<span class="deckbtn-pct">最高 ${bestPct}%${memoLikes[c.name]?' 👍':''}</span></span>
+      <span class="deckbtn-score">今回 <span class="${pctCls(lastPct)}">${lastPct}%</span><span class="deckbtn-pct">最高 <span class="${pctCls(bestPct)}">${bestPct}%</span>${memoLikes[c.name]?' 👍':''}</span></span>
       </button>`;
   }
   const arrow=catSort.dir==='asc'?'▲':'▼';
   homePanel.innerHTML=`
-    <h2>🧠 暗記モード</h2>
     <div class="card-ui">
-      <div style="font-size:13.5px;line-height:1.8">単元を選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
+      <div style="font-size:13.5px;line-height:1.8">セットを選ぶとランダムに一問一答。<b>間違えた問題は弱点特訓に自動追加</b>されます。</div>
     </div>
     <div class="card-ui">
       <div class="decklist-head">
-        <b>単元を選ぶ</b>
+        <b>セットを選ぶ</b>
         <div style="display:flex;gap:4px">
           <button id="sortNo" class="sortmini ${catSort.field==='no'?'sel':''}">No順${catSort.field==='no'?' '+arrow:''}</button>
           <button id="sortPct" class="sortmini ${catSort.field==='pct'?'sel':''}">正答率順${catSort.field==='pct'?' '+arrow:''}</button>
@@ -502,15 +522,18 @@ function renderHome(){
     el.addEventListener('click',()=>startCatDrill(el.dataset.cat));
   });
 }
+/* セット選択画面だけ、上の行に「🧠 暗記モード」を出す */
+function setMemoTitle(on){document.getElementById('memoTitle').style.visibility=on?'':'hidden';}
 function startCatDrill(cat,mode){
   memoClearAdvanceTimer();
+  setMemoTitle(false);
   const ip=state.inProgress[cat];
   if(ip&&!mode){
     homePanel.innerHTML=`<div class="card-ui" style="text-align:center">
       <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${cat}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
       <button class="bigbtn" id="resumeBtn">続きから</button>
       <button class="bigbtn secondary" id="restartBtn">最初から</button>
-      <button class="backbtn" id="chooseBack" style="margin-top:8px">← 単元一覧に戻る</button>
+      <button class="backbtn" id="chooseBack" style="margin-top:8px">← セット選択にもどる</button>
     </div>`;
     document.getElementById('resumeBtn').onclick=()=>startCatDrill(cat,'resume');
     document.getElementById('restartBtn').onclick=()=>startCatDrill(cat,'restart');
@@ -528,6 +551,7 @@ function startCatDrill(cat,mode){
 }
 function catResult(){
   memoClearAdvanceTimer();
+  setMemoTitle(false);
   const correct=catDrill.results.filter(x=>x.ok).length;
   const total=catDrill.results.length;
   const pct=Math.round(100*correct/total);
@@ -541,7 +565,7 @@ function catResult(){
   save();
   let review='';
   catDrill.results.forEach((x,i)=>{
-    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${x.it.q} → ${lbl(x.it.correct)}</div>`;
+    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${ital(x.it.q)} → ${lbl(x.it.correct)}</div>`;
   });
   homePanel.innerHTML=`
     <h2>結果発表</h2>
@@ -549,7 +573,7 @@ function catResult(){
       <div class="score-line" style="font-size:22px">正解 ${correct} / ${total}(${pct}%)</div>
       <div class="muted">${pct>=best?'自己ベスト更新!':`最高記録 ${best}%`}</div>
       <button class="bigbtn" id="catAgain">もう一度</button>
-      <button class="bigbtn secondary" id="catHome">単元一覧に戻る</button>
+      <button class="bigbtn secondary" id="catHome">セット選択にもどる</button>
     </div>
     <div class="card-ui"><b>復習リスト</b>${review}</div>`;
   homePanel.querySelectorAll('.review-tap').forEach(el=>{
@@ -557,12 +581,12 @@ function catResult(){
   });
   document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat);
   document.getElementById('catHome').onclick=()=>{catDrill=null;renderHome();};
-  homePanel.scrollTop=0;
+  homePanel.parentElement.scrollTop=0;
 }
 function nextCatQ(){
   if(catDrill.i>=catDrill.its.length)return catResult();
   const it=catDrill.its[catDrill.i];
-  homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← 単元選択</button>';
+  homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← セット選択にもどる</button>';
   document.getElementById('catBack').onclick=()=>{
     memoClearAdvanceTimer();
     state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results};
@@ -576,7 +600,7 @@ function nextCatQ(){
     else{state.weak[it.id]=2;save();updateWeakBadge();}
     catDrill.i++; nextCatQ();
   },`${catDrill.cat}　${catDrill.i+1} / ${catDrill.its.length}`);
-  homePanel.scrollTop=0;
+  homePanel.parentElement.scrollTop=0;
 }
 
 /* ================= チャレンジモード(1問ミスでゲームオーバー・芳香族クエストと共通仕様) ================= */
@@ -589,10 +613,18 @@ const CHAL_DESC={
 };
 const PODIUM_ICON='<svg viewBox="0 0 24 22" width="18" height="16" style="vertical-align:-3px" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="11" width="6" height="10" rx="1.2" fill="#c3ccd6"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="#f4b942"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="#c2703d"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg>';
 const CHAL_TIME_LIMIT=60;
-function chalRank(kind,correct){
+// 連続正解のランク（2026-10-11 全クエスト統一：化学基礎クエストの基準＋D）。SSS＝全問制覇
+function chalRank(kind,correct,reachedEnd){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
-  return correct>=15?'S':correct>=10?'A':correct>=6?'B':correct>=3?'C':'D';
+  if(reachedEnd)return 'SSS';
+  return correct>=100?'SS':correct>=51?'S':correct>=26?'A':correct>=11?'B':correct>=6?'C':'D';
 }
+// 保存済みの記録（自己ベスト・全国ランキング）も今の基準で振り分けなおして表示する
+LB.setRankFn((kind,e)=>{
+  if(kind!=='score'&&kind!=='time')return null;
+  const n=e.correct||0;
+  return chalRank(kind,n,kind==='score'&&(e.rank==='SSS'||n>=ITEMS.length));
+});
 function refreshLbBox(kind){
   const box=document.getElementById('lbBox');
   if(!box)return;
@@ -684,7 +716,7 @@ function nextChalQ(){
       chalResult(false);
     }
   });
-  chalPanel.scrollTop=0;
+  chalPanel.parentElement.scrollTop=0;
 }
 function chalResult(reachedEnd){
   if(!chal||chal.over)return;
@@ -692,7 +724,7 @@ function chalResult(reachedEnd){
   stopChalTimer();
   const correct=chal.correct;
   const sec=Math.floor((Date.now()-chal.t0)/1000);
-  const rank=chalRank(chal.kind,correct);
+  const rank=chalRank(chal.kind,correct,reachedEnd&&chal.kind==='score');
   if(!state.bestList)state.bestList={score:[],time:[]};
   const list=state.bestList[chal.kind]||[];
   list.push({correct,sec,rank});
@@ -707,7 +739,7 @@ function chalResult(reachedEnd){
       <div class="score-line" style="font-size:17px">${headline}</div>
       <div class="rankbig rank-${rank}">${rank}</div>
       <div class="score-line">正解 ${correct}問　⏱ ${sec}秒</div>
-      <div class="muted">${rank==='S'?'完璧!高分子マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'弱点特訓で復習しよう!':'暗記モードで基礎から固めよう!'}</div>
+      <div class="muted">${rank==='SSS'?'全問制覇!伝説の高分子マスター!':rank==='SS'?'神域の連続正解!':rank==='S'?'完璧!高分子マスター!':rank==='A'?'あと一歩で完全制覇!':rank==='B'?'かなり定着してきた!':rank==='C'?'弱点特訓で復習しよう!':'暗記モードで基礎から固めよう!'}</div>
       <button class="bigbtn" id="chalAgain">もう一度</button>
       <button class="bigbtn secondary" id="chalHome">トップへ</button>
     </div>
@@ -716,7 +748,7 @@ function chalResult(reachedEnd){
   document.getElementById('chalHome').onclick=renderChallengeHome;
   refreshLbBox(chal.kind);
   lbSubmit.then(()=>refreshLbBox(chal.kind));
-  chalPanel.scrollTop=0;
+  chalPanel.parentElement.scrollTop=0;
 }
 
 /* ================= 弱点特訓 ================= */
@@ -728,7 +760,7 @@ function renderWeakHome(){
   for(const id in state.weak){
     const it=IMAP[id];
     if(!it){delete state.weak[id];continue;}
-    list+=`<div class="review-item">🎯 ${it.q} <b>${lbl(it.correct)}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
+    list+=`<div class="review-item">🎯 ${ital(it.q)} <b>${lbl(it.correct)}</b> <span class="muted">(あと${state.weak[id]}回連続正解でクリア)</span></div>`;
   }
   weakPanel.innerHTML=`
     <h2>🎯 弱点特訓</h2>
@@ -758,7 +790,7 @@ function nextDrillQ(){
     save(); updateWeakBadge();
     drill.i++; nextDrillQ();
   },`弱点特訓　残り ${drill.ids.length-drill.i} 件`);
-  weakPanel.scrollTop=0;
+  weakPanel.parentElement.scrollTop=0;
 }
 
 /* ================= 確認ダイアログ ================= */

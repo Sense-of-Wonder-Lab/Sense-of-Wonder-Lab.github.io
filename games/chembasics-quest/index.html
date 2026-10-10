@@ -20,6 +20,7 @@
   --red:#dc2626;
   --gray:#94a3b8;
   --card:#ffffff;
+  --pctblue:#2563eb;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overscroll-behavior:none}
@@ -67,12 +68,14 @@ nav button.active{color:var(--blue);font-weight:700}
 div.deckbtn{display:block}
 .deck-main{display:flex;align-items:center;justify-content:space-between;gap:10px}
 /* レベルの色：レベル1＝さくら、レベル2＝むらさき（満点の単元は従来どおり緑） */
-/* 文字は黒（--lvt）、色はふち・面だけに使う（2026-10-04 先生：赤文字は0%のみ） */
+/* 文字は黒（--lvt）、色はふち・面だけに使う。%の数字だけは青（--pctblue）、0%は赤、100%は緑（2026-10-11 全クエスト統一） */
 .lvwrap.lv1{--lvm:#fb7185;--lvs:#ffe4e6;--lvb:#fecdd3;--lvf:#fff1f2;--lvt:var(--ink)}
 .lvwrap.lv2{--lvm:#8b5cf6;--lvs:#ede9fe;--lvb:#ddd6fe;--lvf:#f5f3ff;--lvt:var(--ink)}
 .lvwrap .deckbtn{border-color:var(--lvb)}
 .lvwrap .deckbtn.perfect{border-color:#86efac}
-.lvwrap .deckbtn-score{color:var(--ink)}
+.lvwrap .deckbtn-score{color:var(--pctblue)}
+.lvwrap .deckbtn.perfect .deckbtn-score{color:var(--green)}
+.pctv{color:var(--pctblue)}
 .lvwrap .deckbtn-pct{color:#475569}
 .pct0{color:var(--red)}
 .pct100{color:var(--green)}
@@ -115,8 +118,10 @@ html[data-theme="navy"] .deckbtn.perfect .deck-mode{background:transparent}
 html[data-theme="navy"] .lvwrap .unit-group.open{background:var(--lvs)}
 /* 正誤ポップアップ・自動送り */
 /* 自動・ポップアップ切替：画面上部に固定し、問題の進捗表示（1/13 など）と重ならないよう専用の行をとる */
-.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;gap:6px;padding:8px 10px 6px;background:var(--bg);pointer-events:none}
+/* 自動・ポップアップ切替：画面上部に固定し、進捗表示と重ならないよう専用の行をとる（化学基礎クエストと共通）。セット選択画面では左に「🧠 暗記モード」 */
+.viewfx-toggles{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;align-items:center;gap:6px;max-width:620px;margin:0 auto;padding:8px 14px 6px;background:var(--bg);pointer-events:none}
 .viewfx-toggles .viewfx-toggle{pointer-events:auto}
+.viewfx-title{margin-right:auto;font-size:17px;font-weight:700}
 #view-home .panel{padding-top:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
@@ -218,10 +223,10 @@ html[data-theme="navy"] .l3-opt.sel{background:rgba(59,130,246,.22)}
 html[data-theme="navy"] .l3-opt.missed{background:rgba(62,232,165,.1)}
 html[data-theme="navy"] .l3-note,html[data-theme="navy"] .l3-legend{color:#93a4a2}
 .rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
-.rank-SSS,.rank-SS{background:linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rank-SSS{background:linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
 .chal-maxmsg{margin:8px 0 4px;padding:12px;border-radius:14px;background:#fff7ed;border:2px solid #fdba74;font-size:14.5px;font-weight:800;line-height:1.7;color:var(--ink)}
 html[data-theme="navy"] .chal-maxmsg{background:rgba(253,186,116,.12)}
-.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.rank-SS{color:#7c3aed}.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
 .score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
 .review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
 .review-item .ok{color:var(--green);font-weight:700}
@@ -277,6 +282,7 @@ html[data-theme="navy"] .chal-maxmsg{background:rgba(253,186,116,.12)}
 .themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
 header .accountBtnWrap{margin-left:0}
 html[data-theme="navy"]{
+  --pctblue:#7cb6ff;
   --ink:#eef3f1;
   --bg:#12181a;
   --card:#1a2224;
@@ -375,6 +381,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
     <option value="../aromatic-quest/index.html">芳香族クエスト</option>
     <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
     <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+    <option value="../polymer-quest/index.html">高分子クエスト</option>
     <option value="index.html" selected>化学基礎クエスト</option>
   </select>
   <div class="title" id="hdrTitle" style="display:none"></div>
@@ -385,6 +392,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <main>
   <div class="view active" id="view-home">
     <div class="viewfx-toggles">
+      <div class="viewfx-title" id="memoTitle">🧠 暗記モード</div>
       <button id="btnAnswerAuto" class="viewfx-toggle"></button>
       <button id="btnAnswerFx" class="viewfx-toggle"></button>
     </div>
@@ -411,8 +419,8 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=37"></script>
-<script src="memo_units.js?v=10"></script>
+<script src="../shared/leaderboard.js?v=39"></script>
+<script src="memo_units.js?v=11"></script>
 <script src="lv3_multi.js?v=5"></script>
 <script>
 'use strict';
@@ -1806,13 +1814,14 @@ const UNIT_GROUPS=[
 ];
 function renderHome(){
   memoClearAdvanceTimer();
+  setMemoTitle(true);
   if(!memoLikesLoaded && LB.currentUser()){
     memoLikesLoaded=true;
     LB.fetchLikes('inorganic').then(likes=>{ memoLikes=likes||{}; if(!catDrill) renderHome(); });
   }
   const lv=state.memoLevel||1;
   let list='';
-  const pctCls=p=>p===0?'pct0':p===100?'pct100':'';  // 文字は黒。0%だけ赤、100%は緑
+  const pctCls=p=>p===0?'pct0':p===100?'pct100':'pctv';  // %の数字は青。0%だけ赤、100%は緑（全クエスト共通）
   const deckHTML=c=>{
     const s=catStats(c.name);
     const lastPct=s?Math.round(100*s.correct/s.total):0;
@@ -1839,7 +1848,7 @@ function renderHome(){
       const key=`${lv}-${g.key}`, isOpen=!!open[key];
       const done=gc.filter(c=>{const s=catStats(c.name);return s&&(s.best||0)===100;}).length;
       const all=done===gc.length;
-      list+=`<button class="unit-group${isOpen?' open':''}${all?' perfect':''}" data-g="${key}"><span>${isOpen?'▼':'▶'} ${g.name}${g.range?`<small>（${g.range}）</small>`:''}</span><span class="ug-count">${all?'🏆 ':''}満点 ${done}/${gc.length}単元</span></button>`;
+      list+=`<button class="unit-group${isOpen?' open':''}${all?' perfect':''}" data-g="${key}"><span>${isOpen?'▼':'▶'} ${g.name}${g.range?`<small>（${g.range}）</small>`:''}</span><span class="ug-count">${all?'🏆 ':''}満点 ${done}/${gc.length}セット</span></button>`;
       if(isOpen)list+=`<div class="unit-group-body">${gc.map(deckHTML).join('')}</div>`;
     }
     const rest=cats.filter(c=>!UNIT_GROUPS.some(g=>g.test(c)));
@@ -1848,11 +1857,10 @@ function renderHome(){
   const arrow=catSort.dir==='asc'?'▲':'▼';
   const tabs=LEVELS.map(L=>`<button class="lv-tab${L.lv===lv?' sel':''}" data-lv="${L.lv}">${L.name}<small>${L.sub}</small></button>`).join('');
   homePanel.innerHTML=`<div class="lvwrap lv${lv}">
-    <h2>🧠 暗記モード</h2>
     <div class="lv-tabs">${tabs}</div>
     <div class="card-ui">
       <div class="decklist-head">
-        <b>単元を選ぶ</b>
+        <b>セットを選ぶ</b>
         <div style="display:flex;gap:4px">
           <button id="sortNo" class="sortmini ${catSort.field==='no'?'sel':''}">No順${catSort.field==='no'?' '+arrow:''}</button>
           <button id="sortPct" class="sortmini ${catSort.field==='pct'?'sel':''}">正答率順${catSort.field==='pct'?' '+arrow:''}</button>
@@ -1882,8 +1890,11 @@ function renderHome(){
   });
 }
 // order: 'seq'＝エクセル（データ）の順番どおり／'rand'＝ランダム
+/* セット選択画面だけ、上の行に「🧠 暗記モード」を出す */
+function setMemoTitle(on){document.getElementById('memoTitle').style.visibility=on?'':'hidden';}
 function startCatDrill(cat,mode,order){
   memoClearAdvanceTimer();
+  setMemoTitle(false);
   order=order||'seq';
   const ip=state.inProgress[cat];
   if(ip&&!mode){
@@ -1891,7 +1902,7 @@ function startCatDrill(cat,mode,order){
       <div style="font-size:15px;font-weight:700;margin-bottom:10px">「${catLabel(cat)}」は ${ip.i} / ${ip.ids.length} 問まで進んでいます</div>
       <button class="bigbtn" id="resumeBtn">続きから</button>
       <button class="bigbtn secondary" id="restartBtn">最初から（${order==='rand'?'ランダム':'ノーマル'}）</button>
-      <button class="backbtn" id="chooseBack" style="margin-top:8px">← 単元一覧に戻る</button>
+      <button class="backbtn" id="chooseBack" style="margin-top:8px">← セット選択にもどる</button>
     </div>`;
     document.getElementById('resumeBtn').onclick=()=>startCatDrill(cat,'resume');
     document.getElementById('restartBtn').onclick=()=>startCatDrill(cat,'restart',order);
@@ -1909,6 +1920,7 @@ function startCatDrill(cat,mode,order){
 }
 function catResult(){
   memoClearAdvanceTimer();
+  setMemoTitle(false);
   const correct=catDrill.results.filter(x=>x.ok).length;
   const total=catDrill.results.length;
   const pct=Math.round(100*correct/total);
@@ -1931,7 +1943,7 @@ function catResult(){
       <div class="score-line" style="font-size:22px">正解 ${correct} / ${total}(${pct}%)</div>
       <div class="muted">${pct>=best?'自己ベスト更新!':`最高記録 ${best}%`}</div>
       <button class="bigbtn" id="catAgain">もう一度</button>
-      <button class="bigbtn secondary" id="catHome">単元一覧に戻る</button>
+      <button class="bigbtn secondary" id="catHome">セット選択にもどる</button>
     </div>
     <div class="card-ui"><b>復習リスト</b>${review}</div>`;
   homePanel.querySelectorAll('.review-tap').forEach(el=>{
@@ -1944,7 +1956,7 @@ function catResult(){
 function nextCatQ(){
   if(catDrill.i>=catDrill.its.length)return catResult();
   const it=catDrill.its[catDrill.i];
-  homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← 単元選択</button>';
+  homePanel.innerHTML='<div id="cdq"></div><button class="fixed-back" id="catBack">← セット選択にもどる</button>';
   document.getElementById('catBack').onclick=()=>{
     memoClearAdvanceTimer();
     state.inProgress[catDrill.cat]={ids:catDrill.its.map(x=>x.id),i:catDrill.i,results:catDrill.results,order:catDrill.order};
@@ -1984,9 +1996,17 @@ const chalMaxCorrect=kind=>kind==='lv3build'?50:120;
 const CHAL_MAX_MSG='すごいです😲 が、受験生的にはこれ以上やるのは時間の無駄。他の勉強をしなさい❤️';
 function chalRank(kind,correct,maxed){
   if(kind==='time')return correct>=15?'S':correct>=11?'A':correct>=7?'B':correct>=3?'C':'D';
-  if(kind==='lv3build')return maxed?'SS':correct>=31?'S':correct>=21?'A':correct>=11?'B':'C';  // 組み立ては50問でカンスト＝SS
-  return maxed?'SSS':correct>=100?'SS':correct>=51?'S':correct>=26?'A':correct>=11?'B':'C';
+  if(kind==='lv3build')return maxed?'SS':correct>=31?'S':correct>=21?'A':correct>=11?'B':correct>=6?'C':'D';  // 組み立ては50問でカンスト＝SS
+  return maxed?'SSS':correct>=100?'SS':correct>=51?'S':correct>=26?'A':correct>=11?'B':correct>=6?'C':'D';  // 2026-10-11 D（5問以下）を追加
 }
+// 保存済みの記録（自己ベスト・全国ランキング・旧バージョンの記録）も今の基準で振り分けなおして表示する
+LB.setRankFn((kind,e)=>{
+  const k=String(kind).replace(/V2$/,'');
+  if(!['score','time','lv3build','lv3multi','lv3hard'].includes(k))return null;  // 元素グリッド・化学RUSH！は対象外
+  const n=e.correct||0;
+  const maxed=k!=='time'&&(e.rank==='SSS'||(k==='lv3build'&&e.rank==='SS')||n>=chalMaxCorrect(k)||(e.sec||0)>=CHAL_MAX_MIN*60);
+  return chalRank(k,n,maxed);
+});
 function refreshOldLbBox(kind){
   const box=document.getElementById('oldLbBody');
   if(!box)return;
