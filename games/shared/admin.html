@@ -173,6 +173,7 @@
       <input type="search" id="qSearchBox" placeholder="🔍 問題文・正解で検索">
       <span class="qGameFilter"><select id="qGameSelect">
         <option value="">すべてのゲーム</option>
+        <option value="化学基礎">化学基礎</option>
         <option value="芳香族">芳香族</option>
         <option value="脂肪族">脂肪族</option>
         <option value="無機化学">無機化学</option>
@@ -222,7 +223,7 @@ const FIREBASE_CONFIG = {
   appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
 };
 const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
-const GAME_NAMES = {inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学RUSH！', polymer:'高分子クエスト'};
+const GAME_NAMES = {chembasics:'化学基礎クエスト', inorganic:'無機化学クエスト', aromatic:'芳香族クエスト', aliphatic:'脂肪族クエスト', chemrunner:'化学RUSH！', polymer:'高分子クエスト'};
 // leaderboard.js 側で、Firebase が禁止する文字(. # $ [ ] /)を含むキー(無機化学の単元名など)
 // を可逆エスケープして保存している。ここは別ファイルなのでロジックを複製して復元する。
 const FB_KEY_UNESCAPE = [['%2E','.'],['%23','#'],['%24','$'],['%5B','['],['%5D',']'],['%2F','/'],['%25','%']];
@@ -247,6 +248,11 @@ function bestPctOf(s){
   if(s.total) return Math.round(100*s.correct/s.total);
   return 0;
 }
+const CHEMBASICS_OLD_SETS = ['No.1 元素記号 初級編(ランダム)','No.1 元素記号 初級編(原子番号順)','No.2 元素記号 中級編','No.3 イオン式 基本編(前半)','No.3 イオン式 基本編(後半)','No.4 イオン式 多原子イオン編','No.5 結晶の性質'];
+// いいね済みか。化学基礎の 2026-10-11 より前のいいねは likes/inorganic に入っている
+function isLiked(likes, p){
+  return !!((likes[p.gameKey] && likes[p.gameKey][p.deckId]) || (p.gameKey==='chembasics' && likes.inorganic && likes.inorganic[p.deckId]));
+}
 function getAllProgress(u){
   const out = [];
   const d = u.data || {};
@@ -258,7 +264,12 @@ function getAllProgress(u){
   // catStats のキーはFirebase保存時にエスケープされている(例: "No%2E1 ..." )。
   // 表示名は復元するが、deckId は Firebase 上の実際のキー(エスケープ済み)のまま保つ
   // (likes の書き込み先パスにそのまま使うため。中身が変わるわけではない)。
-  if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ out.push({game:'無機化学', name: unescapeFbKey(rawName), gameKey:'inorganic', deckId:rawName, best: bestPctOf(s)}); });
+  // 2026-10-11 まで化学基礎クエストも inorganicQuest1 に保存していた。化学基礎のセット（「Lv1 …」や旧名）は無機の行に混ぜない
+  const isChemBasicsSet = n => /^Lv\d/.test(n) || CHEMBASICS_OLD_SETS.includes(n);
+  if(inorg) Object.entries(inorg).forEach(([rawName,s])=>{ const n=unescapeFbKey(rawName); if(isChemBasicsSet(n)) return; out.push({game:'無機化学', name: n, gameKey:'inorganic', deckId:rawName, best: bestPctOf(s)}); });
+  // 化学基礎：専用の chembasicsQuest1。まだ化学基礎を開いていない（移行前の）生徒は inorganicQuest1 に残っている分を出す
+  const cb = (d.chembasicsQuest1 && d.chembasicsQuest1.catStats) || (inorg && Object.fromEntries(Object.entries(inorg).filter(([k])=>isChemBasicsSet(unescapeFbKey(k)))));
+  if(cb) Object.entries(cb).forEach(([rawName,s])=>{ out.push({game:'化学基礎', name: unescapeFbKey(rawName), gameKey:'chembasics', deckId:rawName, best: bestPctOf(s)}); });
   const chemRunner = d.chemRunnerCat1 && d.chemRunnerCat1.catStats;
   if(chemRunner) Object.entries(chemRunner).forEach(([rawName,s])=>{ out.push({game:'化学RUSH！', name: unescapeFbKey(rawName), gameKey:'chemrunner', deckId:rawName, best: bestPctOf(s)}); });
   const polymer = d.polymerQuest1 && d.polymerQuest1.catStats;
@@ -341,7 +352,7 @@ function render(){
   const active7d = rows.filter(r=>now-r.lastActive < 7*24*3600*1000).length;
   const newThisWeek = rows.filter(r=>now-r.ts < 7*24*3600*1000).length;
   const avgDays = total ? (rows.reduce((s,r)=>s+r.days,0)/total).toFixed(1) : '0';
-  const gameSet = {aromatic:new Set(), aliphatic:new Set(), inorganic:new Set(), chemrunner:new Set(), polymer:new Set()};
+  const gameSet = {chembasics:new Set(), aromatic:new Set(), aliphatic:new Set(), inorganic:new Set(), chemrunner:new Set(), polymer:new Set()};
   rows.forEach(r=>{ r.progress.forEach(p=>{ if(p.best>0){ const gk = p.gameKey==='aroma'?'aromatic':p.gameKey; if(gameSet[gk]) gameSet[gk].add(r.uid); } }); });
 
   document.getElementById('stats').innerHTML = `
@@ -350,6 +361,7 @@ function render(){
     <div class="stat"><b>${active7d}</b><span>直近7日アクセス</span></div>
     <div class="stat"><b>${newThisWeek}</b><span>今週の新規登録</span></div>
     <div class="stat"><b>${avgDays}</b><span>平均プレイ日数</span></div>
+    <div class="stat"><b>${gameSet.chembasics.size}</b><span>化学基礎プレイ者</span></div>
     <div class="stat"><b>${gameSet.aromatic.size}</b><span>芳香族プレイ者</span></div>
     <div class="stat"><b>${gameSet.aliphatic.size}</b><span>脂肪族プレイ者</span></div>
     <div class="stat"><b>${gameSet.inorganic.size}</b><span>無機化学プレイ者</span></div>
@@ -406,14 +418,14 @@ function renderDetail(uid){
   if(!u) return;
   const r = buildRows().find(x=>x.uid===uid);
   const av = r.avatar ? `<img class="avatar" src="${r.avatar}" style="width:32px;height:32px">` : `<span class="avatar" style="width:32px;height:32px;font-size:13px">${escapeHtml(r.nickname[0]||'?')}</span>`;
-  const groups = {'芳香族':[], '脂肪族':[], '無機化学':[], '高分子':[], '化学RUSH！':[]};
+  const groups = {'化学基礎':[], '芳香族':[], '脂肪族':[], '無機化学':[], '高分子':[], '化学RUSH！':[]};
   r.progress.forEach(p=>{ if(groups[p.game]) groups[p.game].push(p); });
   const likes = u.likes || {};
-  const unlikedCount = r.progress.filter(p=>p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId])).length;
+  const unlikedCount = r.progress.filter(p=>p.best===100 && !isLiked(likes, p)).length;
   const groupHtml = Object.entries(groups).map(([game, list])=>{
     if(!list.length) return `<div class="progGroup"><h3>${game}</h3><div class="noProg">まだプレイ記録がありません</div></div>`;
     return `<div class="progGroup"><h3>${game} (${list.length}セット挑戦済み)</h3>${list.map(p=>{
-      const already = !!(likes[p.gameKey] && likes[p.gameKey][p.deckId]);
+      const already = !!isLiked(likes, p);
       const likeBtn = p.best===100 ? `<button class="progLike" data-uid="${r.uid}" data-game="${escapeHtml(p.game)}" data-name="${escapeHtml(p.name)}" data-gamekey="${escapeHtml(p.gameKey)}" data-deckid="${escapeHtml(p.deckId)}" ${already?'disabled':''}>${already?'✓済':'👍'}</button>` : '';
       return `
       <div class="progRow">
@@ -479,7 +491,7 @@ function bulkLikeUser(uid){
   const r = buildRows().find(x=>x.uid===uid);
   if(!u || !r) return;
   const likes = u.likes || {};
-  const targets = r.progress.filter(p=>p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId]));
+  const targets = r.progress.filter(p=>p.best===100 && !isLiked(likes, p));
   if(!targets.length){ alert('未いいねの100%達成セットはありません。'); return; }
   const text = prompt(`${r.nickname} さんの未いいね${targets.length}件に送ります。メッセージを入力してください:`, '100%達成おめでとう!いいね!👍');
   if(!text) return;
@@ -502,7 +514,7 @@ function bulkLikeAllUsers(){
   rows.forEach(r=>{
     const likes = (allUsers[r.uid]&&allUsers[r.uid].likes) || {};
     r.progress.forEach(p=>{
-      if(p.best===100 && !(likes[p.gameKey] && likes[p.gameKey][p.deckId])){
+      if(p.best===100 && !isLiked(likes, p)){
         items.push({uid:r.uid, game:p.game, setName:p.name, gameKey:p.gameKey, deckId:p.deckId});
       }
     });
@@ -605,6 +617,8 @@ let allQuestions = null;
 function loadAllQuestions(){
   if(allQuestions) return Promise.resolve(allQuestions);
   const sources = [
+    {url:'../chembasics-quest/index.html', game:'化学基礎', gameKey:'chembasics', marker:'const DATA = ', open:'{', close:'}', kind:'flat'},
+    {url:'../chembasics-quest/memo_units.js', game:'化学基礎', gameKey:'chembasics', marker:'const MEMO_UNITS = ', open:'{', close:'}', kind:'flat'},
     {url:'../aromatic-quest/index.html', game:'芳香族', gameKey:'aromatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../aliphatic-quest/index.html', game:'脂肪族', gameKey:'aliphatic', marker:'const MEMO_DECKS=', open:'[', close:']', kind:'decks'},
     {url:'../inorganic-quest/index.html', game:'無機化学', gameKey:'inorganic', marker:'const DATA = ', open:'{', close:'}', kind:'flat'},
@@ -652,6 +666,17 @@ function loadAllQuestions(){
   });
 }
 let questionStats = null;
+let _inorgIds = null;
+function inorganicIds(){
+  if(!allQuestions) return new Set();
+  if(!_inorgIds) _inorgIds = new Set((allQuestions||[]).filter(x=>x.gameKey==='inorganic').map(x=>x.id));
+  return _inorgIds;
+}
+function addStat(a, b){
+  if(!b) return a;
+  if(!a) return b;
+  return {total:(a.total||0)+(b.total||0), correct:(a.correct||0)+(b.correct||0)};
+}
 function loadQuestionStats(){
   return db.ref('questionStats').once('value').then(snap=>{
     questionStats = snap.val()||{};
@@ -791,8 +816,12 @@ function renderQuestions(){
   document.getElementById('qPersonalHint').textContent = selUser ? `👤 ${selUser.nickname||'選択中のユーザー'} の正答率も表示中` : '';
 
   list = list.map(x=>{
-    const gStat = questionStats && questionStats[x.gameKey] && questionStats[x.gameKey][x.id];
-    const uStat = selUser && selUser.qStats && selUser.qStats[x.gameKey] && selUser.qStats[x.gameKey][x.id];
+    let gStat = questionStats && questionStats[x.gameKey] && questionStats[x.gameKey][x.id];
+    let uStat = selUser && selUser.qStats && selUser.qStats[x.gameKey] && selUser.qStats[x.gameKey][x.id];
+    if(x.gameKey==='chembasics' && !inorganicIds().has(x.id)){
+      gStat = addStat(gStat, questionStats && questionStats.inorganic && questionStats.inorganic[x.id]);
+      uStat = addStat(uStat, selUser && selUser.qStats && selUser.qStats.inorganic && selUser.qStats.inorganic[x.id]);
+    }
     return Object.assign({}, x, {gpct: pctOf(gStat), upct: pctOf(uStat), gStat, uStat});
   });
 

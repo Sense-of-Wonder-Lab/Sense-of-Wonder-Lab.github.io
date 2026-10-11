@@ -1557,8 +1557,56 @@ const IMAP = Object.fromEntries(ITEMS.map(it=>[it.id,it]));
 
 /* ================= 状態 ================= */
 let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
-function save(){try{localStorage.setItem('inorganicQuest1',JSON.stringify(state));}catch(e){}LB.pushState('inorganicQuest1',state);}
-function load(){try{const s=localStorage.getItem('inorganicQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}migrateCatNames();}
+// 2026-10-11 保存場所を無機クエストと分けた。以前は無機と同じ inorganicQuest1 を共有していて、
+// 片方を開くともう片方の弱点リスト・途中の記録が消えることがあった。初回に inorganicQuest1 から化学基礎の分だけを取り込む（無機側のデータは触らない）
+const SKEY='chembasicsQuest1', OLD_SKEY='inorganicQuest1';
+function save(){try{localStorage.setItem(SKEY,JSON.stringify(state));}catch(e){}LB.pushState(SKEY,state);}
+function load(){
+  try{
+    const s=localStorage.getItem(SKEY);
+    if(s)state=Object.assign(state,JSON.parse(s));
+    else{const o=localStorage.getItem(OLD_SKEY);if(o){importOld(JSON.parse(o),true);save();}}
+  }catch(e){}
+  migrateCatNames();
+}
+// 共有していた記録から化学基礎の分を足し込む（すでにある記録は消さない・何度呼んでも同じ結果）。withSettings＝表示設定も引き継ぐ
+// 弱点・習得済みは問題 ID で判定。無機と ID が重なる問題（q19 など）はどちらのものか区別できないので両方に残す
+function importOld(o,withSettings){
+  if(!o)return false;
+  let changed=false;
+  const isMine=n=>n in OLD_CAT_MAP||CATEGORIES.some(c=>n===c.name||n===c.name+'｜ランダム');
+  for(const [k,v] of Object.entries(o.catStats||{})){
+    if(!isMine(k)||!v)continue;
+    const t=state.catStats[k];
+    if(!t||(v.best||0)>(t.best||0)){state.catStats[k]=v;changed=true;}
+  }
+  for(const [k,v] of Object.entries(o.inProgress||{}))if(!state.inProgress[k]&&CATEGORIES.some(c=>c.name===k)){state.inProgress[k]=v;changed=true;}
+  for(const id of o.mastered||[])if(IMAP[id]&&!state.mastered.includes(id)){state.mastered.push(id);changed=true;}
+  for(const [id,n] of Object.entries(o.weak||{}))if(IMAP[id]&&!(id in state.weak)){state.weak[id]=n;changed=true;}
+  // チャレンジの自己ベスト：化学基礎の種目（〜V2）だけ。無機の score/time とは分ける
+  for(const [k,list] of Object.entries(o.bestList||{})){
+    if(!/V2$/.test(k)||!Array.isArray(list))continue;
+    if(!state.bestList)state.bestList={};
+    const cur=state.bestList[k]||[], seen=new Set(cur.map(x=>JSON.stringify(x)));
+    const add=list.filter(x=>x&&!seen.has(JSON.stringify(x)));
+    if(add.length){state.bestList[k]=cur.concat(add).sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec)).slice(0,3);changed=true;}
+  }
+  if(o.gridBestList&&!state.gridBestList){state.gridBestList=o.gridBestList;changed=true;}
+  if(withSettings)for(const k of ['memoLevel','memoOpen','answerFx','answerAuto'])if(o[k]!==undefined){state[k]=o[k];changed=true;}
+  return changed;
+}
+// 別の端末でしか遊んでいない記録はクラウドの inorganicQuest1 にあるので、ログイン後に一度だけ取り込む
+LB.onAuth(u=>{
+  if(!u||state.oldImported)return;
+  LB.pullState(OLD_SKEY).then(o=>{
+    if(!o||state.oldImported)return;
+    importOld(o,false);
+    migrateCatNames();
+    state.oldImported=true;
+    save(); updateWeakBadge();
+    if(!catDrill&&document.getElementById('view-home').classList.contains('active'))renderHome();
+  });
+});
 // 2026-10 単元の再編：旧単元名の記録（最高・今回）を新しい単元へ引き継ぐ。旧単元の「途中」は問題の構成が変わったので破棄
 const OLD_CAT_MAP={
   'No.1 元素記号 初級編(ランダム)':'Lv1 7-1 元素記号（初級）',
@@ -1579,8 +1627,8 @@ function migrateCatNames(){
   }
   for(const k of Object.keys(state.inProgress))if(!CATEGORIES.some(c=>c.name===k))delete state.inProgress[k];
 }
-LB.attachStateSync('inorganicQuest1',()=>localStorage.getItem('inorganicQuest1'));
-LB.maybeShowOnboarding('inorganicQuest1');
+LB.attachStateSync(SKEY,()=>localStorage.getItem(SKEY));
+LB.maybeShowOnboarding(localStorage.getItem(SKEY)?SKEY:OLD_SKEY);
 function isMastered(id){return state.mastered.includes(id);}
 function markMastered(id){if(!isMastered(id)){state.mastered.push(id);save();}}
 function weakCount(){return Object.keys(state.weak).length;}
@@ -1817,7 +1865,8 @@ function renderHome(){
   setMemoTitle(true);
   if(!memoLikesLoaded && LB.currentUser()){
     memoLikesLoaded=true;
-    LB.fetchLikes('inorganic').then(likes=>{ memoLikes=likes||{}; if(!catDrill) renderHome(); });
+    // いいねは 2026-10-11 から chembasics に記録。それより前のものは inorganic に入っているので両方読む
+    Promise.all([LB.fetchLikes('chembasics'),LB.fetchLikes('inorganic')]).then(([a,b])=>{ memoLikes=Object.assign({},b||{},a||{}); if(!catDrill) renderHome(); });
   }
   const lv=state.memoLevel||1;
   let list='';
@@ -1930,7 +1979,7 @@ function catResult(){
   const best=Math.max(prevBest,pct);
   state.catStats[sk]={correct,total,best};
   delete state.inProgress[catDrill.cat];
-  LB.recordQuizResults('inorganic', catDrill.results.map(x=>({id:x.it.id, ok:x.ok})));
+  LB.recordQuizResults('chembasics', catDrill.results.map(x=>({id:x.it.id, ok:x.ok})));
   if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'化学基礎', setName:catLabel(catDrill.cat)});
   save();
   let review='';
