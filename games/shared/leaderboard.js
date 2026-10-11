@@ -131,8 +131,10 @@ const LB = (function(){
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
       auth = firebase.auth();
+      auth.languageCode = 'ja';
+      completeEmailLinkSignIn();
       auth.onAuthStateChanged(fbUser=>{
-        if(!fbUser){ user = null; messages = []; notifyMessages(); notifyAuth(null); return; }
+        if(!fbUser){ user = null; messages = []; notifyMessages(); notifyAuth(null); markAuthReady(); return; }
         db.ref('users/'+fbUser.uid).once('value').then(snap=>{
           const data = snap.val();
           const nickname = (data && data.nickname) || (fbUser.displayName||'').slice(0,12) || 'ゲスト';
@@ -144,6 +146,8 @@ const LB = (function(){
           recordActivity(fbUser.uid);
           checkMessages(fbUser.uid);
           notifyAuth(user);
+          markAuthReady();
+          if(!data && !fbUser.displayName) setTimeout(openNicknamePrompt, 300);
         });
       });
     }catch(e){console.warn('[LB] init failed', e);}
@@ -561,7 +565,12 @@ const LB = (function(){
       .lb-avatar-edit{position:absolute;right:-2px;bottom:-2px;background:#fff;border:1.5px solid #e2e8f0;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center}
       .lb-account-email{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .lb-field-label{font-size:11.5px;color:#64748b;font-weight:700;margin-bottom:4px}
-      .lb-terms-link{font-size:12px;color:#2563eb;display:block;margin-top:12px;text-align:center}
+$1      .lb-or{display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:#94a3b8;font-size:11.5px}
+      .lb-or::before,.lb-or::after{content:'';flex:1;height:1px;background:#e2e8f0}
+      .lb-sent{font-size:13px;line-height:1.7;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px;color:#1e293b}
+      .lb-sent small{color:#64748b}
+      html[data-theme="navy"] .lb-sent{background:rgba(62,232,165,.1);border-color:rgba(62,232,165,.4);color:#eaf6ff}
+      html[data-theme="navy"] .lb-or::before,html[data-theme="navy"] .lb-or::after{background:rgba(255,255,255,.18)}
       .accountBtn{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
       .accountBtn img{width:100%;height:100%;object-fit:cover;display:block}
       .lb-toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:88vw;text-align:center;transition:opacity .3s}
@@ -623,20 +632,137 @@ const LB = (function(){
     return wrap;
   }
 
-  function openLoginModal(){
+  /* ---------- メールアドレスだけでログイン（パスワードなし：メールに届くリンクを開く） ---------- */
+  const EMAIL_KEY = 'lbEmailForSignIn';
+  function sendEmailLink(email){
+    email = (email||'').trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Promise.reject(new Error('メールアドレスを正しく入力してください'));
+    const url = location.origin + location.pathname;   // リンクを開くと、今のクエストのページに戻ってくる
+    return auth.sendSignInLinkToEmail(email, {url, handleCodeInApp:true}).then(()=>{ localStorage.setItem(EMAIL_KEY, email); });
+  }
+  function emailErrorText(err){
+    const c = err && err.code;
+    if(c==='auth/invalid-email') return 'メールアドレスを正しく入力してください';
+    if(c==='auth/operation-not-allowed') return 'メールでのログインは準備中です。先生に連絡してください。';
+    if(c==='auth/quota-exceeded') return '今日はメールを送れる回数の上限に達しました。明日もう一度お試しください。';
+    if(c==='auth/network-request-failed') return '通信エラーが発生しました。電波の良い場所でもう一度お試しください。';
+    if(c==='auth/invalid-action-code' || c==='auth/expired-action-code') return 'このリンクは使えません（期限切れ・使用済み）。もう一度メールを送ってください。';
+    return (err && err.message) ? err.message : String(err);
+  }
+  // メールのリンクから開いたときにログインを完了する。別の端末・アプリ内ブラウザで開いた場合はメールアドレスを聞く
+  function completeEmailLinkSignIn(){
+    try{ if(!auth.isSignInWithEmailLink(location.href)) return; }catch(e){ return; }
+    const finish = email => auth.signInWithEmailLink(email, location.href).then(()=>{
+      localStorage.removeItem(EMAIL_KEY);
+      history.replaceState(null, '', location.pathname + location.hash);
+      showToast('ログインしました！');
+    });
+    const saved = localStorage.getItem(EMAIL_KEY);
+    if(saved){ finish(saved).catch(err=>{ history.replaceState(null, '', location.pathname + location.hash); showToast(emailErrorText(err)); }); return; }
     openModal(`
-      <h3>🏆 ログイン</h3>
-      <p class="lb-note">Googleアカウントでログインすると、進捗が他の端末とも同期され、チャレンジのスコアを全国ランキングに送れます。プレイ自体はログインなしでも自由に楽しめます。</p>
+      <h3>📧 ログインの確認</h3>
+      <p class="lb-note">確認のため、リンクを受け取ったメールアドレスをもう一度入力してください。</p>
+      <input id="lbEmailConfirm" type="email" placeholder="メールアドレス" autocomplete="email">
+      <div class="lb-err" id="lbErr"></div>
+      <div class="lb-btns"><button id="lbCancel" class="lb-btn-secondary">やめる</button><button id="lbOk" class="lb-btn-primary">ログイン</button></div>
+    `, (wrap, close)=>{
+      wrap.querySelector('#lbCancel').onclick = ()=>{ history.replaceState(null, '', location.pathname + location.hash); close(); };
+      wrap.querySelector('#lbOk').onclick = ()=>{
+        finish(wrap.querySelector('#lbEmailConfirm').value.trim()).then(close).catch(err=>{ wrap.querySelector('#lbErr').textContent = emailErrorText(err); });
+      };
+    });
+  }
+  // ログイン画面の中身（Google と メール）。lead＝上に出す説明
+  function loginBodyHTML(lead){
+    return `
+      <p class="lb-note">${lead}</p>
       <div class="lb-err" id="lbErr"></div>
       <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
-      <div class="lb-btns" style="justify-content:center"><button id="lbCancel" class="lb-btn-secondary" style="width:260px">あとで</button></div>
+      <div class="lb-or"><span>または メールアドレスで</span></div>
+      <div id="lbEmailBox">
+        <input id="lbEmail" type="email" placeholder="メールアドレス" autocomplete="email">
+        <button id="lbEmailSend" class="lb-btn-primary" style="width:100%">ログイン用のリンクを送る</button>
+        <p class="lb-note" style="margin:8px 0 0">パスワードは不要です。届いたメールのリンクを開くとログインできます（届かないときは迷惑メールフォルダも見てください）。</p>
+      </div>`;
+  }
+  function wireLogin(wrap){
+    renderGoogleButton(wrap.querySelector('#gsiBox'), msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
+    const btn = wrap.querySelector('#lbEmailSend');
+    btn.onclick = ()=>{
+      const errBox = wrap.querySelector('#lbErr');
+      errBox.textContent = '';
+      btn.disabled = true; btn.textContent = '送信中…';
+      const email = wrap.querySelector('#lbEmail').value;
+      sendEmailLink(email).then(()=>{
+        wrap.querySelector('#lbEmailBox').innerHTML = `<div class="lb-sent">📨 <b>${escapeHtml(email.trim())}</b> にログイン用のリンクを送りました。<br>メールを開いて、リンクを押してください。<br><small>届かないときは迷惑メールフォルダも見てください。</small></div>`;
+      }).catch(err=>{
+        btn.disabled = false; btn.textContent = 'ログイン用のリンクを送る';
+        errBox.textContent = emailErrorText(err);
+      });
+    };
+  }
+  function openLoginModal(opts){
+    opts = opts || {};
+    openModal(`
+      <h3>${opts.title || '🏆 ログイン'}</h3>
+      ${loginBodyHTML(opts.lead || 'ログインすると、暗記以外のモード（チャレンジ・弱点特訓など）も遊べるようになり、進捗が他の端末とも同期されます。')}
+      <div class="lb-btns" style="justify-content:center"><button id="lbCancel" class="lb-btn-secondary" style="width:260px">${opts.cancel || 'あとで'}</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
       wrap.querySelector('#lbCancel').onclick = close;
-      onAuth(u=>{ if(u) close(); });
-      renderGoogleButton(wrap.querySelector('#gsiBox'), msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
+      onAuth(u=>{ if(u){ close(); if(opts.onLogin){ const fn = opts.onLogin; opts.onLogin = null; fn(); } } });
+      wireLogin(wrap);
     });
   }
+  // メールで新しく登録した人（Google の名前がない）に、ランキングで使うユーザーネームを決めてもらう
+  function openNicknamePrompt(){
+    if(!user) return;
+    openModal(`
+      <h3>ようこそ！</h3>
+      <p class="lb-note">ランキングなどに表示するユーザーネームを決めてください（本名でなくてOK。あとから変えられます）。</p>
+      <input id="lbNick" placeholder="ユーザーネーム(12文字以内)" maxlength="12">
+      <div class="lb-err" id="lbErr"></div>
+      <div class="lb-btns"><button id="lbCancel" class="lb-btn-secondary">あとで</button><button id="lbSave" class="lb-btn-primary">決定</button></div>
+    `, (wrap, close)=>{
+      wrap.querySelector('#lbCancel').onclick = close;
+      wrap.querySelector('#lbSave').onclick = ()=>{
+        updateNickname(wrap.querySelector('#lbNick').value).then(()=>{ notifyAuth(user); close(); })
+          .catch(err=>{ wrap.querySelector('#lbErr').textContent = err && err.message ? err.message : String(err); });
+      };
+    });
+  }
+
+  /* ---------- 登録なしで遊べる範囲（2026-10-11 先生）：暗記モードの1セットだけ。それ以外のモードはログインが必要 ---------- */
+  let authReady = false;
+  const readyCbs = [];
+  function markAuthReady(){ if(authReady) return; authReady = true; readyCbs.splice(0).forEach(fn=>{ try{ fn(); }catch(e){ console.error(e); } }); }
+  function whenAuthReady(fn){ if(authReady || !auth) fn(); else readyCbs.push(fn); }
+  const trialKey = ()=>'lbGuestTrial_'+gameId;
+  function getTrial(){ try{ return JSON.parse(localStorage.getItem(trialKey())) || {}; }catch(e){ return {}; } }
+  function setTrial(t){ try{ localStorage.setItem(trialKey(), JSON.stringify(t)); }catch(e){} }
+  // ログインが必要な操作。ログイン済み（確定待ちを含む）なら fn を実行、未ログインならログイン画面を出し、ログインしたら fn を実行
+  function requireLogin(fn, lead){
+    whenAuthReady(()=>{
+      if(user){ fn(); return; }
+      openLoginModal({title:'🔒 ログインが必要です', lead: lead || 'このモードはログイン（無料）すると遊べます。登録なしで遊べるのは暗記モードの1セットまでです。', onLogin: fn});
+    });
+  }
+  // 暗記モードのセットを始めるとき。未ログインなら最初の1セットだけ（同じセットのやり直し・続きはOK）
+  function canStartMemoSet(setKey, fn){
+    whenAuthReady(()=>{
+      if(user){ fn(); return; }
+      const t = getTrial();
+      if(!t.done && (!t.set || t.set===setKey)){ setTrial({set:setKey, done:false}); fn(); return; }
+      openLoginModal({title:'🔒 お試しは1セットまで', lead:'登録なしで遊べるのは暗記モードの1セットまでです。続きはログイン（無料）して遊んでね。ここまでの記録も引き継がれます。', onLogin: fn});
+    });
+  }
+  // 暗記モードのセットをやり終えたとき。未ログインならお試し終了にして登録をすすめる
+  function finishMemoSet(){
+    if(user || !auth) return;
+    const t = getTrial(); t.done = true; setTrial(t);
+    setTimeout(()=>openLoginModal({title:'🎉 1セットおつかれさま！', lead:'お試しはここまでです。ログイン（無料）すると、ほかのセットやチャレンジ・弱点特訓も遊べます。ここまでの記録も引き継がれます。'}), 600);
+  }
+  function isLoggedIn(){ return !!user; }
 
   function openAccountPanel(){
     openModal(`
@@ -720,15 +846,13 @@ const LB = (function(){
     localStorage.setItem(ONBOARD_FLAG, '1');
     openModal(`
       <h3>ようこそ!</h3>
-      <p class="lb-note">Googleでログインすると、進捗がスマホ・タブレットなど複数端末で共有され、チャレンジのスコアを全国ランキングに送れます。あとからでも登録できます。</p>
-      <div class="lb-err" id="lbErr"></div>
-      <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
-      <div class="lb-btns" style="justify-content:center"><button id="lbSkip" class="lb-btn-secondary" style="width:260px">お試しでプレイ</button></div>
+      ${loginBodyHTML('ログイン（無料）すると、すべてのモードが遊べて、進捗がスマホ・タブレットなど複数端末で共有されます。登録なしで遊べるのは暗記モードの1セットまでです。')}
+      <div class="lb-btns" style="justify-content:center"><button id="lbSkip" class="lb-btn-secondary" style="width:260px">お試しでプレイ（暗記1セット）</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
       wrap.querySelector('#lbSkip').onclick = close;
       onAuth(u=>{ if(u) close(); });
-      renderGoogleButton(wrap.querySelector('#gsiBox'), msg=>{ wrap.querySelector('#lbErr').textContent = msg; });
+      wireLogin(wrap);
     });
   }
 
@@ -736,6 +860,7 @@ const LB = (function(){
     init, onAuth, currentUser, logout, updateNickname, deleteAccount,
     submitScore, fetchTop, renderBoardHTML, renderSelfBestHTML, setRankFn,
     pushState, pullState, attachStateSync, maybeShowOnboarding,
-    openAccountModal, ensureStyle, onMessages, fetchLikes, recordQuizResults, notifyAdmin
+    openAccountModal, ensureStyle, onMessages, fetchLikes, recordQuizResults, notifyAdmin,
+    requireLogin, canStartMemoSet, finishMemoSet, isLoggedIn, whenAuthReady
   };
 })();

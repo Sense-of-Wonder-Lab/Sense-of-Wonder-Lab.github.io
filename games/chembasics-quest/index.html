@@ -419,7 +419,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=39"></script>
+<script src="../shared/leaderboard.js?v=40"></script>
 <script src="memo_units.js?v=11"></script>
 <script src="lv3_multi.js?v=5"></script>
 <script>
@@ -1935,7 +1935,7 @@ function renderHome(){
     renderHome();
   };
   homePanel.querySelectorAll('.deck-mode').forEach(el=>{
-    el.addEventListener('click',()=>startCatDrill(el.dataset.cat,null,el.dataset.order));
+    el.addEventListener('click',()=>LB.canStartMemoSet(el.dataset.cat,()=>startCatDrill(el.dataset.cat,null,el.dataset.order)));
   });
 }
 // order: 'seq'＝エクセル（データ）の順番どおり／'rand'＝ランダム
@@ -1980,6 +1980,7 @@ function catResult(){
   state.catStats[sk]={correct,total,best};
   delete state.inProgress[catDrill.cat];
   LB.recordQuizResults('chembasics', catDrill.results.map(x=>({id:x.it.id, ok:x.ok})));
+  LB.finishMemoSet();  // 未ログインならお試し（1セット）終了
   if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'化学基礎', setName:catLabel(catDrill.cat)});
   save();
   let review='';
@@ -1998,7 +1999,7 @@ function catResult(){
   homePanel.querySelectorAll('.review-tap').forEach(el=>{
     el.onclick=()=>reviewRetry(catDrill.results[+el.dataset.i].it);
   });
-  document.getElementById('catAgain').onclick=()=>startCatDrill(catDrill.cat,null,catDrill.order);
+  document.getElementById('catAgain').onclick=()=>{const c=catDrill.cat,o=catDrill.order;LB.canStartMemoSet(c,()=>startCatDrill(c,null,o));};
   document.getElementById('catHome').onclick=()=>{catDrill=null;renderHome();};
   homePanel.parentElement.scrollTop=0;
 }
@@ -3300,6 +3301,8 @@ function switchView(view){
 document.querySelectorAll('nav button').forEach(b=>{
   b.addEventListener('click',()=>{
     const target=b.dataset.view;
+    // 登録なしで遊べるのは暗記モードだけ（2026-10-11 先生）。ほかのタブはログインが必要
+    if(target!=='home'&&!LB.isLoggedIn()){LB.requireLogin(()=>b.click());return;}
     const activeView=document.querySelector('.view.active').id.replace('view-','');
     if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
       confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
@@ -3333,8 +3336,8 @@ updateWeakBadge();
 refreshAnswerFxBtn();
 refreshAnswerAutoBtn();
 renderHome();
-if(location.hash==='#runner')switchView('runner');
-else if(location.hash==='#grid')switchView('grid');
+if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
+else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
 </body>
 </html>

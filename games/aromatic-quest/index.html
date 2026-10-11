@@ -406,7 +406,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=39"></script>
+<script src="../shared/leaderboard.js?v=40"></script>
 <script>
 'use strict';
 let memoLikes={}, memoLikesLoaded=false;
@@ -1865,7 +1865,7 @@ function renderMemoHome(){
     renderMemoHome();
   };
   memoPanel.querySelectorAll('.deckbtn').forEach(b=>{
-    b.onclick=()=>startMemoQuiz(b.dataset.id);
+    b.onclick=()=>LB.canStartMemoSet(b.dataset.id,()=>startMemoQuiz(b.dataset.id));
   });
 }
 function startMemoQuiz(deckId,mode){
@@ -1958,6 +1958,7 @@ function memoQuizResult(){
   memoHeaderUpdate(`${memoQuiz.deck.name}　結果発表`);
   setMemoTitle(false);
   LB.recordQuizResults('aromatic', memoQuiz.results.map(x=>({id:x.item.id, ok:x.ok})));
+  LB.finishMemoSet();  // 未ログインならお試し（1セット）終了
   if(prevBest<100 && best===100) LB.notifyAdmin('perfect', {game:'芳香族', setName:memoQuiz.deck.name});
   save();
   let review='';
@@ -1976,7 +1977,7 @@ function memoQuizResult(){
   memoPanel.querySelectorAll('.review-tap').forEach(el=>{
     el.onclick=()=>reviewRetry(memoQuiz.results[+el.dataset.i].item);
   });
-  document.getElementById('memoAgain').onclick=()=>startMemoQuiz(memoQuiz.deck.id);
+  document.getElementById('memoAgain').onclick=()=>{const id=memoQuiz.deck.id;LB.canStartMemoSet(id,()=>startMemoQuiz(id));};
   document.getElementById('memoHome').onclick=()=>{memoQuiz=null;renderMemoHome();};
   memoPanel.parentElement.scrollTop=0;
 }
@@ -2052,6 +2053,8 @@ function showComplete(){
 /* ================= ナビ・共通 ================= */
 document.querySelectorAll('nav button').forEach(b=>{
   b.addEventListener('click',()=>{
+    // 登録なしで遊べるのは暗記モードだけ（2026-10-11 先生）。マップ・チャレンジ・弱点特訓はログインが必要
+    if(b.dataset.view!=='memo'&&!LB.isLoggedIn()){LB.requireLogin(()=>b.click());return;}
     document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -2127,6 +2130,12 @@ renderMap();
 initView();
 updateWeakBadge();
 if(!state.seen)document.getElementById('onboard').classList.add('open');
+// 未ログインなら暗記タブで始める（マップの説明も閉じる。ログイン後に初めてマップを開いたときに出す）
+LB.whenAuthReady(()=>{
+  if(LB.isLoggedIn())return;
+  document.getElementById('onboard').classList.remove('open');
+  document.querySelector('nav button[data-view="memo"]').click();
+});
 </script>
 </body>
 </html>
