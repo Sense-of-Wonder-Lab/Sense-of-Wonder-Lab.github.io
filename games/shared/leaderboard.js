@@ -13,6 +13,16 @@
      LB.pushState(storageKey, obj)                       // 進捗データを保存(デバウンス済み)
      LB.maybeShowOnboarding(storageKey)                  // 初回訪問の登録案内ポップアップ
 */
+/* LINE のアプリ内ブラウザでは Google ログインができない（Google がアプリ内ブラウザを禁止している）。
+   2026-10-12 公式LINEから配信したリンクでログインできなかったため、外部ブラウザで開き直す */
+(function(){
+  try{
+    if(!/ Line\//.test(navigator.userAgent)) return;
+    if(/[?&]openExternalBrowser=1/.test(location.search)) return;
+    var q = location.search ? location.search + '&openExternalBrowser=1' : '?openExternalBrowser=1';
+    location.replace(location.origin + location.pathname + q + location.hash);
+  }catch(e){}
+})();
 const LB = (function(){
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyBVmC7sIj4mRwgLyNmqJN5CQg6y_XMHiC0",
@@ -565,7 +575,9 @@ const LB = (function(){
       .lb-avatar-edit{position:absolute;right:-2px;bottom:-2px;background:#fff;border:1.5px solid #e2e8f0;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center}
       .lb-account-email{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .lb-field-label{font-size:11.5px;color:#64748b;font-weight:700;margin-bottom:4px}
-$1      .lb-or{display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:#94a3b8;font-size:11.5px}
+$1      .lb-inapp{font-size:12.5px;line-height:1.7;background:#fff7ed;border:1.5px solid #fdba74;border-radius:12px;padding:10px 12px;margin:0 0 12px;color:#1e293b}
+      html[data-theme="navy"] .lb-inapp{background:rgba(253,186,116,.12);color:#eaf6ff}
+      .lb-or{display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:#94a3b8;font-size:11.5px}
       .lb-or::before,.lb-or::after{content:'';flex:1;height:1px;background:#e2e8f0}
       .lb-sent{font-size:13px;line-height:1.7;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px;color:#1e293b}
       .lb-sent small{color:#64748b}
@@ -673,8 +685,10 @@ $1      .lb-or{display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:
     });
   }
   // ログイン画面の中身（Google と メール）。lead＝上に出す説明
+  const IN_APP_BROWSER = / Line\/|Instagram|FBAN|FBAV|FB_IAB|Twitter|TikTok|; wv\)/.test(navigator.userAgent);
   function loginBodyHTML(lead){
     return `
+      ${IN_APP_BROWSER ? '<div class="lb-inapp">⚠️ LINE などのアプリの中で開いていると、ログインできないことがあります。右上（または右下）のメニューから<b>「ブラウザで開く」</b>を選んで、Safari や Chrome で開き直してください。</div>' : ''}
       <p class="lb-note">${lead}</p>
       <div class="lb-err" id="lbErr"></div>
       <div id="gsiBox" style="display:flex;justify-content:center;margin:10px 0 4px"></div>
