@@ -749,7 +749,30 @@ $1      .lb-inapp{font-size:12.5px;line-height:1.7;background:#fff7ed;border:1.5
   /* ---------- 登録なしで遊べる範囲（2026-10-11 先生）：暗記モードの1セットだけ。それ以外のモードはログインが必要 ---------- */
   let authReady = false;
   const readyCbs = [];
-  function markAuthReady(){ if(authReady) return; authReady = true; readyCbs.splice(0).forEach(fn=>{ try{ fn(); }catch(e){ console.error(e); } }); }
+  /* ---------- 訪問の記録（管理画面の「アクセス」タブ用。ログインしていない人も数える） ----------
+     visits/{日付(日本時間)}/{ゲームID}/{端末のランダムID} = 0(ログインなし) / 1(ログインあり)。名前・メールは記録しない */
+  function visitorId(){
+    try{
+      let v = localStorage.getItem('lbVisitorId');
+      if(!v){ v = 'v' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-6); localStorage.setItem('lbVisitorId', v); }
+      return v;
+    }catch(e){ return null; }
+  }
+  function jstDay(){ return new Date(Date.now()+9*3600*1000).toISOString().slice(0,10); }
+  function recordVisit(){
+    try{
+      if(!db || !gameId) return;
+      const vid = visitorId(); if(!vid) return;
+      const day = jstDay(), val = user ? 1 : 0;
+      const cacheKey = 'lbVisit_'+gameId;
+      let c; try{ c = JSON.parse(localStorage.getItem(cacheKey)) || {}; }catch(e){ c = {}; }
+      if(c.day===day && c.val>=val) return;   // 今日はもう記録済み
+      db.ref('visits/'+day+'/'+gameId+'/'+vid).set(val)
+        .then(()=>{ try{ localStorage.setItem(cacheKey, JSON.stringify({day, val})); }catch(e){} })
+        .catch(()=>{});   // ルール未設定などで失敗しても遊ぶのには影響しない
+    }catch(e){}
+  }
+  function markAuthReady(){ recordVisit(); if(authReady) return; authReady = true; readyCbs.splice(0).forEach(fn=>{ try{ fn(); }catch(e){ console.error(e); } }); }
   function whenAuthReady(fn){ if(authReady || !auth) fn(); else readyCbs.push(fn); }
   const trialKey = ()=>'lbGuestTrial_'+gameId;
   function getTrial(){ try{ return JSON.parse(localStorage.getItem(trialKey())) || {}; }catch(e){ return {}; } }

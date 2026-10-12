@@ -137,6 +137,7 @@
     <button class="tabbtn active" id="tabUsers">👤 会員一覧</button>
     <button class="tabbtn" id="tabQuestions">📋 全問題一覧</button>
     <button class="tabbtn" id="tabRunner">🏃 化学RUSH！</button>
+    <button class="tabbtn" id="tabVisits">📈 アクセス</button>
   </div>
 
   <div class="layout" id="usersView">
@@ -197,6 +198,12 @@
       <th class="sortable" data-key="gpct" title="全プレイヤー合計">全体正答率<span class="arrow">▾</span></th>
       <th class="sortable" data-key="upct" title="会員一覧で選択中のユーザーのみ">個人正答率<span class="arrow">▾</span></th>
     </tr></thead><tbody id="qTbody"></tbody></table></div>
+  </div>
+
+  <div class="card" id="visitsView" style="display:none">
+    <div class="stat-row" id="visitStats"></div>
+    <div class="resultCount">人数は端末ごとに数えています（同じ人でもスマホとパソコンは別）。同じ日に同じ端末が何度開いても1人。ログイン中に1ページでも開いた人は「ログインあり」、トップページだけ見た人は「ログインなし」に数えます。</div>
+    <div class="tw" id="visitTable"></div>
   </div>
 
   <div class="card" id="runnerView" style="display:none">
@@ -854,11 +861,46 @@ function renderQuestions(){
     </tr>`).join('');
 }
 function setActiveTab(id){
-  ['tabUsers','tabQuestions','tabRunner'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
+  ['tabUsers','tabQuestions','tabRunner','tabVisits'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
   document.getElementById('usersView').style.display = id==='tabUsers' ? '' : 'none';
   document.getElementById('questionsView').style.display = id==='tabQuestions' ? '' : 'none';
   document.getElementById('runnerView').style.display = id==='tabRunner' ? '' : 'none';
+  document.getElementById('visitsView').style.display = id==='tabVisits' ? '' : 'none';
 }
+/* ================= アクセス（visits/{日付}/{ページ}/{端末ID} = 0 ログインなし / 1 ログインあり） ================= */
+const VISIT_PAGES = [['top','トップ'],['chembasics','化学基礎'],['inorganic','無機'],['aliphatic','脂肪族'],['aromatic','芳香族'],['polymer','高分子']];
+function jstDayOffset(n){ return new Date(Date.now()+9*3600*1000-n*86400000).toISOString().slice(0,10); }
+function renderVisits(){
+  const box = document.getElementById('visitTable');
+  box.innerHTML = '<div class="resultCount">読み込み中...</div>';
+  db.ref('visits').orderByKey().startAt(jstDayOffset(29)).once('value').then(snap=>{
+    const all = snap.val() || {};
+    // 日ごとに、端末ごとの「ログインあり」を集計（どこか1ページでもログインありなら、ありとする）
+    const days = [];
+    for(let i=0;i<30;i++){
+      const day = jstDayOffset(i), d = all[day] || {};
+      const dev = {}, page = {};
+      for(const [p, vids] of Object.entries(d)){
+        page[p] = {g:0, l:0};
+        for(const [vid, v] of Object.entries(vids||{})){
+          dev[vid] = Math.max(dev[vid]||0, v===1?1:0);
+          page[p][v===1?'l':'g']++;
+        }
+      }
+      const vals = Object.values(dev);
+      days.push({day, total: vals.length, login: vals.filter(v=>v===1).length, guest: vals.filter(v=>v!==1).length, page, dev});
+    }
+    const uniq = n => { const m = {}; days.slice(0,n).forEach(x=>Object.entries(x.dev).forEach(([k,v])=>{ m[k] = Math.max(m[k]||0, v); })); const v = Object.values(m); return {t:v.length, g:v.filter(x=>x!==1).length, l:v.filter(x=>x===1).length}; };
+    const t1 = uniq(1), t7 = uniq(7), t30 = uniq(30);
+    document.getElementById('visitStats').innerHTML = [['今日',t1],['直近7日',t7],['直近30日',t30]].map(([k,u])=>
+      `<div class="stat"><b>${u.t}</b><span>${k}の訪問者（ログインなし ${u.g}・あり ${u.l}）</span></div>`).join('');
+    const pc = (p, x) => { const c = x.page[p]; if(!c) return '<td class="noProg">-</td>'; return p==='top' ? `<td>${c.g+c.l}</td>` : `<td>${c.g+c.l}<span class="noProg">（なし ${c.g}）</span></td>`; };
+    box.innerHTML = `<table><thead><tr><th>日付</th><th>訪問者</th><th>ログインなし</th><th>ログインあり</th>${VISIT_PAGES.map(([,n])=>`<th>${n}</th>`).join('')}</tr></thead><tbody>`
+      + days.map(x=>`<tr><td>${x.day.slice(5).replace('-','/')}</td><td><b>${x.total}</b></td><td>${x.guest}</td><td>${x.login}</td>${VISIT_PAGES.map(([p])=>pc(p,x)).join('')}</tr>`).join('')
+      + '</tbody></table>';
+  }).catch(err=>{ box.innerHTML = '<div class="resultCount" style="color:#dc2626">読み込めませんでした（Firebase のルールに visits が入っているか確認してください）: '+escapeHtml(String(err && err.message || err))+'</div>'; });
+}
+document.getElementById('tabVisits').addEventListener('click', ()=>{ setActiveTab('tabVisits'); renderVisits(); });
 document.getElementById('tabUsers').addEventListener('click', ()=>{
   setActiveTab('tabUsers');
 });

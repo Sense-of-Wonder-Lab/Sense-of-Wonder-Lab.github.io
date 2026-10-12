@@ -798,5 +798,25 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 </script>
 
+<script>
+/* 訪問の記録（管理画面の「アクセス」タブ用。名前・メールなどは記録しない） */
+(function(){
+  try{
+    function visitorId(){
+      try{
+        let v = localStorage.getItem('lbVisitorId');
+        if(!v){ v = 'v' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-6); localStorage.setItem('lbVisitorId', v); }
+        return v;
+      }catch(e){ return null; }
+    }
+    function jstDay(){ return new Date(Date.now()+9*3600*1000).toISOString().slice(0,10); }
+    var vid = visitorId(); if(!vid) return;
+    var day = jstDay();
+    if(localStorage.getItem('lbVisit_top') === day) return;
+    fetch('https://sense-of-wonder-lab-default-rtdb.asia-southeast1.firebasedatabase.app/visits/'+day+'/top/'+vid+'.json', {method:'PUT', body:'0'})
+      .then(function(r){ if(r.ok) localStorage.setItem('lbVisit_top', day); }).catch(function(){});
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
