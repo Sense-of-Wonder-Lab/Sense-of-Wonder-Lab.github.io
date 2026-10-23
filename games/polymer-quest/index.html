@@ -72,6 +72,8 @@ nav button.active{color:var(--blue);font-weight:700}
 #view-home .panel{padding-top:6px}
 .viewfx-toggle{background:rgba(255,255,255,.92);border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#64748b;padding:6px 9px;box-shadow:0 1px 3px rgba(0,0,0,.06);white-space:nowrap}
 .viewfx-toggle.on{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
+/* 解説ボタン追加で4つ並ぶので、スマホ幅では少し詰める（タイトルを2行にしない） */
+@media(max-width:420px){.viewfx-title{font-size:15px;white-space:nowrap}.viewfx-toggles{gap:4px;padding-left:10px;padding-right:10px}.viewfx-toggle{padding:6px 5px;font-size:10px}}
 #answerFxPopup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:70;pointer-events:none}
 #answerFxPopup.show{display:flex}
 .afx-box{text-align:center;animation:afxpop .32s cubic-bezier(.34,1.56,.64,1)}
@@ -298,6 +300,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
   <div class="view active" id="view-home">
     <div class="viewfx-toggles">
       <div class="viewfx-title" id="memoTitle">🧠 暗記モード</div>
+      <button id="btnExplain" class="viewfx-toggle"></button>
       <button id="btnAnswerAuto" class="viewfx-toggle"></button>
       <button id="btnAnswerFx" class="viewfx-toggle"></button>
     </div>
@@ -370,7 +373,7 @@ function choicesClass(it){return it.choiceImg?'choices imgs':'choices';}
 function preloadImgs(its){its.forEach(it=>{[it.img,...(it.choiceImg?[...answersOf(it),...it.wrongs]:[])].forEach(n=>{if(n){const im=new Image();im.src=imgSrc(n);}});});}
 
 /* ================= 状態 ================= */
-let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false};
+let state={mastered:[],weak:{},best:null,catStats:{},inProgress:{},answerFx:'popup',answerAuto:false,explainOn:true};
 function save(){try{localStorage.setItem('polymerQuest1',JSON.stringify(state));}catch(e){}LB.pushState('polymerQuest1',state);}
 function load(){
   try{const s=localStorage.getItem('polymerQuest1');if(s)state=Object.assign(state,JSON.parse(s));}catch(e){}
@@ -483,6 +486,19 @@ document.getElementById('btnAnswerFx').addEventListener('click',()=>{
   save(); refreshAnswerFxBtn();
   toast(state.answerFx==='simple'?'正誤リアクション:シンプルに切り替えました':'正誤リアクション:ポップアップに切り替えました');
 });
+/* 解説の表示ON/OFF（2026-10-23、無機・脂肪族・芳香族と共通）。自動のすぐ左に置く */
+function refreshExplainBtn(){
+  const on=state.explainOn!==false;
+  const btn=document.getElementById('btnExplain');
+  btn.textContent=on?'📖 解説:ON':'📖 解説:OFF';
+  btn.classList.toggle('on',on);
+  btn.title='回答後に解説を表示する';
+}
+document.getElementById('btnExplain').addEventListener('click',()=>{
+  state.explainOn=state.explainOn===false;
+  save(); refreshExplainBtn();
+  toast(state.explainOn?'回答後に解説を表示します':'解説を表示しないようにしました');
+});
 function refreshAnswerAutoBtn(){
   const on=state.answerAuto===true;
   const btn=document.getElementById('btnAnswerAuto');
@@ -512,17 +528,27 @@ function renderMemoQ(el,it,onDone,progressText){
     ${progressText?`<div class="chal-head">${progressText}</div>`:''}
     <div class="qprompt">${qHTML(it)}</div>
     ${ch}
-    <div style="height:80px"></div>
+    <div class="explain" id="memoExplain"></div>
+    <div id="memoSpacer" style="height:80px"></div>
     <button class="bigbtn fixed-next" id="memoNextBtn" style="display:none">次へ</button>`;
   bindAnswer(el,it,choices,(ok,picked)=>{
     markChoices(el,it,choices,picked,false,false);
     if(state.answerFx!=='simple')showAnswerFxPopup(ok);
+    // 解説（2026-10-23、他クエストと共通）：正解・不正解とも表示。不正解のときは自動送りせず、読んでから「次へ」
+    // 解説OFFのときは表示せず、自動送りも従来どおり（不正解は少し長く待って進む）
+    const showExp=state.explainOn!==false;
+    if(showExp){
+      const ex=el.querySelector('#memoExplain');
+      ex.className='explain '+(ok?'ok':'ng');
+      ex.innerHTML=`<div class="rname">${ok?'⭕ 正解!':'❌ 不正解… 正解は「'+lbl(it.correct)+'」'}</div>${it.exp?`<div class="note">${ital(it.exp)}</div>`:''}`;
+    }
     const nb=el.querySelector('#memoNextBtn');
     nb.style.display='block';
+    if(showExp&&!ok)el.querySelector('#memoSpacer').scrollIntoView({behavior:'smooth',block:'nearest'});  // 固定の「次へ」に隠れないよう余白ごと見せる
     let advanced=false;
     const advance=()=>{if(advanced)return;advanced=true;onDone(ok);};
     nb.onclick=advance;
-    if(state.answerAuto)memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(ok?0:1000));
+    if(state.answerAuto&&(ok||!showExp))memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(ok?0:1000));
   });
 }
 function reviewRetry(it){
@@ -926,6 +952,7 @@ load();
 updateWeakBadge();
 refreshAnswerFxBtn();
 refreshAnswerAutoBtn();
+refreshExplainBtn();
 renderHome();
 </script>
 </body>
