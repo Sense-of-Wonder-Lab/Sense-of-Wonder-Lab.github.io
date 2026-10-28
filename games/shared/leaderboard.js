@@ -369,6 +369,19 @@ const LB = (function(){
     }, payload||{})).catch(err=>console.error('[LB] notifyAdmin failed', err));
   }
 
+  // 管理画面で「ランキング表示」を外したユーザー(lbHidden/{uid}=true)。
+  // 読めない(ルール未設定・通信失敗)ときは誰も隠さずにランキングを出す。
+  let hiddenCache = null;
+  function fetchHidden(){
+    if(hiddenCache) return hiddenCache;
+    hiddenCache = fetch(FIREBASE_CONFIG.databaseURL + '/lbHidden.json')
+      .then(r=>r.ok ? r.json() : {})
+      .then(obj=>obj||{})
+      .catch(()=>({}));
+    setTimeout(()=>{ hiddenCache = null; }, 60000);
+    return hiddenCache;
+  }
+
   function fetchTop(kind, n){
     n = n || 10;
     if(!gameId) return Promise.resolve([]);
@@ -376,10 +389,10 @@ const LB = (function(){
     // orderByChild) だと、この一覧読み込みだけ稀に一部の子しか返らないことが
     // あったための回避策。
     const url = FIREBASE_CONFIG.databaseURL + '/leaderboard/' + encodeURIComponent(gameId) + '/' + encodeURIComponent(kind) + '.json';
-    return fetch(url).then(r=>r.json())
-      .then(obj=>{
+    return Promise.all([fetch(url).then(r=>r.json()), fetchHidden()])
+      .then(([obj, hidden])=>{
         const arr = [];
-        for(const uid in (obj||{})) arr.push(Object.assign({uid}, obj[uid]));
+        for(const uid in (obj||{})) if(!hidden[uid]) arr.push(Object.assign({uid}, obj[uid]));
         arr.sort((a,b)=>(b.correct-a.correct)||(a.sec-b.sec));
         return arr.slice(0, n);
       }).catch(err=>{ console.warn('[LB] fetchTop failed', err); return []; });

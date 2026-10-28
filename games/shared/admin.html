@@ -49,6 +49,9 @@
   #tbody tr:hover{background:#f8fafc}
   #tbody tr.selected{background:#eff6ff}
   #tbody td button{cursor:pointer}
+  #tbody td.lbCell{text-align:center}
+  #tbody td.lbCell input{width:18px;height:18px;cursor:pointer}
+  #tbody tr.lbOff td{color:#94a3b8}
   .resultCount{font-size:12px;color:#94a3b8;margin:-6px 0 12px}
   .detailCard{min-height:200px}
   .detailEmpty{color:#94a3b8;font-size:13px;text-align:center;padding:40px 10px}
@@ -169,6 +172,7 @@
           <th class="sortable" data-key="days">プレイ日数<span class="arrow">▾</span></th>
           <th>直近のゲーム</th>
           <th title="100%達成したセット数(クリックで詳細)">🎉達成</th>
+          <th title="チェックを外すと全ゲームのランキングに表示されなくなります(記録は消えません)">ランキング表示</th>
         </tr></thead><tbody id="tbody"></tbody></table></div>
       </div>
     </div>
@@ -344,6 +348,15 @@ function setMemo(uid, text){
 }
 
 let allUsers = {};
+// ランキング非表示リスト: lbHidden/{uid} = true のユーザーは全ゲームのランキング(fetchTop)から除外される。
+// 記録(leaderboard/...)自体は消さないので、チェックを戻せば元通り表示される。
+let lbHidden = {};
+let lbHiddenOk = true;
+function loadLbHidden(){
+  return db.ref('lbHidden').once('value')
+    .then(snap=>{ lbHidden = snap.val()||{}; lbHiddenOk = true; })
+    .catch(err=>{ lbHidden = {}; lbHiddenOk = false; console.error('[admin] lbHidden read failed', err); });
+}
 let sortKey = 'lastActive', sortDir = -1;
 let selectedUid = null;
 
@@ -358,7 +371,11 @@ auth.onAuthStateChanged(fbUser=>{
     document.getElementById('loginCard').style.display='none';
     document.getElementById('dataCard').style.display='';
     allUsers = snap.val()||{};
-    render();
+    return loadLbHidden().then(()=>{
+      render();
+      if(!lbHiddenOk) document.getElementById('err').textContent = 'ランキング表示の設定を読み込めませんでした（Firebase のルールに lbHidden が入っているか確認してください）';
+    });
+  }).then(()=>{
     attachNotifListener();
   }).catch(err=>{
     document.getElementById('err').textContent = '閲覧権限がありません('+escapeHtml(fbUser.email)+')。管理者アカウントでログインしてください。';
@@ -431,7 +448,9 @@ function render(){
     else if(idleDays >= 7) tag = '<span class="tag tag-idle">idle</span>';
     const newTag = (now-r.ts < 7*24*3600*1000) ? '<span class="tag tag-new">NEW</span>' : '';
     const av = r.avatar ? `<img class="avatar" src="${r.avatar}">` : `<span class="avatar">${escapeHtml(r.nickname[0]||'?')}</span>`;
-    return `<tr data-uid="${r.uid}"${r.uid===selectedUid?' class="selected"':''}>
+    const lbOn = !lbHidden[r.uid];
+    const trCls = [r.uid===selectedUid?'selected':'', lbOn?'':'lbOff'].filter(Boolean).join(' ');
+    return `<tr data-uid="${r.uid}"${trCls?` class="${trCls}"`:''}>
       <td>${av}</td>
       <td>${escapeHtml(r.nickname)} ${tag} ${newTag}</td>
       <td class="memoCell">${r.memo?escapeHtml(r.memo):'<span style="color:#cbd5e1;font-weight:400">-</span>'}</td>
@@ -440,6 +459,7 @@ function render(){
       <td>${r.days}日</td>
       <td>${escapeHtml(r.lastGame)}</td>
       <td>${r.sets100.length?`<span class="achieveBadge">🎉 ${r.sets100.length}</span>`:'<span style="color:#cbd5e1">-</span>'}</td>
+      <td class="lbCell"><input type="checkbox" class="lbToggle" data-uid="${r.uid}" ${lbOn?'checked':''} ${lbHiddenOk?'':'disabled'} title="${lbOn?'ランキングに表示中':'ランキング非表示'}"></td>
     </tr>`;
   }).join('');
   if(selectedUid && allUsers[selectedUid]) renderDetail(selectedUid);
@@ -657,10 +677,29 @@ document.getElementById('memoImportFile').addEventListener('change', e=>{
   }).catch(err=>alert('読み込みに失敗しました: '+err.message));
 });
 
+document.getElementById('tbody').addEventListener('change', e=>{
+  const cb = e.target.closest('.lbToggle');
+  if(!cb) return;
+  const uid = cb.dataset.uid;
+  const show = cb.checked;
+  const name = (allUsers[uid] && allUsers[uid].nickname) || uid;
+  if(!show && !confirm(`「${name}」を全ゲームのランキングに表示しないようにします。\n(記録は消えません。チェックを戻せば再表示されます)`)){
+    cb.checked = true; return;
+  }
+  cb.disabled = true;
+  db.ref('lbHidden/'+uid).set(show ? null : true).then(()=>{
+    if(show) delete lbHidden[uid]; else lbHidden[uid] = true;
+    render();
+  }).catch(err=>{
+    cb.checked = !show; cb.disabled = false;
+    alert('保存できませんでした（Firebase のルールに lbHidden の書き込み許可があるか確認してください）: '+(err && err.message || err));
+  });
+});
 function sendMessage(uid, text, extra){
   return db.ref('users/'+uid+'/messages').push(Object.assign({text, ts:firebase.database.ServerValue.TIMESTAMP, read:false}, extra||{}));
 }
 document.getElementById('tbody').addEventListener('click', e=>{
+  if(e.target.closest('.lbCell')) return;   // チェックボックス操作で行選択しない
   const tr = e.target.closest('tr[data-uid]');
   if(tr) selectUser(tr.dataset.uid);
 });
