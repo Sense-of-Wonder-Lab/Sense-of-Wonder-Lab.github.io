@@ -353,6 +353,8 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rn-ans-btn:disabled{opacity:.5}
 .rn-ans-btn.true-btn{left:16px;color:#5cffc0;border-color:rgba(92,255,192,.7);
   box-shadow:0 0 14px rgba(92,255,192,.45),inset 0 0 12px rgba(92,255,192,.15);text-shadow:0 0 10px rgba(92,255,192,.9)}
+.rn-track.rn-compact .rn-ans-btn{width:72px;height:72px;border-radius:18px;bottom:14px;font-size:32px}
+.rn-track.rn-compact .rn-ans-btn.false-btn{font-size:38px}
 .rn-ans-btn.false-btn{right:16px;color:#ff6f8f;border-color:rgba(255,111,143,.7);font-size:48px;
   box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
 .rn-statement-panel{
@@ -2889,6 +2891,10 @@ void main(void){
 
 const RN_FLASK_EXTRA_SCALE = 1.05;
 const RN_FLASK_CENTER_Y_FRACTION = 0.46;
+// 写真＋器具の欄の高さ（元は480px固定）。縦が短い画面では縮め、器具も同じ比率で縮めて見た目の構図を保つ
+const RN_TRACK_MAX_H = 480;
+const RN_TRACK_MIN_H = 260;
+const RN_STATEMENT_MIN_H = 250;
 
 class RunnerFlaskEngine {
   constructor(host, trackW, trackH, bgSrc){
@@ -2934,7 +2940,7 @@ class RunnerFlaskEngine {
     this.originX = -(imgW*scale)/2; this.originY = -(imgH*scale)/2;
     this.scaleV = scale; this.particleArea = particleArea;
     // 器具ごとの追加縮小率(未指定なら1倍)
-    const dispScale = RN_FLASK_EXTRA_SCALE * (instr.dispScale || 1);
+    const dispScale = RN_FLASK_EXTRA_SCALE * (instr.dispScale || 1) * (this.trackH / RN_TRACK_MAX_H);
     this.artContainer.scale.set(dispScale);
     // 器具をトラック中央付近に配置(○×ボタン・問題文パネルは写真の上に重ねて表示するデザインのため)
     this.artContainer.y = this.trackH * RN_FLASK_CENTER_Y_FRACTION;
@@ -3173,7 +3179,14 @@ function renderRunnerPlayShell(){
       </div>
     </div>`;
   const rnTrackEl = document.querySelector('.rn-track');
-  runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, 480, 'assets_flask/bg_lab.webp');
+  // 2026-10-29 iPhoneなど縦の短い画面では問題文・解説が見切れていたため、
+  // 問題文欄に最低 RN_STATEMENT_MIN_H を残し、残りの高さに合わせて写真＋器具の欄を縮める（最大480px）
+  const rnCardEl = rnTrackEl.parentElement;
+  const rnAvailH = rnCardEl.clientHeight;
+  const rnTrackH = rnAvailH>0 ? Math.round(Math.max(RN_TRACK_MIN_H, Math.min(RN_TRACK_MAX_H, rnAvailH - RN_STATEMENT_MIN_H))) : RN_TRACK_MAX_H;
+  rnTrackEl.style.height = rnTrackH+'px';
+  rnTrackEl.classList.toggle('rn-compact', rnTrackH < 400);
+  runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, rnTrackH, 'assets_flask/bg_lab.webp');
   runnerState.el={
     timerFill:document.getElementById('rnTimerFill'), timerNum:document.getElementById('rnTimerNum'),
     hearts:document.getElementById('rnHearts'), genreTag:document.getElementById('rnGenreTag'),
@@ -3252,6 +3265,7 @@ function runnerNextQuestion(){
   const q=st.pool[st.idx];
   st.el.genreTag.textContent=q.genre;
   st.el.statement.innerHTML=(q.svg||'')+q.statement;
+  st.el.statement.parentElement.scrollTop=0;
   pickRunnerFlask(st.flaskEngine);
   startRunnerTimer();
 }
@@ -3285,6 +3299,11 @@ function runnerAnswer(userAnswer){
     fb.innerHTML = isTimeout
       ? `⏰ 時間切れ! 正解は「${q.answer?'正しい(○)':'誤り(×)'}」。 ${q.explanation}`
       : `❌ 残念、正解は「${q.answer?'正しい(○)':'誤り(×)'}」。 ${q.explanation}`;
+  }
+  // 問題文欄がスクロールする長さのときは、解説が見えるところまで自動で送る
+  const rnSp=fb.parentElement;
+  if(rnSp && rnSp.scrollHeight>rnSp.clientHeight){
+    rnSp.scrollTo({top:Math.max(0,rnSp.scrollTop+fb.getBoundingClientRect().top-rnSp.getBoundingClientRect().top-8),behavior:'smooth'});
   }
   runnerRenderHUD();
   if(st.lives<=0){
