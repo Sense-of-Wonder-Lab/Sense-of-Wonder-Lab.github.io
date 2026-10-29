@@ -438,6 +438,22 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
   .plus{font-size:24px}
   .arrow-h{font-size:32px}
 }
+/* 化学RUSH！ PC・タブレット：問題文と解説の文字を大きく（2026-10-29） */
+@media (min-width:700px){
+  .rn-statement{font-size:19px;line-height:1.7}
+  .rn-feedback{font-size:16px;line-height:1.65;padding:12px 14px;margin-top:14px;border-radius:10px}
+  .rn-statement-panel{padding:20px 22px}
+  .rn-genretag{font-size:13px}
+}
+/* 化学RUSH！ 横長の画面：左に器具・右に問題文の2列で、画面の高さに収める */
+@media (min-width:960px) and (orientation:landscape){
+  #runnerPanel:has(.rn-card){max-width:1240px}
+  .rn-card{flex-direction:row;min-height:0}
+  .rn-track{height:auto!important;flex:0 0 56%;border-radius:16px 0 0 16px}
+  .rn-statement-panel{flex:1;min-width:0;min-height:0;margin:14px 14px 14px 12px;padding:24px 26px}
+  .rn-statement{font-size:20px}
+  .rn-feedback{font-size:17px}
+}
 /* 横長の画面（PC・タブレット横）：暗記は左に問題・右に選択肢、スクロールなしで1画面に */
 @media (min-width:960px) and (orientation:landscape){
   .decklist,.unit-group-body{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -2893,6 +2909,8 @@ const RN_FLASK_EXTRA_SCALE = 1.05;
 const RN_FLASK_CENTER_Y_FRACTION = 0.46;
 // 写真＋器具の欄の高さ（元は480px固定）。縦が短い画面では縮め、器具も同じ比率で縮めて見た目の構図を保つ
 const RN_TRACK_MAX_H = 480;
+// 器具の大きさ：元の480px欄を1倍として、欄の高さ・幅に合わせて拡大縮小（大きい画面でも1.25倍まで）
+function rnFlaskFit(w,h){ return Math.min(h/RN_TRACK_MAX_H, w/400, 1.25); }
 const RN_TRACK_MIN_H = 260;
 const RN_STATEMENT_MIN_H = 250;
 
@@ -2940,7 +2958,7 @@ class RunnerFlaskEngine {
     this.originX = -(imgW*scale)/2; this.originY = -(imgH*scale)/2;
     this.scaleV = scale; this.particleArea = particleArea;
     // 器具ごとの追加縮小率(未指定なら1倍)
-    const dispScale = RN_FLASK_EXTRA_SCALE * (instr.dispScale || 1) * (this.trackH / RN_TRACK_MAX_H);
+    const dispScale = RN_FLASK_EXTRA_SCALE * (instr.dispScale || 1) * rnFlaskFit(this.trackW, this.trackH);
     this.artContainer.scale.set(dispScale);
     // 器具をトラック中央付近に配置(○×ボタン・問題文パネルは写真の上に重ねて表示するデザインのため)
     this.artContainer.y = this.trackH * RN_FLASK_CENTER_Y_FRACTION;
@@ -3027,8 +3045,46 @@ class RunnerFlaskEngine {
   }
 }
 function pickRunnerFlask(engine){
-  engine.load(RUNNER_INSTRUMENTS[Math.floor(Math.random()*RUNNER_INSTRUMENTS.length)]);
+  engine.lastInstr = RUNNER_INSTRUMENTS[Math.floor(Math.random()*RUNNER_INSTRUMENTS.length)];
+  engine.load(engine.lastInstr);
 }
+// 写真＋器具の欄の大きさを決めてエンジンを作る（2026-10-29）
+//  携帯・縦長：問題文欄に最低 RN_STATEMENT_MIN_H を残し、残りの高さで欄を決める（最大480px、縦長タブレットは620pxまで）
+//  横長のPC・タブレット：左に器具、右に問題文の2列（CSSの .rn-card が横並び）。欄は画面の高さいっぱい
+function rnBuildFlaskEngine(){
+  const st=runnerState; if(!st) return;
+  const trackEl=document.querySelector('.rn-track'); if(!trackEl) return;
+  const cardEl=trackEl.parentElement;
+  const host=document.getElementById('rnFlaskHost');
+  host.style.display='none';   // 今の描画面の大きさに引っぱられずに測るため、測る間だけ隠す
+  const side=getComputedStyle(cardEl).flexDirection==='row';
+  let h;
+  if(side){
+    trackEl.style.height='';
+    h=Math.round(cardEl.clientHeight)||RN_TRACK_MAX_H;
+  }else{
+    const maxH = window.innerWidth>=700 ? 620 : RN_TRACK_MAX_H;
+    const availH=cardEl.clientHeight;
+    h = availH>0 ? Math.round(Math.max(RN_TRACK_MIN_H, Math.min(maxH, availH - RN_STATEMENT_MIN_H))) : RN_TRACK_MAX_H;
+    trackEl.style.height=h+'px';
+  }
+  const w=Math.round(trackEl.clientWidth)||420;
+  host.style.display='';
+  trackEl.classList.toggle('rn-compact', h<400);
+  const old=st.flaskEngine;
+  if(old){
+    if(old.trackW===w && old.trackH===h) return;
+    try{ old.app.destroy(true,{children:true}); }catch(e){}
+    host.innerHTML='';
+  }
+  st.flaskEngine = new RunnerFlaskEngine(host, w, h, 'assets_flask/bg_lab.webp');
+  if(old && old.lastInstr){ st.flaskEngine.lastInstr=old.lastInstr; st.flaskEngine.load(old.lastInstr); }
+}
+let rnResizeTimer=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(rnResizeTimer);
+  rnResizeTimer=setTimeout(()=>{ if(runnerState && runnerState.el) rnBuildFlaskEngine(); },200);
+});
 const RUNNER_DIFFS={
   easy:{label:'Easy',lives:5,sub:'ミス許容5回'},
   normal:{label:'Normal',lives:2,sub:'ミス許容2回'},
@@ -3178,15 +3234,7 @@ function renderRunnerPlayShell(){
         <div class="rn-feedback" id="rnFeedback"></div>
       </div>
     </div>`;
-  const rnTrackEl = document.querySelector('.rn-track');
-  // 2026-10-29 iPhoneなど縦の短い画面では問題文・解説が見切れていたため、
-  // 問題文欄に最低 RN_STATEMENT_MIN_H を残し、残りの高さに合わせて写真＋器具の欄を縮める（最大480px）
-  const rnCardEl = rnTrackEl.parentElement;
-  const rnAvailH = rnCardEl.clientHeight;
-  const rnTrackH = rnAvailH>0 ? Math.round(Math.max(RN_TRACK_MIN_H, Math.min(RN_TRACK_MAX_H, rnAvailH - RN_STATEMENT_MIN_H))) : RN_TRACK_MAX_H;
-  rnTrackEl.style.height = rnTrackH+'px';
-  rnTrackEl.classList.toggle('rn-compact', rnTrackH < 400);
-  runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, rnTrackH, 'assets_flask/bg_lab.webp');
+  rnBuildFlaskEngine();
   runnerState.el={
     timerFill:document.getElementById('rnTimerFill'), timerNum:document.getElementById('rnTimerNum'),
     hearts:document.getElementById('rnHearts'), genreTag:document.getElementById('rnGenreTag'),
