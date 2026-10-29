@@ -147,6 +147,7 @@
     <button class="tabbtn" id="tabQuestions">📋 全問題一覧</button>
     <button class="tabbtn" id="tabRunner">🏃 化学RUSH！</button>
     <button class="tabbtn" id="tabVisits">📈 アクセス</button>
+    <button class="tabbtn" id="tabRooms">⚔️ 対戦ルーム</button>
   </div>
 
   <div class="layout" id="usersView">
@@ -218,6 +219,11 @@
     <div class="stat-row" id="visitStats"></div>
     <div class="resultCount">人数は端末ごとに数えています（同じ人でもスマホとパソコンは別）。同じ日に同じ端末が何度開いても1人。ログイン中に1ページでも開いた人は「ログインあり」、トップページだけ見た人は「ログインなし」に数えます。</div>
     <div class="tw" id="visitTable"></div>
+  </div>
+
+  <div class="card" id="roomsView" style="display:none">
+    <div class="resultCount">化学RUSH！のオンライン対戦ルーム（自動で更新）。作成から3時間を過ぎたルームは入れないので「期限切れ」にまとめています。「乱入」は試合中・満員でも入れます（管理者だけ）。</div>
+    <div class="tw" id="roomsTable"></div>
   </div>
 
   <div class="card" id="runnerView" style="display:none">
@@ -972,11 +978,65 @@ function renderQuestions(){
     </tr>`).join('');
 }
 function setActiveTab(id){
-  ['tabUsers','tabQuestions','tabRunner','tabVisits'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
+  ['tabUsers','tabQuestions','tabRunner','tabVisits','tabRooms'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
   document.getElementById('usersView').style.display = id==='tabUsers' ? '' : 'none';
   document.getElementById('questionsView').style.display = id==='tabQuestions' ? '' : 'none';
   document.getElementById('runnerView').style.display = id==='tabRunner' ? '' : 'none';
   document.getElementById('visitsView').style.display = id==='tabVisits' ? '' : 'none';
+  document.getElementById('roomsView').style.display = id==='tabRooms' ? '' : 'none';
+  if(id==='tabRooms') watchRooms(); else unwatchRooms();
+}
+/* ================= 対戦ルーム（mpRooms/{4桁}：rush_battle.js） ================= */
+const ROOM_TTL = 3*3600*1000;
+const FIELD_LABEL = {aro:'芳香族', ali:'脂肪族', ino:'無機', pol:'高分子'};
+const BASIC_SCOPE = {all:'化学基礎＋α', bunkei:'化学基礎（文系）', chemBasicsOnly:'化学基礎ALL'};
+function roomGenreLabel(g){
+  const m = /^F:(\w+)(?::(\d+))?$/.exec(g||'');
+  if(m) return (FIELD_LABEL[m[1]]||m[1]) + (m[2]==null ? '・全範囲' : '・単元'+(+m[2]+1));
+  return BASIC_SCOPE[g] || ('化学基礎・'+(g||'-'));
+}
+let roomsRef = null, roomsTimer = null, roomsData = {};
+function watchRooms(){
+  if(roomsRef) return;
+  document.getElementById('roomsTable').innerHTML = '<div class="resultCount">読み込み中...</div>';
+  roomsRef = db.ref('mpRooms');
+  roomsRef.on('value', snap=>{ roomsData = snap.val()||{}; renderRooms(); }, err=>{
+    document.getElementById('roomsTable').innerHTML = '<div class="resultCount" style="color:#dc2626">読み込めませんでした: '+escapeHtml(String(err && err.message || err))+'</div>';
+    unwatchRooms();
+  });
+  roomsTimer = setInterval(renderRooms, 30000);  // 期限切れの判定を進める
+}
+function unwatchRooms(){
+  if(roomsRef){ roomsRef.off(); roomsRef = null; }
+  clearInterval(roomsTimer); roomsTimer = null;
+}
+function renderRooms(){
+  const now = Date.now();
+  const rows = Object.entries(roomsData).map(([code, r])=>{
+    const meta = r.meta||{}, mem = r.members||{}, conn = r.conn||{};
+    const pids = Object.keys(mem);
+    return {code, meta, mem, pids,
+      online: pids.filter(p=>conn[p]===true).length,
+      created: meta.created||0,
+      live: !!meta.created && now-meta.created < ROOM_TTL};
+  }).sort((a,b)=>b.created-a.created);
+  const live = rows.filter(x=>x.live), old = rows.filter(x=>!x.live);
+  const hostName = x => (x.mem[x.meta.host] && x.mem[x.meta.host].name) || '（退室済み）';
+  const status = x => x.meta.status==='play' ? '<b style="color:#dc2626">対戦中</b>' : '待機中';
+  const intrudeUrl = code => '../chembasics-quest/index.html#intrude-'+code;
+  const table = (list, withBtn) => `<table><thead><tr><th>コード</th><th>状態</th><th>出題</th><th>作った人</th><th>参加者</th><th>作成</th>${withBtn?'<th></th>':''}</tr></thead><tbody>`
+    + list.map(x=>`<tr>
+        <td><b style="font-size:20px;letter-spacing:2px;font-variant-numeric:tabular-nums">${escapeHtml(x.code)}</b></td>
+        <td>${status(x)}</td>
+        <td>${escapeHtml(roomGenreLabel(x.meta.genre))}</td>
+        <td>${escapeHtml(hostName(x))}</td>
+        <td>${x.pids.length}人（接続中 ${x.online}）<div class="noProg" style="font-size:11.5px">${x.pids.map(p=>escapeHtml(x.mem[p].name||'?')).join('、')}</div></td>
+        <td>${fmtDateTime(x.created)}</td>
+        ${withBtn?`<td><a class="tabbtn" style="text-decoration:none;display:inline-block" href="${intrudeUrl(encodeURIComponent(x.code))}" target="_blank" rel="noopener">乱入</a></td>`:''}
+      </tr>`).join('') + '</tbody></table>';
+  document.getElementById('roomsTable').innerHTML =
+    (live.length ? table(live, true) : '<div class="resultCount">いま入れるルームはありません</div>')
+    + (old.length ? `<details style="margin-top:16px"><summary class="resultCount" style="cursor:pointer">期限切れ ${old.length}件</summary>${table(old, false)}</details>` : '');
 }
 /* ================= アクセス（visits/{日付}/{ページ}/{端末ID} = 0 ログインなし / 1 ログインあり） ================= */
 const VISIT_PAGES = [['top','トップ'],['chembasics','化学基礎'],['inorganic','無機'],['aliphatic','脂肪族'],['aromatic','芳香族'],['polymer','高分子']];
@@ -1012,6 +1072,7 @@ function renderVisits(){
   }).catch(err=>{ box.innerHTML = '<div class="resultCount" style="color:#dc2626">読み込めませんでした（Firebase のルールに visits が入っているか確認してください）: '+escapeHtml(String(err && err.message || err))+'</div>'; });
 }
 document.getElementById('tabVisits').addEventListener('click', ()=>{ setActiveTab('tabVisits'); renderVisits(); });
+document.getElementById('tabRooms').addEventListener('click', ()=>setActiveTab('tabRooms'));
 document.getElementById('tabUsers').addEventListener('click', ()=>{
   setActiveTab('tabUsers');
 });

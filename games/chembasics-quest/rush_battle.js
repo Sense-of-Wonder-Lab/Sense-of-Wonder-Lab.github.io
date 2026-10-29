@@ -234,6 +234,23 @@ const RB=(function(){
     }
     return enterRoom(code);
   }
+  // 管理者だけの乱入（管理画面のルーム一覧から #intrude-1234 で来る）。
+  // 試合中・満員でも入れる。試合中なら players に自分を足し、届いた時点からスタート。
+  // 管理者かどうかは「users を読めるか」で判定（Firebase のルールで管理者だけが読める）
+  async function intrude(code){
+    if(!/^\d{4}$/.test(code)) throw new Error('4桁の数字を入れてね');
+    const m=me(); if(!m) throw new Error('ログインしてね');
+    try{ await getDb().ref('users').limitToFirst(1).once('value'); }
+    catch(e){ throw new Error('乱入は管理者だけです'); }
+    const meta=(await getDb().ref(ROOT+'/'+code+'/meta').once('value')).val();
+    if(!meta) throw new Error('そのコードのルームは見つかりませんでした');
+    await enterRoom(code);
+    if(meta.status==='play'){
+      await getDb().ref(ROOT+'/'+code+'/meta/players').transaction(p=>{
+        p=p||[]; if(!p.includes(m.pid)) p.push(m.pid); return p;
+      });
+    }
+  }
   async function enterRoom(code){
     if(room) detach();
     room=newRoom(code);
@@ -792,5 +809,15 @@ const RB=(function(){
     if(rs) rs.onclick=()=>run(joinRoom(sess.code).catch(e=>{ saveSess(null); throw e; }));
   }
 
-  return {openHome, active, render, quit, onAnswer, hudHTML, laneHTML, renderLanes, TRACK_MIN_H:180, STATEMENT_MIN_H:200};
+  // 管理画面の「乱入」リンクから。失敗したら対戦の入口画面にエラーを出す
+  function intrudeFromLink(code){
+    openHome();
+    intrude(code).catch(e=>{
+      console.warn('[RB] intrude',e);
+      if(room) return;
+      const el=document.getElementById('rbErr'); if(el) el.textContent=(e&&e.message)||'通信できませんでした';
+    });
+  }
+
+  return {openHome, intrudeFromLink, active, render, quit, onAnswer, hudHTML, laneHTML, renderLanes, TRACK_MIN_H:180, STATEMENT_MIN_H:200};
 })();
