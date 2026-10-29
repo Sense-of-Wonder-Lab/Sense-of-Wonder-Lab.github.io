@@ -381,6 +381,8 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rb-runner.off .rb-av{opacity:.35}
 .rb-runner.out .rb-av{opacity:.25;filter:grayscale(1)}
 .rb-runner.done .rb-av{box-shadow:0 0 0 1.5px #06d6a0}
+.rb-av.rb-ghost{opacity:.5}
+.rb-best{font-size:13px;font-weight:800;color:#f4b942;margin:2px 0 4px}
 .rb-net{position:absolute;right:8px;bottom:2px;font-size:10px;color:#ffd166}
 .rb-hud{font-size:14px;letter-spacing:0;font-weight:800;color:#fff;background:rgba(6,10,20,.55);border:1px solid rgba(255,255,255,.25);padding:2px 10px;border-radius:20px}
 .rb-codecard{text-align:center}
@@ -3579,6 +3581,6 @@ if(location.hash==='#battle')LB.requireLogin(()=>{switchView('runner');RB.openHo
 else if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
 else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
-<script src="rush_battle.js?v=2"></script>
+<script src="rush_battle.js?v=3"></script>
 </body>
 </html>

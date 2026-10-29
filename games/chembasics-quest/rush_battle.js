@@ -1,6 +1,8 @@
 /* ================= 化学RUSH！ みんなで対戦（ルーム制・リアルタイム） 2026-10-29 =================
    化学RUSH！の問題・判定・画面をそのまま使い、上に細いレーン表示を足した対戦モード。
-   - 4桁のルームコードで2〜10人。作成者が開始ボタンを押す
+   - 4桁のルームコードで1〜10人。作成者が開始ボタンを押す
+   - 1人のまま開始したらゴースト1体と対戦（自分のベスト記録 → なければ他の人の記録からランダム）。
+     ゴーストの再生は端末内だけ（試合中の通信なし）
    - 10問先取。正解+1・不正解/時間切れ−1（0未満にしない）
    - 問題は開始時に全員分まとめて配布（全員同じ順番）
    - 試合中に送るのは自分の現在位置（数字）とゴールタイム（各自の端末で計測）だけ
@@ -15,15 +17,24 @@
        "meta": { ".write": "auth != null && data.exists()" },
        "$sub": { "$pid": { ".write": "auth != null && $pid.beginsWith(auth.uid)" } }
      }
-   }
+   },
+   "rbRecs":    { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+   "rbBest":    { ".read": "auth != null", "$uid": { ".write": "auth != null && auth.uid === $uid" } },
+   "rbGhostAv": { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid" } }
+
+   プレイ記録（ゴースト用）:
+     rbRecs/{uid}/{push}  ゴールした試合すべて {ms, log, genre, n, at}
+     rbBest/{uid}         その人のベスト {ms, log, name, genre, at}   rbGhostAv/{uid} ベスト時の小さいアイコン
+     log は "回答時刻ms,正誤(1/0);..."（時刻はスタートからの経過）
 
    データ構成 mpRooms/{code}:
-     meta    {host, status:'wait'|'play', genre, created, round, startAt, qs:[問題ID], players:[pid]}
+     meta    {host, status:'wait'|'play', genre, created, round, startAt, qs:[問題ID], players:[pid], ghost:{uid,name,ms,log,own}|null}
      members/{pid} {name, joined}   av/{pid} 小さいアイコン(dataURL)   conn/{pid} true か 切断時刻
      pos_{round}/{pid} 現在位置    goal_{round}/{pid} ゴールまでのミリ秒（棄権は -1）
 */
 const RB=(function(){
-  const ROOT='mpRooms', GOAL=10, MAX_PLAYERS=10, MIN_PLAYERS=2;
+  const ROOT='mpRooms', GOAL=10, MAX_PLAYERS=10, MIN_PLAYERS=1;
+  const GHOST='~ghost';         // ゴーストのレーン用の pid（Firebase のキーには使わない）
   const DROP_MS=60000;          // これより長く切断していたら「通信切れ」扱い（表示のみ）
   const ROOM_TTL=3*3600*1000;   // 古いルームのコードは再利用してよい
   const QUESTION_COUNT=120;     // 配布する問題数（足りなければ同じ順番でもう一周）
@@ -48,14 +59,14 @@ const RB=(function(){
   /* ---------- 自分 ---------- */
   function me(){
     const u=LB.currentUser(); if(!u) return null;
-    if(!DEMO) return {pid:u.uid, name:u.nickname||'ゲスト', avatar:u.avatar||null};
+    if(!DEMO) return {pid:u.uid, uid:u.uid, name:u.nickname||'ゲスト', avatar:u.avatar||null};
     let tag=null;
     try{ tag=sessionStorage.getItem('rbDemoTag'); }catch(e){}
     if(!tag){
       tag=String.fromCharCode(65+Math.floor(Math.random()*26))+String.fromCharCode(65+Math.floor(Math.random()*26));
       try{ sessionStorage.setItem('rbDemoTag',tag); }catch(e){}
     }
-    return {pid:u.uid+'-'+tag, name:(u.nickname||'ゲスト').slice(0,8)+'('+tag+')', avatar:null};
+    return {pid:u.uid+'-'+tag, uid:u.uid, name:(u.nickname||'ゲスト').slice(0,8)+'('+tag+')', avatar:null};
   }
   function loadSess(){ try{ return JSON.parse(sessionStorage.getItem(SESS_KEY)); }catch(e){ return null; } }
   function saveSess(s){ try{ s?sessionStorage.setItem(SESS_KEY,JSON.stringify(s)):sessionStorage.removeItem(SESS_KEY); }catch(e){} }
@@ -85,18 +96,18 @@ const RB=(function(){
   function newRoom(code){
     return {code, ref:getDb().ref(ROOT+'/'+code), me:me(), meta:null, members:{}, names:{}, imgs:{}, conn:{},
       pos:{}, goal:{}, round:0, offs:[], roundOffs:[], view:'lobby', laneSlots:null, tick:null,
-      goalSent:false, localStart:0, countdown:null, toasted:{}};
+      goalSent:false, localStart:0, countdown:null, toasted:{}, ghost:null, ghostTick:null, log:[], myAv:null};
   }
   function listen(ref,ev,cb,list){ ref.on(ev,cb); (list||room.offs).push(()=>ref.off(ev,cb)); }
   function active(){ return !!room; }
 
   function img(pid){
     // 試合中はこの img を動かすだけで、読み込み直さない
-    if(!room.imgs[pid]){ const i=new Image(); i.className='rb-av'; i.alt=''; i.draggable=false; room.imgs[pid]=i; }
+    if(!room.imgs[pid]){ const i=new Image(); i.className='rb-av'+(pid===GHOST?' rb-ghost':''); i.alt=''; i.draggable=false; room.imgs[pid]=i; }
     return room.imgs[pid];
   }
   function nameOf(pid){ const m=room.members[pid]; return m?m.name:(room.names[pid]||'?'); }  // 退室した人も名前は残す
-  function isOnline(pid){ return pid===room.me.pid ? online : room.conn[pid]===true; }
+  function isOnline(pid){ return pid===room.me.pid ? online : pid===GHOST ? true : room.conn[pid]===true; }
   function isDropped(pid){ const c=room.conn[pid]; return typeof c==='number' && serverNow()-c>DROP_MS; }
   function effectiveHost(){
     const m=room.meta; if(!m) return null;
@@ -145,6 +156,7 @@ const RB=(function(){
     const same=sess&&sess.code===code&&sess.pid===m.pid;
     const av=await smallAvatar(m.avatar,m.name,m.pid);
     if(room!==r) return;
+    r.myAv=av;
     const joined=(same&&sess.joined)||Date.now();
     saveSess(same?sess:{code,pid:m.pid,joined});
     await r.ref.update({['members/'+m.pid]:{name:m.name,joined},['av/'+m.pid]:av});
@@ -165,7 +177,7 @@ const RB=(function(){
   function detach(){
     if(!room) return;
     room.offs.forEach(f=>f()); room.roundOffs.forEach(f=>f());
-    clearInterval(room.tick); clearInterval(room.countdown);
+    clearInterval(room.tick); clearInterval(room.countdown); clearInterval(room.ghostTick);
     room=null;
   }
   function leave(){
@@ -212,7 +224,8 @@ const RB=(function(){
   function setupRound(round){
     const r=room;
     r.roundOffs.forEach(f=>f()); r.roundOffs=[];
-    r.round=round; r.pos={}; r.goal={}; r.goalSent=false; r.laneSlots=null; r.toasted={};
+    r.round=round; r.pos={}; r.goal={}; r.goalSent=false; r.laneSlots=null; r.toasted={}; r.log=[]; r.newBest=false;
+    setupGhost(r.meta&&r.meta.ghost);
     const posRef=r.ref.child('pos_'+round), goalRef=r.ref.child('goal_'+round);
     // 相手の位置は表示だけに使う（勝敗には使わない）
     const onPos=s=>{ if(s.key!==r.me.pid){ r.pos[s.key]=s.val()|0; renderLanes(); } };
@@ -231,11 +244,89 @@ const RB=(function(){
   async function startMatch(){
     const r=room; if(!r||!r.meta) return;
     const players=sortedMembers().filter(isOnline).slice(0,MAX_PLAYERS);
-    if(players.length<MIN_PLAYERS){ toast('2人以上そろってから始めてね'); return; }
+    if(players.length<MIN_PLAYERS) return;
+    const ghost=players.length===1 ? await pickGhost() : null;  // 1人ならゴーストと対戦
+    if(room!==r) return;
     const qs=buildRunnerPool(r.meta.genre).slice(0,QUESTION_COUNT).map(q=>q.id);
-    await r.ref.child('meta').update({status:'play',round:(r.meta.round||0)+1,qs,players,startAt:serverNow()+4000});
+    await r.ref.child('meta').update({status:'play',round:(r.meta.round||0)+1,qs,players,ghost,startAt:serverNow()+4000});
   }
   function rematch(){ if(room) room.ref.child('meta').update({status:'wait'}); }
+
+  /* ---------- ゴースト（1人で始めたとき） ---------- */
+  const encLog=log=>log.map(e=>e[0]+','+(e[1]?1:0)).join(';');
+  const decLog=s=>String(s||'').split(';').filter(Boolean).map(x=>{ const a=x.split(','); return [+a[0]||0,a[1]==='1']; });
+  // まだ誰の記録もないときの練習用ゴースト（1問4〜7秒・だいたい8割正解）
+  function practiceGhost(){
+    const log=[]; let t=0,p=0;
+    while(p<GOAL){
+      t+=4000+Math.floor(Math.random()*3000);
+      const ok=Math.random()<0.8; p=Math.max(0,p+(ok?1:-1)); log.push([t,ok]);
+      t+=ok?1200:1600;
+    }
+    return {uid:null,name:'練習ゴースト',ms:log[log.length-1][0],log:encLog(log),own:false};
+  }
+  // 自分のベストがあればそれ、なければ他の人のベストからランダムに1つ
+  async function pickGhost(){
+    const d=getDb(), uid=room.me.uid;
+    try{
+      const mine=(await d.ref('rbBest/'+uid).once('value')).val();
+      if(mine&&mine.log) return {uid,name:mine.name||room.me.name,ms:mine.ms,log:mine.log,own:true};
+      // ランダムなキーの位置から数件だけ読む（全員分は読まない）
+      const abc='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+      let k=''; for(let i=0;i<28;i++) k+=abc[Math.floor(Math.random()*abc.length)];
+      const take=async q=>{ const v=(await q.once('value')).val()||{}; return Object.keys(v).filter(id=>id!==uid&&v[id]&&v[id].log&&v[id].ms>0).map(id=>Object.assign({uid:id},v[id])); };
+      let c=await take(d.ref('rbBest').orderByKey().startAt(k).limitToFirst(3));
+      if(!c.length) c=await take(d.ref('rbBest').orderByKey().limitToFirst(3));
+      if(c.length){ const g=c[Math.floor(Math.random()*c.length)]; return {uid:g.uid,name:g.name||'?',ms:g.ms,log:g.log,own:false}; }
+    }catch(e){ console.warn('[RB] ghost',e); }
+    return practiceGhost();
+  }
+  function setupGhost(g){
+    const r=room;
+    delete r.imgs[GHOST]; r.ghost=null;
+    if(!g||!g.log) return;
+    r.ghost={name:g.name,ms:g.ms,own:!!g.own,log:decLog(g.log)};
+    r.names[GHOST]='👻 '+(g.own?'自分のベスト':g.name);
+    // アイコンは開始時に1回だけ読む（元のプレイヤーのアイコンを半透明で出す）
+    const set=src=>{ if(room===r) img(GHOST).src=src; };
+    const fallback=()=>smallAvatar(null,'👻',GHOST).then(set);
+    if(g.own&&r.myAv) set(r.myAv);
+    else if(g.uid) getDb().ref('rbGhostAv/'+g.uid).once('value').then(s=>s.val()?set(s.val()):fallback()).catch(fallback);
+    else fallback();
+  }
+  function ghostPos(t){
+    let p=0;
+    for(const [at,ok] of room.ghost.log){ if(at>t) break; p=Math.max(0,p+(ok?1:-1)); }
+    return Math.min(GOAL,p);
+  }
+  // 記録どおりのタイミングで前進・後退させる（端末内だけ）
+  function startGhostTick(){
+    const r=room; clearInterval(r.ghostTick);
+    if(!r.ghost) return;
+    const step=()=>{
+      if(room!==r||r.view!=='play'){ clearInterval(r.ghostTick); return; }
+      const t=Date.now()-r.localStart, p=ghostPos(t);
+      if(p!==r.pos[GHOST]){ r.pos[GHOST]=p; renderLanes(); }
+      if(t>=r.ghost.ms&&r.goal[GHOST]==null){ r.goal[GHOST]=r.ghost.ms; toast('👻 ゴーストがゴール！'); renderLanes(); }
+    };
+    r.ghostTick=setInterval(step,200); step();
+  }
+  // 結果画面ではゴーストのタイムを最初から出す（決まっているので）
+  function revealGhost(){ const r=room; if(r&&r.ghost){ r.goal[GHOST]=r.ghost.ms; r.pos[GHOST]=GOAL; } }
+  function vsGhost(){ return !!(room&&room.ghost); }
+
+  /* ---------- プレイ記録（ゴースト用） ---------- */
+  function saveRecord(ms){
+    const r=room, uid=r.me.uid, log=encLog(r.log), genre=r.meta.genre, d=getDb();
+    d.ref('rbRecs/'+uid).push({ms,log,genre,n:racers().length,at:TS()}).catch(e=>console.warn('[RB] rec',e));
+    d.ref('rbBest/'+uid+'/ms').once('value').then(s=>{
+      const b=s.val(); if(b!=null&&b<=ms) return;
+      return Promise.all([
+        d.ref('rbBest/'+uid).set({ms,log,name:r.me.name,genre,at:TS()}),
+        r.myAv?d.ref('rbGhostAv/'+uid).set(r.myAv):null
+      ]).then(()=>{ r.newBest=true; if(room===r&&r.view==='result') render(); });
+    }).catch(e=>console.warn('[RB] best',e));
+  }
 
   /* ---------- 試合 ---------- */
   function beginCountdown(){
@@ -263,8 +354,10 @@ const RB=(function(){
     r.view='play';
     const myPos=resume&&resume.pos|0;
     r.pos[r.me.pid]=myPos;
+    r.log=resume?decLog(resume.log):[];
     startRunner('battle',{pool,genre:meta.genre,pos:myPos,idx:resume&&resume.idx|0});
     if(!resume) r.ref.child('pos_'+r.round+'/'+r.me.pid).set(0);
+    startGhostTick();
     renderLanes();
   }
   function destroyRun(){
@@ -280,13 +373,15 @@ const RB=(function(){
     st.battle.pos=Math.max(0,st.battle.pos+(correct?1:-1));
     const p=st.battle.pos;
     r.pos[r.me.pid]=p;
+    r.log.push([Date.now()-r.localStart,correct]);
     r.ref.child('pos_'+r.round+'/'+r.me.pid).set(p);
-    const sess=loadSess(); if(sess) saveSess(Object.assign(sess,{pos:p,idx:st.idx+1}));
+    const sess=loadSess(); if(sess) saveSess(Object.assign(sess,{pos:p,idx:st.idx+1,log:encLog(r.log)}));
     runnerRenderHUD(); renderLanes();
     if(p>=GOAL){
       const ms=Date.now()-r.localStart;
       r.goalSent=true; r.goal[r.me.pid]=ms; r.myGoalSaved=false;
       r.ref.child('goal_'+r.round+'/'+r.me.pid).set(ms).then(()=>{ r.myGoalSaved=true; if(room===r) render(); });
+      saveRecord(ms);
       setTimeout(()=>{ if(room!==r) return; destroyRun(); r.view='result'; render(); },900);
     }else{
       st.autoAdvanceTimeout=setTimeout(runnerGoNext,correct?1200:1600);
@@ -296,9 +391,10 @@ const RB=(function(){
 
   /* ---------- 順位 ---------- */
   function posOf(pid){ return pid===room.me.pid&&runnerState&&runnerState.battle ? runnerState.battle.pos : (room.pos[pid]|0); }
+  function racers(){ const p=((room.meta&&room.meta.players)||[]).slice(); if(room.ghost) p.push(GHOST); return p; }
   function standings(){
     const r=room, order=sortedMembers();
-    const players=(r.meta&&r.meta.players)||[];
+    const players=racers();
     const g=pid=>r.goal[pid];
     const cls=pid=>{ const v=g(pid); return v>=0?0 : v===-1?2 : isDropped(pid)?2 : 1; };
     return players.slice().sort((a,b)=>cls(a)-cls(b)
@@ -309,7 +405,7 @@ const RB=(function(){
   function fmtMs(ms){ const s=ms/1000; const m=Math.floor(s/60); return (m?m+'分':'')+(s-m*60).toFixed(m?0:1)+'秒'; }
 
   /* ---------- レーン表示（問題画面の上の細い帯） ---------- */
-  function laneCount(){ const n=((room&&room.meta&&room.meta.players)||[]).length; return Math.min(2,Math.max(1,n-1))*2+1; }
+  function laneCount(){ const n=room?racers().length:1; return Math.min(2,Math.max(1,n-1))*2+1; }
   const LANE_H=17;
   function laneHTML(){ return `<div class="rb-lanes" id="rbLanes" style="height:${laneCount()*LANE_H+8}px"></div>`; }
   function renderLanes(){
@@ -358,7 +454,7 @@ const RB=(function(){
     const r=room; if(!r) return;
     if(r.view==='play'){ renderLanes(); return; }
     if(r.view==='countdown'){
-      if(!document.getElementById('rbCount')) runnerPanel.innerHTML=`<div class="rb-countwrap"><div class="muted">ルーム ${r.code}　全員同じ問題・同じ順番です</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退</div></div>`;
+      if(!document.getElementById('rbCount')) runnerPanel.innerHTML=`<div class="rb-countwrap"><div class="muted">${vsGhost()?esc(r.names[GHOST])+' と対戦（記録 '+fmtMs(r.ghost.ms)+'）':'ルーム '+r.code+'　全員同じ問題・同じ順番です'}</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退</div></div>`;
       return;
     }
     if(r.view==='result') return renderResult();
@@ -377,7 +473,7 @@ const RB=(function(){
       <div class="card-ui rb-codecard">
         <div class="muted">ルームコード</div>
         <div class="rb-code">${esc(r.code)}</div>
-        <div class="muted">この4桁を友だちに伝えてね（${MIN_PLAYERS}〜${MAX_PLAYERS}人）</div>
+        <div class="muted">この4桁を友だちに伝えてね（${MIN_PLAYERS}〜${MAX_PLAYERS}人・1人ならゴーストと対戦）</div>
         <div class="rb-scope">出題：${esc(scope.label)}</div>
       </div>
       <div class="card-ui">
@@ -387,7 +483,7 @@ const RB=(function(){
       <div id="rbStartArea">${
         playing ? `<div class="card-ui muted" style="text-align:center">いまは試合中です。終わるまで待ってね</div>`
         : amHost ? `<button class="bigbtn" id="rbStart" ${aliveN<MIN_PLAYERS?'disabled':''}>⚔️ スタート！</button>
-                    <div class="muted" style="text-align:center">${aliveN<MIN_PLAYERS?'あと'+(MIN_PLAYERS-aliveN)+'人そろうと始められます':'全員そろったらスタートを押してね'}</div>`
+                    <div class="muted" style="text-align:center">${aliveN<=1?'このまま始めると 👻 ゴーストと対戦します':'全員そろったらスタートを押してね'}</div>`
         : `<div class="card-ui muted" style="text-align:center">ルームを作った人がスタートするのを待っています…</div>`
       }</div>
       ${DEMO?`<div class="muted" style="margin-top:8px">デモモード：このタブは「${esc(r.me.name)}」として参加しています</div>`:''}`;
@@ -406,6 +502,7 @@ const RB=(function(){
   }
   function renderResult(){
     const r=room, meta=r.meta;
+    revealGhost();
     const S=standings();
     const mine=r.goal[r.me.pid];
     const winner=S[0];
@@ -416,14 +513,17 @@ const RB=(function(){
       const medal= gv>=0 ? ['🥇','🥈','🥉'][i]||(i+1)+'位' : '';
       return `<div class="rb-row${pid===r.me.pid?' me':''}" data-pid="${esc(pid)}"><span class="rb-rmedal">${medal}</span><span class="rb-ravatar"></span><span class="rb-rname">${esc(nameOf(pid))}</span><span class="rb-rstat">${st}</span></div>`;
     }).join('');
-    const head = mine>=0 ? (winner===r.me.pid&&r.goal[winner]>=0 ? '🏆 優勝！' : `ゴール！ ${S.indexOf(r.me.pid)+1}位`) : '結果';
+    const head = !(mine>=0) ? '結果'
+      : vsGhost() ? (mine<r.ghost.ms ? '🏆 ゴーストに勝った！' : '👻 ゴーストの勝ち…')
+      : winner===r.me.pid&&r.goal[winner]>=0 ? '🏆 優勝！' : `ゴール！ ${S.indexOf(r.me.pid)+1}位`;
     const amHost=effectiveHost()===r.me.pid;
     runnerPanel.innerHTML=`
       <h2>${head}</h2>
       <div class="card-ui" style="text-align:center">
         ${mine>=0?`<div class="score-line">${fmtMs(mine)}</div>`:''}
+        ${r.newBest?`<div class="rb-best">✨ 自己ベスト更新！（次からゴーストになります）</div>`:''}
         ${mine>=0&&!r.myGoalSaved&&r.myGoalSaved!==undefined?`<div class="muted">記録を送信中…（つながると自動で送られます）</div>`:''}
-        <div class="muted">${allDone?'全員の結果が出ました':'ほかの人がゴールすると順位が更新されます'}</div>
+        ${vsGhost()?'':`<div class="muted">${allDone?'全員の結果が出ました':'ほかの人がゴールすると順位が更新されます'}</div>`}
       </div>
       <div class="card-ui"><b>順位（ルーム ${esc(r.code)}）</b><div class="rb-results">${rows}</div></div>
       ${amHost?`<button class="bigbtn" id="rbAgain">🔁 同じルームでもう一度</button>`:`<div class="muted" style="text-align:center;margin-bottom:8px">ルームを作った人が「もう一度」を押すと待機画面に戻ります</div>`}
@@ -450,7 +550,7 @@ const RB=(function(){
     runnerPanel.innerHTML=`
       <button class="backbtn" id="rbBack">← 化学RUSH！に戻る</button>
       <h2>⚔️ みんなで対戦</h2>
-      <div class="card-ui"><div class="muted">化学RUSH！の○×問題で<b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。</div></div>
+      <div class="card-ui"><div class="muted">化学RUSH！の○×問題で<b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！</div></div>
       ${sess&&sess.code?`<div class="card-ui"><b>前のルーム ${esc(sess.code)}</b><button class="bigbtn" id="rbResume">ルーム ${esc(sess.code)} に戻る</button></div>`:''}
       <div class="card-ui">
         <b>ルームを作る</b>
