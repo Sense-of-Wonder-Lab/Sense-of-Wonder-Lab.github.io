@@ -233,6 +233,7 @@ html[data-theme="navy"] .chal-maxmsg{background:rgba(253,186,116,.12)}
 .review-item{border-bottom:1px solid #f1f5f9;padding:9px 2px;font-size:12.5px;line-height:1.6}
 .review-item .ok{color:var(--green);font-weight:700}
 .review-item .ng{color:var(--red);font-weight:700}
+.review-item .rv-ans{margin-top:2px;padding-left:1.6em;font-size:12px;color:var(--muted,#64748b)}
 .scopebtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .scopebtns button{flex:1;min-width:100px;padding:10px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:12.5px;font-weight:700;color:#475569}
 .scopebtns button.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
@@ -466,6 +467,8 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
   .chal-timer{font-size:30px}
   .qprompt{font-size:22px}
   .multi-hint{font-size:15px}
+.rn-review-item .rv-ans{margin-top:6px;font-size:12px;color:#64748b}
+.rn-review-item .rv-ans b{color:var(--ink)}
   .modebadge{font-size:14px;padding:4px 14px}
   .choices,.choices.textmode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .choice{font-size:18px;min-height:68px;border-radius:16px}
@@ -1951,7 +1954,7 @@ function renderMemoQ(el,it,onDone,progressText){
       nb.style.display='block';
       if(showExp&&!c.ok)el.querySelector('#memoSpacer').scrollIntoView({behavior:'smooth',block:'nearest'});  // 固定の「次へ」に隠れないよう余白ごと見せる
       let advanced=false;
-      const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok);};
+      const advance=()=>{if(advanced)return;advanced=true;onDone(c.ok,c.text);};
       nb.onclick=advance;
       if(state.answerAuto&&(c.ok||!showExp))memoAdvanceTimer=setTimeout(advance,ANSWER_FX_DURATION+(c.ok?0:1000));
     });
@@ -2161,7 +2164,11 @@ function catResult(){
   save();
   let review='';
   catDrill.results.forEach((x,i)=>{
-    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${qHTML(x.it)} → ${x.it.correct}</div>`;
+    // 自分が選んだ答えと正解を並べて表示（カードは選択肢がないので正解のみ。pick のない途中保存データも正解のみ）
+    const ans=x.pick===undefined?`<div class="rv-ans">正解：<b>${x.it.correct}</b></div>`
+      :x.ok?`<div class="rv-ans">あなたの答え：<b class="ok">${x.pick}</b>（正解）</div>`
+      :`<div class="rv-ans">あなたの答え：<b class="ng">${x.pick}</b><br>正解：<b class="ok">${x.it.correct}</b></div>`;
+    review+=`<div class="review-item${x.ok?'':' review-tap'}" ${x.ok?'':`data-i="${i}"`}><div><span class="${x.ok?'ok':'ng'}">${x.ok?'⭕':'❌'}</span> ${qHTML(x.it)}${ans}</div></div>`;
   });
   homePanel.innerHTML=`
     <h2>結果発表</h2>
@@ -2189,9 +2196,9 @@ function nextCatQ(){
     save();
     catDrill=null; renderHome();
   };
-  renderMemoQ(document.getElementById('cdq'),it,ok=>{
+  renderMemoQ(document.getElementById('cdq'),it,(ok,pick)=>{
     memoAdvanceTimer=null;
-    catDrill.results.push({it,ok});
+    catDrill.results.push({it,ok,pick});
     if(ok)markMastered(it.id);
     else{state.weak[it.id]=2;save();updateWeakBadge();}
     catDrill.i++; nextCatQ();
@@ -3396,7 +3403,7 @@ function runnerAnswer(userAnswer){
     recordRunnerGenreAnswer(q.genre,correct);
     if(typeof LB!=='undefined') LB.recordQuizResults('chemrunner',[{id:q.id,ok:correct}]);
   }
-  st.history.push({qid:q.id,genre:q.genre,statement:q.statement,explanation:q.explanation,correct});
+  st.history.push({qid:q.id,genre:q.genre,statement:q.statement,explanation:q.explanation,correct,userAnswer,answer:q.answer});
   st.el.btnTrue.disabled=true;
   st.el.btnFalse.disabled=true;
   const fb=st.el.feedback;
@@ -3540,6 +3547,7 @@ function requestSwitch(target,after){
     const done=()=>{ switchView(target); if(after) after(); };
     // 登録なしで遊べるのは暗記モードだけ（2026-10-11 先生）。ほかのタブはログインが必要
     if(target!=='home'&&!LB.isLoggedIn()){LB.requireLogin(()=>requestSwitch(target,after));return;}
+        ${h.answer===undefined?'':`<div class="rv-ans">あなたの答え：<b>${h.userAnswer===null?'時間切れ':h.userAnswer?'○':'×'}</b>　／　正解：<b>${h.answer?'○':'×'}</b></div>`}
     const activeView=document.querySelector('.view.active').id.replace('view-','');
     if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
       confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
