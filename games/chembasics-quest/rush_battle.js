@@ -8,10 +8,10 @@
    - 試合中に送るのは自分の現在位置（数字）とゴールタイム（各自の端末で計測）だけ
    - 切断してもすぐ負けにせず、DROP_MS のあいだ再接続を待つ
    - ?demo=1 を付けると、同じアカウントでもタブごとに別の参加者として入れる（動作確認用）
-   - 分野は 化学基礎（化学RUSH！の○×問題）／芳香族・脂肪族・無機・高分子（各クエストの暗記カード）から選ぶ。
-     4分野は rush_fields.js（tools/build_rush_fields.js で作る）を読み、問題に「答え：○○」を添えて
-     それが正しいかを○×で答える形にする。正しい答えか誤答のどれかを、開始時に問題ごとに決める
-     問題ID "分野|カードID|t"（正しい答え）・"分野|カードID|f2"（2番目の誤答）　ルームの genre は "F:分野" か "F:分野:単元番号"
+   - 分野は 化学基礎（化学RUSH！の○×問題・器具の画面）／芳香族・脂肪族・無機・高分子（各クエストの暗記カード）から選ぶ。
+     4分野は rush_fields.js（tools/build_rush_fields.js で作る）を読み、元の選択式（多答は「決定」）のまま出す。
+     画面は背景の写真＋半透明の枠（横長は問題文が左・選択肢が右）で、枠に沿って時間のバーが12時から時計回りに減る
+     問題ID "分野|カードID|選択肢の並び"（例 "aro|d4-0|20413"）　ルームの genre は "F:分野" か "F:分野:単元番号"
 
    Firebase Realtime Database のルールに次を追加すること（ルート "rules" の中）:
    "mpRooms": {
@@ -63,7 +63,7 @@ const RB=(function(){
     if(typeof RUSH_FIELDS!=='undefined') return Promise.resolve();
     if(!fieldsP) fieldsP=new Promise((resolve,reject)=>{
       const s=document.createElement('script');
-      s.src='rush_fields.js?v=1';
+      s.src='rush_fields.js?v=2';
       s.onload=resolve;
       s.onerror=()=>{ fieldsP=null; s.remove(); reject(new Error('問題データを読み込めませんでした。通信を確認してね')); };
       document.head.appendChild(s);
@@ -94,35 +94,37 @@ const RB=(function(){
     if(!cardIndex[f.key]){ const m=new Map(); f.decks.forEach(d=>d.items.forEach(it=>m.set(it.id,{it,deck:d}))); cardIndex[f.key]=m; }
     return cardIndex[f.key].get(id);
   }
-  // 暗記カード1枚を○×問題にする。v は 't'（正しい答えを見せる）か 'f番号'（その誤答を見せる）
+  // 暗記カード1枚を選択式の問題にする。perm は選択肢の並び（カードの選択肢の番号を1桁ずつ並べたもの）
   function fieldQ(id){
-    const [fk,cid,v]=id.split('|');
+    const [fk,cid,perm]=id.split('|');
     const f=fieldOf(fk), hit=f&&cardOf(f,cid);
-    if(!hit) return null;
-    const {it,deck}=hit, ok=v==='t';
-    const cand=ok?it.a:it.w[+String(v).slice(1)];
-    if(cand==null) return null;
-    const pic=it.img?`<img class="rb-qimg" src="${esc(f.img+encodeURIComponent(it.img))}" alt="構造式">`:'';
-    return {id, field:fk, genre:f.label+'｜'+deck.name, answer:ok,
-      statement:`${pic}<div>${it.q}</div><div class="rb-cand">答え：<b>${cand}</b></div>`,
-      explanation:(ok?'':`正しい答えは「${it.a}」。`)+it.e};
+    if(!hit||!perm) return null;
+    const {it,deck}=hit;
+    const order=perm.split('').map(Number);
+    if(order.length!==it.c.length||order.some(i=>!(i<it.c.length))) return null;
+    const src=n=>esc(f.img+encodeURIComponent(n));
+    const html=t=>it.ci?`<img class="rb-cimg" src="${src(t)}" alt="構造式">`:t;
+    const pic=it.img?`<img class="rb-qimg" src="${src(it.img)}" alt="構造式">`:'';
+    const right=it.k.map(i=>html(it.c[i])).join(it.ci?'':'・');
+    return {id, field:fk, choice:true, genre:f.label+'｜'+deck.name, q:it.q, pic, multi:it.k.length>1, ci:!!it.ci,
+      choices:order.map(i=>({html:html(it.c[i]), ok:it.k.includes(i)})),
+      // 振り返り（renderRunnerReview）用
+      statement:`${pic}<div>${it.q}</div><div class="rb-cand">正解：<b>${right}</b></div>`,
+      explanation:it.e};
   }
-  // 開始時に配る問題IDの列。4分野は○と×がだいたい半分ずつになるよう、カードごとに見せる答えを決める
+  // 開始時に配る問題IDの列。選択肢の並びも全員同じになるよう、ここで決めてIDに入れる
   function buildPool(genre){
     const s=parseScope(genre);
     if(!s) return buildRunnerPool(genre).slice(0,QUESTION_COUNT).map(q=>q.id);
     if(!s.field) throw new Error('問題データを読み込めませんでした');
     const cards=[];
     s.field.decks.forEach((d,i)=>{ if(s.deck==null||s.deck===i) cards.push(...d.items); });
-    const ids=[], last={};
-    // 単元が小さいときは2周目以降も配る（同じカードは前の周と違う答えを見せる）
+    const ids=[];
+    // 単元が小さいときは2周目以降も配る（選択肢の並びはその都度変える）
     while(ids.length<QUESTION_COUNT&&cards.length){
       for(const it of shuffleRunner(cards)){
-        const pick=()=>Math.random()<0.5?'t':'f'+Math.floor(Math.random()*it.w.length);
-        let v=pick();
-        if(v===last[it.id]) v= v==='t' ? 'f'+Math.floor(Math.random()*it.w.length) : 't';
-        last[it.id]=v;
-        ids.push(s.field.key+'|'+it.id+'|'+v);
+        const idx=it.c.map((_,i)=>i);
+        ids.push(s.field.key+'|'+it.id+'|'+(it.fix?idx:shuffleRunner(idx)).join(''));
         if(ids.length>=QUESTION_COUNT) break;
       }
     }
@@ -443,7 +445,9 @@ const RB=(function(){
     const myPos=resume&&resume.pos|0;
     r.pos[r.me.pid]=myPos;
     r.log=resume?decLog(resume.log):[];
-    startRunner('battle',{pool,genre:meta.genre,pos:myPos,idx:resume&&resume.idx|0});
+    const opt={pool,genre:meta.genre,pos:myPos,idx:resume&&resume.idx|0};
+    if(parseScope(meta.genre)) startChoiceRun(opt);  // 4分野は選択式の画面
+    else startRunner('battle',opt);
     if(!resume) r.ref.child('pos_'+r.round+'/'+r.me.pid).set(0);
     startGhostTick();
     renderLanes();
@@ -452,9 +456,10 @@ const RB=(function(){
     const st=runnerState; if(!st) return;
     lastRunnerRun={history:st.history,correct:st.correct,total:st.total,battle:true};
     try{ st.flaskEngine&&st.flaskEngine.app.destroy(true); }catch(e){}
+    if(st.ro) st.ro.disconnect();
     stopRunner();
   }
-  // runnerAnswer から呼ばれる。位置を動かして送信し、次の問題かゴールへ
+  // runnerAnswer・choiceAnswer から呼ばれる。位置を動かして送信し、次の問題かゴールへ
   function onAnswer(correct){
     const r=room, st=runnerState;
     if(!r||!st||!st.battle) return;
@@ -464,18 +469,108 @@ const RB=(function(){
     r.log.push([Date.now()-r.localStart,correct]);
     r.ref.child('pos_'+r.round+'/'+r.me.pid).set(p);
     const sess=loadSess(); if(sess) saveSess(Object.assign(sess,{pos:p,idx:st.idx+1,log:encLog(r.log)}));
-    runnerRenderHUD(); renderLanes();
+    if(st.choice) choiceHUD(); else runnerRenderHUD();
+    renderLanes();
     if(p>=GOAL){
       const ms=Date.now()-r.localStart;
       r.goalSent=true; r.goal[r.me.pid]=ms; r.myGoalSaved=false;
       r.ref.child('goal_'+r.round+'/'+r.me.pid).set(ms).then(()=>{ r.myGoalSaved=true; if(room===r) render(); });
       saveRecord(ms);
       setTimeout(()=>{ if(room!==r) return; destroyRun(); r.view='result'; render(); },900);
+    }else if(st.choice){
+      st.autoAdvanceTimeout=setTimeout(choiceGoNext,correct?1200:2200);  // まちがえたときは解説を読む時間を長めに
     }else{
       st.autoAdvanceTimeout=setTimeout(runnerGoNext,correct?1200:1600);
     }
   }
   function hudHTML(){ const st=runnerState; return `<span class="rb-hud">🏁 ${st.battle.pos}/${GOAL}</span>`; }
+
+  /* ---------- 4分野の選択式の画面 ----------
+     背景の写真の上に半透明の枠。横長の画面は問題文が左・選択肢が右、縦長は上から問題文・選択肢。
+     その外側の枠が時間のバー（12時から時計回りに減る）、さらに上にレーン。
+     runnerState は化学RUSH！と同じ形で持つ（タブ切り替えの確認・stopRunner のタイマー停止をそのまま使うため） */
+  const CHOICE_MS=15000, MULTI_MS=20000;  // 1問の制限時間（「すべて選べ」は長め）
+  function startChoiceRun(o){
+    runnerState={battle:{pos:o.pos||0}, choice:true, pool:o.pool, idx:o.idx||0, genre:o.genre,
+      history:[], correct:0, total:0, answered:false, timerInterval:null, autoAdvanceTimeout:null, ce:null, ro:null};
+    runnerPanel.innerHTML=`<div class="rb-play">${laneHTML()}
+      <div class="rb-frame" id="rbFrame">
+        <svg class="rb-tsvg" aria-hidden="true"><path class="rb-tbg" id="rbTbg"/><path class="rb-tbar" id="rbTbar" pathLength="1000"/></svg>
+        <span class="rb-hud" id="rbHud"></span>
+        <div class="rb-inner" id="rbInner"><div class="rb-q" id="rbQ"></div><div class="rb-ch" id="rbCh"></div></div>
+      </div></div>`;
+    const st=runnerState, $=id=>document.getElementById(id);
+    st.ce={frame:$('rbFrame'), bar:$('rbTbar'), bg:$('rbTbg'), hud:$('rbHud'), inner:$('rbInner'), q:$('rbQ'), ch:$('rbCh')};
+    if(window.ResizeObserver){ st.ro=new ResizeObserver(()=>framePath()); st.ro.observe(st.ce.frame); }
+    framePath(); choiceHUD(); choiceShow();
+  }
+  // 時間のバーの通り道：枠の上の真ん中（12時）から時計回りに一周
+  function framePath(){
+    const st=runnerState; if(!st||!st.ce) return;
+    const w=st.ce.frame.clientWidth, h=st.ce.frame.clientHeight, i=3, r=19;
+    if(!w||!h) return;
+    const d=`M${w/2},${i} H${w-i-r} A${r},${r} 0 0 1 ${w-i},${i+r} V${h-i-r} A${r},${r} 0 0 1 ${w-i-r},${h-i} H${i+r} A${r},${r} 0 0 1 ${i},${h-i-r} V${i+r} A${r},${r} 0 0 1 ${i+r},${i} Z`;
+    st.ce.bar.setAttribute('d',d); st.ce.bg.setAttribute('d',d);
+  }
+  // 残り時間 = 今の位置から12時までの部分。使った分は12時から時計回りに消えていく
+  function drawTime(left){
+    const bar=runnerState.ce.bar;
+    bar.setAttribute('stroke-dasharray',`0 ${(1-left)*1000} ${left*1000} 1000`);
+    bar.style.stroke= left>.5?'#06d6a0':left>.2?'#ffd166':'#ef476f';
+  }
+  function choiceHUD(){ const st=runnerState; if(st&&st.ce) st.ce.hud.textContent=`🏁 ${st.battle.pos}/${GOAL}`; }
+  function choiceGoNext(){ const st=runnerState; if(!st||!st.choice) return; clearRunnerTimer(); st.idx++; choiceShow(); }
+  function choiceShow(){
+    const st=runnerState, el=st.ce;
+    st.answered=false;
+    if(st.idx>=st.pool.length) st.idx=0;
+    const q=st.pool[st.idx];
+    el.q.innerHTML=`<span class="rb-tag">${esc(q.genre)}</span>${q.pic}<div class="rb-qt">${q.q}</div>`
+      +(q.multi?'<div class="rb-multi">☑ あてはまるものをすべて選んで「決定」</div>':'')
+      +'<div class="rb-fb" id="rbFb"></div>';
+    el.ch.className='rb-ch'+(q.ci?' imgs':'');
+    el.ch.innerHTML=q.choices.map((c,i)=>`<button class="rb-cbtn" data-i="${i}"><b>${i+1}</b><span>${c.html}</span></button>`).join('')
+      +(q.multi?'<button class="rb-decide" disabled>決定</button>':'');
+    el.inner.scrollTop=0; el.q.scrollTop=0; el.ch.scrollTop=0;
+    const btns=[...el.ch.querySelectorAll('.rb-cbtn')], dec=el.ch.querySelector('.rb-decide');
+    if(!q.multi) btns.forEach(b=>b.onclick=()=>choiceAnswer([+b.dataset.i]));
+    else{
+      btns.forEach(b=>b.onclick=()=>{ if(st.answered) return; b.classList.toggle('sel'); dec.disabled=!btns.some(x=>x.classList.contains('sel')); });
+      dec.onclick=()=>{ const picked=btns.filter(x=>x.classList.contains('sel')).map(x=>+x.dataset.i); if(picked.length) choiceAnswer(picked); };
+    }
+    // 制限時間
+    const limit=q.multi?MULTI_MS:CHOICE_MS, t0=Date.now();
+    drawTime(1);
+    st.timerInterval=setInterval(()=>{
+      const left=Math.max(0,1-(Date.now()-t0)/limit);
+      drawTime(left);
+      if(left<=0){ clearInterval(st.timerInterval); st.timerInterval=null; if(!st.answered) choiceAnswer(null); }
+    },100);
+  }
+  // picked: 選んだ番号の配列（時間切れは null）。多答は正解を過不足なく選べたら正解
+  function choiceAnswer(picked){
+    const st=runnerState;
+    if(!st||!st.choice||st.answered) return;
+    clearRunnerTimer();
+    st.answered=true;
+    const q=st.pool[st.idx], el=st.ce;
+    const ok=!!picked&&q.choices.every((c,i)=>c.ok===picked.includes(i));
+    st.total++; if(ok) st.correct++;
+    st.history.push({qid:q.id,genre:q.genre,statement:q.statement,explanation:q.explanation,correct:ok});
+    el.ch.querySelectorAll('.rb-cbtn').forEach((b,i)=>{
+      b.disabled=true; b.classList.remove('sel');
+      if(q.choices[i].ok) b.classList.add('ok');
+      else if(picked&&picked.includes(i)) b.classList.add('ng');
+    });
+    const dec=el.ch.querySelector('.rb-decide'); if(dec) dec.remove();
+    const fb=document.getElementById('rbFb');
+    fb.className='rb-fb '+(ok?'correct':'wrong');
+    fb.innerHTML=(ok?'⭕ 正解！ ':picked?'❌ 残念！ 緑が正解。 ':'⏰ 時間切れ！ 緑が正解。 ')+q.explanation;
+    // 縦長の画面で解説が隠れるときは見えるところまで送る
+    if(el.inner.scrollHeight>el.inner.clientHeight) fb.scrollIntoView({block:'nearest',behavior:'smooth'});
+    drawTime(0);
+    onAnswer(ok);
+  }
 
   /* ---------- 順位 ---------- */
   function posOf(pid){ return pid===room.me.pid&&runnerState&&runnerState.battle ? runnerState.battle.pos : (room.pos[pid]|0); }
@@ -494,7 +589,7 @@ const RB=(function(){
 
   /* ---------- レーン表示（問題画面の上の細い帯） ---------- */
   function laneCount(){ const n=room?racers().length:1; return Math.min(2,Math.max(1,n-1))*2+1; }
-  const LANE_H=17;
+  const LANE_H=22;
   function laneHTML(){ return `<div class="rb-lanes" id="rbLanes" style="height:${laneCount()*LANE_H+8}px"></div>`; }
   function renderLanes(){
     const r=room; const box=document.getElementById('rbLanes');
@@ -642,7 +737,7 @@ const RB=(function(){
     runnerPanel.innerHTML=`
       <button class="backbtn" id="rbBack">← 化学RUSH！に戻る</button>
       <h2>⚔️ オンライン対戦</h2>
-      <div class="card-ui"><div class="muted">○×問題で<b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！<br>芳香族・脂肪族・無機・高分子は、問題の下に出る「答え」が正しいかどうかを○×で答えます。</div></div>
+      <div class="card-ui"><div class="muted">○×問題で<b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！<br>化学基礎は○×問題、芳香族・脂肪族・無機・高分子は各クエストと同じ選択式です。</div></div>
       ${sess&&sess.code?`<div class="card-ui"><b>前のルーム ${esc(sess.code)}</b><button class="bigbtn" id="rbResume">ルーム ${esc(sess.code)} に戻る</button></div>`:''}
       <div class="card-ui">
         <b>① 分野を選ぶ</b>

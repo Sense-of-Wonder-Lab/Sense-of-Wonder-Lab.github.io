@@ -369,19 +369,19 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rn-feedback.wrong{background:rgba(239,71,111,.18);color:#ff8fa8;display:block}
 /* ---- 化学RUSH！ みんなで対戦（rush_battle.js） ---- */
 .rb-lanes{position:relative;flex:0 0 auto;margin-bottom:6px;padding:4px 6px;border-radius:12px;background:#0b1120;border:1px solid rgba(255,255,255,.12);overflow:hidden}
-.rb-lane{display:flex;align-items:center;height:17px;gap:4px}
-.rb-rank{flex:0 0 26px;font-size:10px;font-weight:700;color:#cbd5e1;text-align:right}
-.rb-road{position:relative;flex:1;height:13px;border-radius:7px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px) 10%)}
+.rb-lane{display:flex;align-items:center;height:22px;gap:5px}
+.rb-rank{flex:0 0 32px;font-size:12px;font-weight:700;color:#cbd5e1;text-align:right}
+.rb-road{position:relative;flex:1;height:16px;border-radius:9px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px) 10%)}
 .rb-lane.me .rb-road{background-color:rgba(255,209,102,.25);box-shadow:0 0 0 1px rgba(255,209,102,.8)}
 .rb-lane.me .rb-rank{color:#ffd166}
 .rb-lane.empty .rb-road{opacity:.25}
-.rb-flag{position:absolute;right:-1px;top:50%;transform:translateY(-50%);font-size:10px;line-height:1}
-.rb-runner{position:absolute;top:-1px;left:0;width:15px;height:15px;transition:left .45s cubic-bezier(.3,1.3,.5,1)}
-.rb-runner .rb-av{width:15px;height:15px;border-radius:50%;display:block;box-shadow:0 0 0 1.5px #fff}
-.rb-lane.me .rb-runner .rb-av{box-shadow:0 0 0 1.5px #ffd166}
+.rb-flag{position:absolute;right:-1px;top:50%;transform:translateY(-50%);font-size:12px;line-height:1}
+.rb-runner{position:absolute;top:-2px;left:0;width:20px;height:20px;transition:left .45s cubic-bezier(.3,1.3,.5,1)}
+.rb-runner .rb-av{width:20px;height:20px;border-radius:50%;display:block;box-shadow:0 0 0 2px #fff}
+.rb-lane.me .rb-runner .rb-av{box-shadow:0 0 0 2px #ffd166}
 .rb-runner.off .rb-av{opacity:.35}
 .rb-runner.out .rb-av{opacity:.25;filter:grayscale(1)}
-.rb-runner.done .rb-av{box-shadow:0 0 0 1.5px #06d6a0}
+.rb-runner.done .rb-av{box-shadow:0 0 0 2px #06d6a0}
 .rb-av.rb-ghost{opacity:.5}
 .rb-best{font-size:13px;font-weight:800;color:#f4b942;margin:2px 0 4px}
 .rb-net{position:absolute;right:8px;bottom:2px;font-size:10px;color:#ffd166}
@@ -412,13 +412,54 @@ html[data-theme="navy"] .rb-codein{border-color:rgba(255,255,255,.25)}
 .rb-field{padding:10px 4px;border:1.5px solid #cbd5e1;border-radius:12px;background:transparent;color:var(--ink);font-size:14px;font-weight:800;cursor:pointer}
 .rb-field.on{border-color:var(--accent);background:var(--accent);color:#fff}
 html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
-/* 4分野の問題：問いの下に「答え」を出して、それが正しいかを○×で答える */
-.rn-statement .rb-qimg{display:block;max-width:100%;max-height:140px;margin:0 auto 8px;background:#fff;border-radius:10px;padding:4px;box-sizing:border-box}
-.rb-cand{margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(255,209,102,.16);border:1px dashed rgba(255,209,102,.7)}
-.rb-cand b{color:#ffd166}
+/* 対戦・4分野（選択式）：背景の写真の上に半透明の枠。外側の枠が時間のバー（12時から時計回りに減る）、その上にレーン */
+#runnerPanel:has(.rb-play){max-width:1240px}
+.rb-play{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.rb-play .rb-lanes{margin:0;padding:4px 8px;border-radius:14px;background:#1c2346;border-color:rgba(160,170,255,.18)}
+.rb-play .rb-road{background-color:#2a3263}
+.rb-frame{position:relative;flex:1;min-height:260px;border-radius:22px;background:#141a33 url(assets_flask/bg_lab.webp) center/cover no-repeat}
+.rb-tsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:2}
+.rb-tbg{fill:none;stroke:rgba(255,255,255,.15);stroke-width:6}
+.rb-tbar{fill:none;stroke:#06d6a0;stroke-width:6;stroke-linecap:round}
+.rb-frame .rb-hud{position:absolute;top:-11px;right:22px;z-index:3;background:rgba(6,10,20,.85)}
+.rb-inner{position:absolute;inset:7px;border-radius:16px;background:rgba(8,12,26,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:12px;padding:14px;box-sizing:border-box;overflow-y:auto;color:#f2f5ff}
+.rb-q{flex:0 0 auto;display:flex;flex-direction:column;gap:10px}
+.rb-tag{align-self:flex-start;font-size:12px;font-weight:700;color:#cbd5e1;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:20px}
+.rb-q .rb-qimg{display:block;align-self:center;max-width:100%;max-height:130px;background:#fff;border-radius:12px;padding:6px;box-sizing:border-box}
+.rb-qt{font-size:17px;line-height:1.6;font-weight:700}
+.rb-multi{font-size:13px;font-weight:700;color:#ffd166}
+.rb-fb{display:none;font-size:14px;line-height:1.6;padding:10px 12px;border-radius:10px}
+.rb-fb.correct{display:block;background:rgba(6,214,160,.18);color:#8ff0cf}
+.rb-fb.wrong{display:block;background:rgba(239,71,111,.18);color:#ff9fb4}
+.rb-ch{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
+.rb-ch.imgs{display:grid;grid-template-columns:1fr 1fr}
+.rb-cbtn{display:flex;align-items:center;gap:10px;font:inherit;font-size:15px;font-weight:700;text-align:left;color:#fff;padding:10px 14px;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.35);-webkit-tap-highlight-color:transparent}
+.rb-cbtn b{flex:0 0 auto;width:18px;color:#ffd166}
+.rb-cbtn span{flex:1;min-width:0}
+.rb-cbtn.sel{border-color:#ffd166;background:rgba(255,209,102,.25)}
+.rb-cbtn.ok{border-color:#06d6a0;background:rgba(6,214,160,.32)}
+.rb-cbtn.ng{border-color:#ef476f;background:rgba(239,71,111,.32)}
+.rb-cbtn:disabled{cursor:default;color:#fff}
+.rb-cimg{display:block;max-width:100%;max-height:90px;margin:0 auto;background:#fff;border-radius:8px;padding:3px;box-sizing:border-box}
+.rb-decide{font:inherit;font-size:16px;font-weight:800;color:#1b1b1b;background:#ffd166;border:0;border-radius:14px;padding:12px;cursor:pointer}
+.rb-decide:disabled{opacity:.45;cursor:default}
+.rb-ch.imgs .rb-decide{grid-column:1/-1}
+@media (orientation:landscape) and (min-width:700px){
+  .rb-inner{flex-direction:row;gap:18px;padding:18px;overflow:hidden}
+  .rb-q{flex:1.1 1 0;min-width:0;overflow-y:auto}
+  .rb-ch{flex:1 1 0;min-width:0;overflow-y:auto;justify-content:safe center}
+  .rb-ch.imgs{align-content:safe center}
+  .rb-qt{font-size:20px}
+  .rb-q .rb-qimg{max-height:180px}
+  .rb-cbtn{font-size:17px;padding:12px 16px}
+  .rb-fb{font-size:15px}
+}
+/* 対戦の振り返り（4分野） */
+.rb-cand{margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(244,185,66,.12);border:1px dashed #f4b942}
 .rv-statement .rb-qimg{display:block;max-width:100%;max-height:100px;margin-bottom:6px}
-.rv-statement .rb-cand{background:rgba(244,185,66,.12);border-color:#f4b942}
-.rv-statement .rb-cand b{color:inherit}
+.rv-statement .rb-cimg{display:inline-block;max-height:70px;margin:2px 4px 2px 0;vertical-align:middle}
 .rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
 .rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
 .rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
@@ -426,6 +467,8 @@ html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
 .rn-review-item .rv-mark.correct{color:#06a06a}
 .rn-review-item .rv-mark.wrong{color:#ef476f}
 .rn-review-item .rv-statement{color:var(--ink);line-height:1.5}
+.rn-review-item .rv-ans{margin-top:6px;font-size:12px;color:#64748b}
+.rn-review-item .rv-ans b{color:var(--ink)}
 .rn-review-item .rv-explanation{color:#64748b;margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;line-height:1.5}
 html[data-theme="navy"] .rn-review-item{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
 html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1);border-color:rgba(255,111,111,.4)}
@@ -467,8 +510,6 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
   .chal-timer{font-size:30px}
   .qprompt{font-size:22px}
   .multi-hint{font-size:15px}
-.rn-review-item .rv-ans{margin-top:6px;font-size:12px;color:#64748b}
-.rn-review-item .rv-ans b{color:var(--ink)}
   .modebadge{font-size:14px;padding:4px 14px}
   .choices,.choices.textmode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .choice{font-size:18px;min-height:68px;border-radius:16px}
@@ -3506,6 +3547,7 @@ function renderRunnerReview(){
       <div class="rn-review-item ${h.correct?'':'is-wrong'}">
         <div class="rv-head"><span>${h.genre}</span><span class="rv-mark ${h.correct?'correct':'wrong'}">${h.correct?'○ 正解':'× 不正解'}</span></div>
         <div class="rv-statement">${h.statement}</div>
+        ${h.answer===undefined?'':`<div class="rv-ans">あなたの答え：<b>${h.userAnswer===null?'時間切れ':h.userAnswer?'○':'×'}</b>　／　正解：<b>${h.answer?'○':'×'}</b></div>`}
         <div class="rv-explanation">${h.explanation}</div>
       </div>`).join('');
   }
@@ -3547,7 +3589,6 @@ function requestSwitch(target,after){
     const done=()=>{ switchView(target); if(after) after(); };
     // 登録なしで遊べるのは暗記モードだけ（2026-10-11 先生）。ほかのタブはログインが必要
     if(target!=='home'&&!LB.isLoggedIn()){LB.requireLogin(()=>requestSwitch(target,after));return;}
-        ${h.answer===undefined?'':`<div class="rv-ans">あなたの答え：<b>${h.userAnswer===null?'時間切れ':h.userAnswer?'○':'×'}</b>　／　正解：<b>${h.answer?'○':'×'}</b></div>`}
     const activeView=document.querySelector('.view.active').id.replace('view-','');
     if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
       confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
@@ -3606,6 +3647,6 @@ if(battleHash)LB.requireLogin(()=>{switchView('runner');RB.openHome(battleHash[1
 else if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
 else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
-<script src="rush_battle.js?v=4"></script>
+<script src="rush_battle.js?v=5"></script>
 </body>
 </html>
