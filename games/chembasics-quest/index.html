@@ -526,6 +526,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
     <option value="../inorganic-quest/index.html">無機化学クエスト</option>
     <option value="../polymer-quest/index.html">高分子クエスト</option>
     <option value="index.html" selected>化学基礎クエスト</option>
+    <option value="index.html#battle">⚔️ オンライン対戦（化学RUSH！）</option>
   </select>
   <div class="title" id="hdrTitle" style="display:none"></div>
   <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
@@ -3529,44 +3530,55 @@ function switchView(view){
   if(view==='runner'&&!runnerState)renderRunnerHome();
   if(view==='weak'&&!drill)renderWeakHome();
 }
-document.querySelectorAll('nav button').forEach(b=>{
-  b.addEventListener('click',()=>{
-    const target=b.dataset.view;
+// 画面を切り替える（遊んでいる途中なら終了の確認を出す）。after は切り替えたあとに行う処理
+function requestSwitch(target,after){
+    const done=()=>{ switchView(target); if(after) after(); };
     // 登録なしで遊べるのは暗記モードだけ（2026-10-11 先生）。ほかのタブはログインが必要
-    if(target!=='home'&&!LB.isLoggedIn()){LB.requireLogin(()=>b.click());return;}
+    if(target!=='home'&&!LB.isLoggedIn()){LB.requireLogin(()=>requestSwitch(target,after));return;}
     const activeView=document.querySelector('.view.active').id.replace('view-','');
     if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
       confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
         stopChalTimer(); chal.over=true; chal=null;
-        switchView(target);
+        done();
       });
       return;
     }
     if(activeView==='grid'&&target!=='grid'&&gridState&&!gridState.locked){
       confirmDialog('元素グリッドを終了しますか？記録は保存されません。',()=>{
         stopGridLevel();
-        switchView(target);
+        done();
       });
       return;
     }
     if(activeView==='runner'&&target!=='runner'&&runnerState&&runnerState.battle){
       confirmDialog('対戦を棄権してルームを出ますか？',()=>{
         RB.quit();
-        switchView(target);
+        done();
       });
       return;
     }
-    if(activeView==='runner'&&target!=='runner'&&runnerState&&!runnerState.locked){
+    // after があるとき（オンライン対戦を開くなど）は、化学RUSH！の画面どうしでも1人用の途中なら確認する
+    if(activeView==='runner'&&(target!=='runner'||after)&&runnerState&&!runnerState.battle&&!runnerState.locked){
       confirmDialog('化学RUSH！を終了しますか？記録は保存されません。',()=>{
         stopRunner();
-        switchView(target);
+        done();
       });
       return;
     }
-    switchView(target);
-  });
+    done();
+}
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click',()=>requestSwitch(b.dataset.view));
 });
-document.getElementById('questSelect').addEventListener('change',e=>{location.href=e.target.value;});
+document.getElementById('questSelect').addEventListener('change',e=>{
+  // オンライン対戦はこのページの中なので、ページ移動せずに化学RUSH！の対戦画面へ
+  if(e.target.value==='index.html#battle'){
+    e.target.value='index.html';
+    requestSwitch('runner',()=>RB.openHome());
+    return;
+  }
+  location.href=e.target.value;
+});
 
 /* ================= 起動 ================= */
 load();
@@ -3579,6 +3591,6 @@ if(location.hash==='#battle')LB.requireLogin(()=>{switchView('runner');RB.openHo
 else if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
 else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
-<script src="rush_battle.js?v=1"></script>
+<script src="rush_battle.js?v=2"></script>
 </body>
 </html>

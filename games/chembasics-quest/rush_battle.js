@@ -442,8 +442,8 @@ const RB=(function(){
 
   /* ---------- 入口（ルームを作る／入る） ---------- */
   function openHome(){
+    if(room){ render(); return; }  // ルームに入っている（試合中も含む）ならその画面のまま
     stopRunner();
-    if(room){ render(); return; }
     const sess=loadSess();
     const m=me();
     const opts=RUNNER_SCOPES.map(s=>`<option value="${esc(s.value)}" ${selectedRunnerGenre===s.value?'selected':''}>${esc(s.label)}</option>`).join('');
