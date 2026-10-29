@@ -3104,7 +3104,10 @@ function rnBuildFlaskEngine(){
   }else{
     const maxH = window.innerWidth>=700 ? 620 : RN_TRACK_MAX_H;
     const availH=cardEl.clientHeight;
-    h = availH>0 ? Math.round(Math.max(RN_TRACK_MIN_H, Math.min(maxH, availH - RN_STATEMENT_MIN_H))) : RN_TRACK_MAX_H;
+    // 対戦では上にレーン表示がある分、写真＋器具の欄をさらに縮めてよい
+    const minH = st.battle ? RB.TRACK_MIN_H : RN_TRACK_MIN_H;
+    const stmtH = st.battle ? RB.STATEMENT_MIN_H : RN_STATEMENT_MIN_H;
+    h = availH>0 ? Math.round(Math.max(minH, Math.min(maxH, availH - stmtH))) : RN_TRACK_MAX_H;
     trackEl.style.height=h+'px';
   }
   const w=Math.round(trackEl.clientWidth)||420;
@@ -3278,22 +3281,7 @@ function renderRunnerPlayShell(){
         <div class="rn-feedback" id="rnFeedback"></div>
       </div>
     </div>`;
-<<<<<<< HEAD
   rnBuildFlaskEngine();
-=======
-  const rnTrackEl = document.querySelector('.rn-track');
-  // 2026-10-29 iPhoneなど縦の短い画面では問題文・解説が見切れていたため、
-  // 問題文欄に最低 RN_STATEMENT_MIN_H を残し、残りの高さに合わせて写真＋器具の欄を縮める（最大480px）
-  const rnCardEl = rnTrackEl.parentElement;
-  const rnAvailH = rnCardEl.clientHeight;
-  // 対戦では上にレーン表示がある分、写真＋器具の欄をさらに縮めてよい
-  const rnMinH = runnerState.battle ? RB.TRACK_MIN_H : RN_TRACK_MIN_H;
-  const rnStmtH = runnerState.battle ? RB.STATEMENT_MIN_H : RN_STATEMENT_MIN_H;
-  const rnTrackH = rnAvailH>0 ? Math.round(Math.max(rnMinH, Math.min(RN_TRACK_MAX_H, rnAvailH - rnStmtH))) : RN_TRACK_MAX_H;
-  rnTrackEl.style.height = rnTrackH+'px';
-  rnTrackEl.classList.toggle('rn-compact', rnTrackH < 400);
-  runnerState.flaskEngine = new RunnerFlaskEngine(document.getElementById('rnFlaskHost'), rnTrackEl.clientWidth || 420, rnTrackH, 'assets_flask/bg_lab.webp');
->>>>>>> 984f0af (化学基礎クエスト 化学RUSH！: みんなで対戦モード（4桁ルーム・2〜10人・10問先取）を追加)
   runnerState.el={
     timerFill:document.getElementById('rnTimerFill'), timerNum:document.getElementById('rnTimerNum'),
     hearts:document.getElementById('rnHearts'), genreTag:document.getElementById('rnGenreTag'),
