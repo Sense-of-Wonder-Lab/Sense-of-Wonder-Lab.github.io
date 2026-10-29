@@ -3643,10 +3643,15 @@ refreshExplainBtn();
 renderHome();
 // #battle-aro などは、ほかのクエストから来たときにその分野を選んだ状態で対戦画面を開く
 const battleHash=/^#battle(?:-(\w+))?$/.exec(location.hash);
-if(battleHash)LB.requireLogin(()=>{switchView('runner');RB.openHome(battleHash[1]);});
+const intrudeHash=/^#intrude-(\d{4})$/.exec(location.hash);
+if(intrudeHash){
+  history.replaceState(null,'',location.pathname+location.search);  // 再読み込みで二重に入らないように
+  LB.requireLogin(()=>{switchView('runner');RB.intrudeFromLink(intrudeHash[1]);});
+}
+else if(battleHash)LB.requireLogin(()=>{switchView('runner');RB.openHome(battleHash[1]);});
 else if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
 else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
-<script src="rush_battle.js?v=5"></script>
+<script src="rush_battle.js?v=6"></script>
 </body>
 </html>
