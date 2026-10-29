@@ -8,6 +8,10 @@
    - 試合中に送るのは自分の現在位置（数字）とゴールタイム（各自の端末で計測）だけ
    - 切断してもすぐ負けにせず、DROP_MS のあいだ再接続を待つ
    - ?demo=1 を付けると、同じアカウントでもタブごとに別の参加者として入れる（動作確認用）
+   - 分野は 化学基礎（化学RUSH！の○×問題）／芳香族・脂肪族・無機・高分子（各クエストの暗記カード）から選ぶ。
+     4分野は rush_fields.js（tools/build_rush_fields.js で作る）を読み、問題に「答え：○○」を添えて
+     それが正しいかを○×で答える形にする。正しい答えか誤答のどれかを、開始時に問題ごとに決める
+     問題ID "分野|カードID|t"（正しい答え）・"分野|カードID|f2"（2番目の誤答）　ルームの genre は "F:分野" か "F:分野:単元番号"
 
    Firebase Realtime Database のルールに次を追加すること（ルート "rules" の中）:
    "mpRooms": {
@@ -44,7 +48,88 @@ const RB=(function(){
   const TS=()=>firebase.database.ServerValue.TIMESTAMP;
   const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let qmap=null;
-  const Q=id=>{ if(!qmap) qmap=new Map(RUNNER_QUESTIONS.map(q=>[q.id,q])); return qmap.get(id); };
+  const Q=id=>{
+    if(!qmap) qmap=new Map(RUNNER_QUESTIONS.map(q=>[q.id,q]));
+    if(!qmap.has(id)&&id.includes('|')){ const q=fieldQ(id); if(q) qmap.set(id,q); }
+    return qmap.get(id);
+  };
+
+  /* ---------- 分野（化学基礎・芳香族・脂肪族・無機・高分子） ---------- */
+  const BASICS={key:'basic',label:'化学基礎'};
+  const FIELD_KEY='rbField_v1';  // 最後に選んだ分野と範囲 {field, genre}
+  let fieldsP=null;
+  // 4分野の問題データは対戦画面を開いたときに読む
+  function loadFields(){
+    if(typeof RUSH_FIELDS!=='undefined') return Promise.resolve();
+    if(!fieldsP) fieldsP=new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='rush_fields.js?v=1';
+      s.onload=resolve;
+      s.onerror=()=>{ fieldsP=null; s.remove(); reject(new Error('問題データを読み込めませんでした。通信を確認してね')); };
+      document.head.appendChild(s);
+    });
+    return fieldsP;
+  }
+  const fieldList=()=>[BASICS].concat(typeof RUSH_FIELDS!=='undefined'?RUSH_FIELDS:[]);
+  const fieldOf=key=>(typeof RUSH_FIELDS!=='undefined'&&RUSH_FIELDS.find(f=>f.key===key))||null;
+  function parseScope(genre){
+    const m=/^F:(\w+)(?::(\d+))?$/.exec(genre||'');
+    return m ? {field:fieldOf(m[1]), deck:m[2]==null?null:+m[2]} : null;
+  }
+  function scopeLabel(genre){
+    const s=parseScope(genre);
+    if(!s) return BASICS.label+'：'+runnerScopeOf(genre).label;
+    if(!s.field) return '（問題データを読み込み中）';
+    return s.field.label+'：'+(s.deck==null?'全範囲':s.field.decks[s.deck].name);
+  }
+  function scopeOptions(fkey){
+    if(fkey===BASICS.key) return RUNNER_SCOPES.map(s=>({value:s.value,label:s.label}));
+    const f=fieldOf(fkey); if(!f) return [];
+    const total=f.decks.reduce((n,d)=>n+d.items.length,0);
+    return [{value:'F:'+f.key,label:`全範囲（${total}問）`}]
+      .concat(f.decks.map((d,i)=>({value:'F:'+f.key+':'+i,label:`${d.name}（${d.items.length}問）`})));
+  }
+  let cardIndex={};
+  function cardOf(f,id){
+    if(!cardIndex[f.key]){ const m=new Map(); f.decks.forEach(d=>d.items.forEach(it=>m.set(it.id,{it,deck:d}))); cardIndex[f.key]=m; }
+    return cardIndex[f.key].get(id);
+  }
+  // 暗記カード1枚を○×問題にする。v は 't'（正しい答えを見せる）か 'f番号'（その誤答を見せる）
+  function fieldQ(id){
+    const [fk,cid,v]=id.split('|');
+    const f=fieldOf(fk), hit=f&&cardOf(f,cid);
+    if(!hit) return null;
+    const {it,deck}=hit, ok=v==='t';
+    const cand=ok?it.a:it.w[+String(v).slice(1)];
+    if(cand==null) return null;
+    const pic=it.img?`<img class="rb-qimg" src="${esc(f.img+encodeURIComponent(it.img))}" alt="構造式">`:'';
+    return {id, field:fk, genre:f.label+'｜'+deck.name, answer:ok,
+      statement:`${pic}<div>${it.q}</div><div class="rb-cand">答え：<b>${cand}</b></div>`,
+      explanation:(ok?'':`正しい答えは「${it.a}」。`)+it.e};
+  }
+  // 開始時に配る問題IDの列。4分野は○と×がだいたい半分ずつになるよう、カードごとに見せる答えを決める
+  function buildPool(genre){
+    const s=parseScope(genre);
+    if(!s) return buildRunnerPool(genre).slice(0,QUESTION_COUNT).map(q=>q.id);
+    if(!s.field) throw new Error('問題データを読み込めませんでした');
+    const cards=[];
+    s.field.decks.forEach((d,i)=>{ if(s.deck==null||s.deck===i) cards.push(...d.items); });
+    const ids=[], last={};
+    // 単元が小さいときは2周目以降も配る（同じカードは前の周と違う答えを見せる）
+    while(ids.length<QUESTION_COUNT&&cards.length){
+      for(const it of shuffleRunner(cards)){
+        const pick=()=>Math.random()<0.5?'t':'f'+Math.floor(Math.random()*it.w.length);
+        let v=pick();
+        if(v===last[it.id]) v= v==='t' ? 'f'+Math.floor(Math.random()*it.w.length) : 't';
+        last[it.id]=v;
+        ids.push(s.field.key+'|'+it.id+'|'+v);
+        if(ids.length>=QUESTION_COUNT) break;
+      }
+    }
+    return ids;
+  }
+  function loadFieldPref(){ try{ return JSON.parse(localStorage.getItem(FIELD_KEY))||{}; }catch(e){ return {}; } }
+  function saveFieldPref(p){ try{ localStorage.setItem(FIELD_KEY,JSON.stringify(p)); }catch(e){} }
 
   let db=null, offset=0, online=true;
   function getDb(){
@@ -154,6 +239,9 @@ const RB=(function(){
     const sess=loadSess();
     // 同じルームに入り直すとき（再読み込みなど）は、試合の途中経過を残す
     const same=sess&&sess.code===code&&sess.pid===m.pid;
+    // 4分野のルームの問題を出せるよう、先に問題データを読んでおく（化学基礎のルームなら読めなくても続ける）
+    await loadFields().catch(e=>console.warn('[RB] fields',e));
+    if(room!==r) return;
     const av=await smallAvatar(m.avatar,m.name,m.pid);
     if(room!==r) return;
     r.myAv=av;
@@ -234,7 +322,7 @@ const RB=(function(){
     const onGoal=s=>{
       r.goal[s.key]=s.val();
       // 再読み込みで戻ってきたが、もうゴール済みだった
-      if(s.key===r.me.pid&&r.view!=='result'){ r.goalSent=true; if(runnerState&&runnerState.battle) destroyRun(); r.view='result'; }
+      if(s.key===r.me.pid&&r.view!=='result'&&r.view!=='review'){ r.goalSent=true; if(runnerState&&runnerState.battle) destroyRun(); r.view='result'; }
       if(s.key!==r.me.pid&&s.val()>=0&&r.view==='play'&&!r.toasted[s.key]){ r.toasted[s.key]=1; toast('🏁 '+nameOf(s.key)+' がゴール！'); }
       render();
     };
@@ -247,7 +335,7 @@ const RB=(function(){
     if(players.length<MIN_PLAYERS) return;
     const ghost=players.length===1 ? await pickGhost() : null;  // 1人ならゴーストと対戦
     if(room!==r) return;
-    const qs=buildRunnerPool(r.meta.genre).slice(0,QUESTION_COUNT).map(q=>q.id);
+    const qs=buildPool(r.meta.genre);
     await r.ref.child('meta').update({status:'play',round:(r.meta.round||0)+1,qs,players,ghost,startAt:serverNow()+4000});
   }
   function rematch(){ if(room) room.ref.child('meta').update({status:'wait'}); }
@@ -453,6 +541,7 @@ const RB=(function(){
   function render(){
     const r=room; if(!r) return;
     if(r.view==='play'){ renderLanes(); return; }
+    if(r.view==='review') return;
     if(r.view==='countdown'){
       if(!document.getElementById('rbCount')) runnerPanel.innerHTML=`<div class="rb-countwrap"><div class="muted">${vsGhost()?esc(r.names[GHOST])+' と対戦（記録 '+fmtMs(r.ghost.ms)+'）':'ルーム '+r.code+'　全員同じ問題・同じ順番です'}</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退</div></div>`;
       return;
@@ -466,7 +555,6 @@ const RB=(function(){
     const amHost=host===r.me.pid;
     const playing=meta.status==='play';
     const aliveN=mems.filter(isOnline).length;
-    const scope=runnerScopeOf(meta.genre);
     runnerPanel.innerHTML=`
       <button class="backbtn" id="rbLeave">← ルームを出る</button>
       <h2>⚔️ 対戦ルーム</h2>
@@ -474,7 +562,7 @@ const RB=(function(){
         <div class="muted">ルームコード</div>
         <div class="rb-code">${esc(r.code)}</div>
         <div class="muted">この4桁を友だちに伝えてね（${MIN_PLAYERS}〜${MAX_PLAYERS}人・1人ならゴーストと対戦）</div>
-        <div class="rb-scope">出題：${esc(scope.label)}</div>
+        <div class="rb-scope">出題：${esc(scopeLabel(meta.genre))}</div>
       </div>
       <div class="card-ui">
         <b>参加者 ${mems.length}/${MAX_PLAYERS}</b>
@@ -532,33 +620,40 @@ const RB=(function(){
     runnerPanel.querySelectorAll('.rb-row').forEach(row=>row.querySelector('.rb-ravatar').appendChild(img(row.dataset.pid).cloneNode()));
     const a=document.getElementById('rbAgain'); if(a) a.onclick=rematch;
     document.getElementById('rbReview').onclick=()=>{
+      r.view='review';  // 振り返り中は順位画面の定期更新で上書きしない
       renderRunnerReview();
       // 振り返りの「戻る」は1人用の結果画面ではなく対戦の順位画面へ
       const b=document.getElementById('rnReviewBack'), nb=b.cloneNode(true);
-      b.replaceWith(nb); nb.onclick=()=>render();
+      b.replaceWith(nb); nb.onclick=()=>{ if(room===r&&r.view==='review') r.view='result'; render(); };
     };
     document.getElementById('rbExit').onclick=()=>{ leave(); openHome(); };
   }
 
   /* ---------- 入口（ルームを作る／入る） ---------- */
-  function openHome(){
+  // fkey: ほかのクエストから来たときの分野（'aro' など）。なければ前回選んだ分野
+  function openHome(fkey){
     if(room){ render(); return; }  // ルームに入っている（試合中も含む）ならその画面のまま
     stopRunner();
     const sess=loadSess();
     const m=me();
-    const opts=RUNNER_SCOPES.map(s=>`<option value="${esc(s.value)}" ${selectedRunnerGenre===s.value?'selected':''}>${esc(s.label)}</option>`).join('');
+    const pref=loadFieldPref();
+    let field=(typeof fkey==='string'&&fkey)||pref.field||BASICS.key;
+    const fieldBtns=()=>fieldList().map(f=>`<button class="rb-field${f.key===field?' on':''}" data-f="${esc(f.key)}">${esc(f.label)}</button>`).join('');
     runnerPanel.innerHTML=`
       <button class="backbtn" id="rbBack">← 化学RUSH！に戻る</button>
-      <h2>⚔️ みんなで対戦</h2>
-      <div class="card-ui"><div class="muted">化学RUSH！の○×問題で<b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！</div></div>
+      <h2>⚔️ オンライン対戦</h2>
+      <div class="card-ui"><div class="muted">○×問題で<b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！<br>芳香族・脂肪族・無機・高分子は、問題の下に出る「答え」が正しいかどうかを○×で答えます。</div></div>
       ${sess&&sess.code?`<div class="card-ui"><b>前のルーム ${esc(sess.code)}</b><button class="bigbtn" id="rbResume">ルーム ${esc(sess.code)} に戻る</button></div>`:''}
       <div class="card-ui">
-        <b>ルームを作る</b>
-        <select class="genreSelect" id="rbGenre" style="margin-top:8px">${opts}</select>
+        <b>① 分野を選ぶ</b>
+        <div class="rb-fields" id="rbFields">${fieldBtns()}</div>
+        <b>② 範囲を選んでルームを作る</b>
+        <select class="genreSelect" id="rbGenre" style="margin-top:8px"></select>
         <button class="bigbtn" id="rbCreate" style="margin-top:10px">ルームを作る</button>
       </div>
       <div class="card-ui">
         <b>ルームに入る</b>
+        <div class="muted">分野と範囲はルームを作った人が決めます</div>
         <input class="rb-codein" id="rbCode" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4桁のコード">
         <button class="bigbtn" id="rbJoin">参加する</button>
       </div>
@@ -567,8 +662,33 @@ const RB=(function(){
     const err=document.getElementById('rbErr');
     const busy=(on)=>runnerPanel.querySelectorAll('.bigbtn').forEach(b=>b.disabled=on);
     const run=(p)=>{ err.textContent=''; busy(true); p.catch(e=>{ busy(false); err.textContent=(e&&e.message)||'通信できませんでした'; console.warn('[RB]',e); }); };
+    const sel=document.getElementById('rbGenre'), createBtn=document.getElementById('rbCreate');
+    // 分野を選ぶと範囲の一覧を入れ替える（化学基礎の範囲は化学RUSH！で選んでいたものを最初に選ぶ）
+    const drawScopes=()=>{
+      runnerPanel.querySelectorAll('.rb-field').forEach(b=>b.classList.toggle('on',b.dataset.f===field));
+      const opts=scopeOptions(field);
+      const want=pref.field===field&&pref.genre ? pref.genre : field===BASICS.key ? selectedRunnerGenre : null;
+      sel.innerHTML=opts.length ? opts.map(o=>`<option value="${esc(o.value)}" ${o.value===want?'selected':''}>${esc(o.label)}</option>`).join('')
+        : '<option value="">問題データを読み込み中…</option>';
+      sel.disabled=createBtn.disabled=!opts.length;
+    };
+    const bindFields=()=>runnerPanel.querySelectorAll('.rb-field').forEach(b=>b.onclick=()=>{ field=b.dataset.f; err.textContent=''; drawScopes(); });
+    bindFields(); drawScopes();
+    loadFields().then(()=>{
+      const box=document.getElementById('rbFields');
+      if(room||!box||box.children.length>1) return;
+      if(!fieldOf(field)&&field!==BASICS.key) field=BASICS.key;
+      box.innerHTML=fieldBtns(); bindFields(); drawScopes();
+    }).catch(e=>{
+      if(document.getElementById('rbErr')) err.textContent=e.message+'（化学基礎だけ選べます）';
+      if(field!==BASICS.key&&document.getElementById('rbFields')){ field=BASICS.key; drawScopes(); }
+    });
     document.getElementById('rbBack').onclick=()=>renderRunnerHome();
-    document.getElementById('rbCreate').onclick=()=>run(createRoom(document.getElementById('rbGenre').value));
+    createBtn.onclick=()=>{
+      if(!sel.value) return;
+      saveFieldPref({field,genre:sel.value});
+      run(createRoom(sel.value));
+    };
     const code=document.getElementById('rbCode');
     code.oninput=()=>{ code.value=code.value.replace(/\D/g,'').slice(0,4); };
     code.onkeydown=e=>{ if(e.key==='Enter') document.getElementById('rbJoin').click(); };

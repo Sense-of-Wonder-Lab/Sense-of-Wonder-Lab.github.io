@@ -406,6 +406,18 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rb-rstat{flex:0 0 auto;font-size:12px}
 html[data-theme="navy"] .rb-member,html[data-theme="navy"] .rb-row{border-color:rgba(255,255,255,.16)}
 html[data-theme="navy"] .rb-codein{border-color:rgba(255,255,255,.25)}
+/* 対戦の分野選び（化学基礎・芳香族・脂肪族・無機・高分子） */
+.rb-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;margin:8px 0 12px}
+.rb-field{padding:10px 4px;border:1.5px solid #cbd5e1;border-radius:12px;background:transparent;color:var(--ink);font-size:14px;font-weight:800;cursor:pointer}
+.rb-field.on{border-color:var(--accent);background:var(--accent);color:#fff}
+html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
+/* 4分野の問題：問いの下に「答え」を出して、それが正しいかを○×で答える */
+.rn-statement .rb-qimg{display:block;max-width:100%;max-height:140px;margin:0 auto 8px;background:#fff;border-radius:10px;padding:4px;box-sizing:border-box}
+.rb-cand{margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(255,209,102,.16);border:1px dashed rgba(255,209,102,.7)}
+.rb-cand b{color:#ffd166}
+.rv-statement .rb-qimg{display:block;max-width:100%;max-height:100px;margin-bottom:6px}
+.rv-statement .rb-cand{background:rgba(244,185,66,.12);border-color:#f4b942}
+.rv-statement .rb-cand b{color:inherit}
 .rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
 .rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
 .rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
@@ -528,7 +540,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
     <option value="../inorganic-quest/index.html">無機化学クエスト</option>
     <option value="../polymer-quest/index.html">高分子クエスト</option>
     <option value="index.html" selected>化学基礎クエスト</option>
-    <option value="index.html#battle">⚔️ オンライン対戦（化学RUSH！）</option>
+    <option value="index.html#battle">⚔️ オンライン対戦</option>
   </select>
   <div class="title" id="hdrTitle" style="display:none"></div>
   <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
@@ -3378,9 +3390,12 @@ function runnerAnswer(userAnswer){
   const isTimeout = userAnswer===null;
   const correct = !isTimeout && (userAnswer===q.answer);
   st.total++;
-  recordRunnerAnswer(q.id,correct);
-  recordRunnerGenreAnswer(q.genre,correct);
-  if(typeof LB!=='undefined') LB.recordQuizResults('chemrunner',[{id:q.id,ok:correct}]);
+  // 対戦の4分野（芳香族など）の問題は化学基礎の成績・苦手分析に入れない
+  if(!q.field){
+    recordRunnerAnswer(q.id,correct);
+    recordRunnerGenreAnswer(q.genre,correct);
+    if(typeof LB!=='undefined') LB.recordQuizResults('chemrunner',[{id:q.id,ok:correct}]);
+  }
   st.history.push({qid:q.id,genre:q.genre,statement:q.statement,explanation:q.explanation,correct});
   st.el.btnTrue.disabled=true;
   st.el.btnFalse.disabled=true;
@@ -3577,10 +3592,12 @@ refreshAnswerFxBtn();
 refreshAnswerAutoBtn();
 refreshExplainBtn();
 renderHome();
-if(location.hash==='#battle')LB.requireLogin(()=>{switchView('runner');RB.openHome();});
+// #battle-aro などは、ほかのクエストから来たときにその分野を選んだ状態で対戦画面を開く
+const battleHash=/^#battle(?:-(\w+))?$/.exec(location.hash);
+if(battleHash)LB.requireLogin(()=>{switchView('runner');RB.openHome(battleHash[1]);});
 else if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
 else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
-<script src="rush_battle.js?v=3"></script>
+<script src="rush_battle.js?v=4"></script>
 </body>
 </html>
