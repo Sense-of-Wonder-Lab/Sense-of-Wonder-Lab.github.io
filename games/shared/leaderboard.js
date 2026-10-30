@@ -284,12 +284,10 @@ const LB = (function(){
   }
   function logout(){ return auth ? auth.signOut() : Promise.resolve(); }
 
-  const GAME_IDS = ['inorganic','aromatic','aliphatic','chembasics','polymer','theory'];
+  const GAME_IDS = ['inorganic','aromatic','aliphatic','chembasics','polymer'];
   // gridBasic/gridMid/gridAdvanced: 元素タッチ(元素グリッド)のタイムアタック3レベル。
   // correct は常にそのレベルの元素数(固定)なので、fetchTop の並び替えは実質 sec 昇順のみで効く。
-  const CHAL_KINDS = ['score','time','scoreV2','timeV2','gridBasic','gridMid','gridAdvanced','runnerScore','runnerScoreBunkei','runnerScoreChemAll','runnerScoreGenre1','runnerScoreGenre2','runnerScoreGenre3','runnerScoreGenre4','lv3buildV2','lv3multiV2','lv3hardV2',
-    // 理論化学クエスト（theory）の化学RUSH！：範囲ごと（全分野・化学基礎・化学・分野G1〜G10）
-    'runnerScoreKiso','runnerScoreRiron','runnerScoreG1','runnerScoreG2','runnerScoreG3','runnerScoreG4','runnerScoreG5','runnerScoreG6','runnerScoreG7','runnerScoreG8','runnerScoreG9','runnerScoreG10'];
+  const CHAL_KINDS = ['score','time','scoreV2','timeV2','gridBasic','gridMid','gridAdvanced','runnerScore','runnerScoreBunkei','runnerScoreChemAll','runnerScoreGenre1','runnerScoreGenre2','runnerScoreGenre3','runnerScoreGenre4','lv3buildV2','lv3multiV2','lv3hardV2'];
   function propagateField(field, value){
     const jobs = [];
     GAME_IDS.forEach(gid=>CHAL_KINDS.forEach(kind=>{
