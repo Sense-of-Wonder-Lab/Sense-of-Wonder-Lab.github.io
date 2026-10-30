@@ -1,0 +1,83 @@
+/* 化学RUSH！（化学基礎クエストから移植 2026-10-30） */
+.rl-search{width:100%;margin-top:8px;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+.rl-head{font-size:12.5px;font-weight:800;color:#64748b;margin:14px 2px 6px}
+.rl-item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:6px}
+.rl-ans{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff}
+.rl-ans.t{background:var(--green)} .rl-ans.f{background:var(--red)}
+.rl-st{font-size:13.5px;font-weight:700;line-height:1.6}
+.rl-ex{font-size:12px;color:#64748b;line-height:1.6;margin-top:3px}
+html[data-theme="navy"] .rl-item,html[data-theme="navy"] .rl-search{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
+html[data-theme="navy"] .rl-ex,html[data-theme="navy"] .rl-head{color:#93a4a2}
+.genreSelect{width:100%;padding:11px 12px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:13px;font-weight:700;color:#475569;font-family:inherit}
+.eg-levelgrid{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.eg-levelbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid #e2e8f0;background:#fff}
+.eg-levelbtn:active{border-color:var(--blue)}
+.eg-lv-name{font-size:16px;font-weight:800;color:var(--ink)}
+.eg-lv-sub{display:block;font-size:11.5px;color:#64748b;margin-top:2px}
+.eg-lv-best{text-align:right;font-size:11px;color:#64748b;flex:none}
+.eg-lv-best b{display:block;font-size:16px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+html[data-theme="navy"] .genreSelect{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);color:var(--ink)}
+html[data-theme="navy"] .genreSelect option{color:#000}
+html[data-theme="navy"] .eg-levelbtn{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .eg-levelbtn:active{border-color:var(--blue)}
+#runnerPanel{--rn-true:#06d6a0;--rn-false:#ef476f;--rn-accent:#ffd166;display:flex;flex-direction:column;padding-bottom:0}
+.rn-card{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;margin-bottom:0}
+.rn-track{position:relative;height:480px;flex:0 0 auto;overflow:hidden;border-radius:16px 16px 0 0;background:#05070c}
+.rn-flask-host{line-height:0}
+.rn-flask-host canvas{display:block;position:relative;z-index:1}
+.rn-header-row{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.rn-genretag{background:rgba(6,10,20,.55);border:1px solid rgba(255,255,255,.25);color:#eaf2ff;
+  font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:20px;backdrop-filter:blur(3px);
+  max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.life-hearts{font-size:17px;letter-spacing:3px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))}
+.rn-timer-bar{position:absolute;top:46px;left:14px;right:14px;height:6px;border-radius:6px;
+  background:rgba(255,255,255,.2);overflow:hidden;z-index:5}
+.rn-timer-fill{height:100%;width:100%;background:var(--rn-true);transition:width .12s linear,background .3s}
+.rn-ans-btn{
+  position:absolute;bottom:20px;width:92px;height:92px;border-radius:22px;
+  background:rgba(8,14,26,.55);backdrop-filter:blur(4px);border:2px solid;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;
+  cursor:pointer;z-index:6;transition:transform .1s}
+.rn-ans-btn:active{transform:translateY(2px) scale(.97)}
+.rn-ans-btn:disabled{opacity:.5}
+.rn-ans-btn.true-btn{left:16px;color:#5cffc0;border-color:rgba(92,255,192,.7);
+  box-shadow:0 0 14px rgba(92,255,192,.45),inset 0 0 12px rgba(92,255,192,.15);text-shadow:0 0 10px rgba(92,255,192,.9)}
+.rn-track.rn-compact .rn-ans-btn{width:72px;height:72px;border-radius:18px;bottom:14px;font-size:32px}
+.rn-track.rn-compact .rn-ans-btn.false-btn{font-size:38px}
+.rn-ans-btn.false-btn{right:16px;color:#ff6f8f;border-color:rgba(255,111,143,.7);font-size:48px;
+  box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
+.rn-statement-panel{
+  flex:1;min-height:130px;margin:0 14px 6px;overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-start;
+  background:linear-gradient(160deg,rgba(58,30,10,.82),rgba(6,10,20,.85));backdrop-filter:blur(3px);
+  border:1.5px solid rgba(255,166,77,.55);border-radius:20px;padding:14px 16px;
+  box-shadow:0 0 16px rgba(255,140,60,.12)}
+.rn-statement{font-size:14.5px;line-height:1.6;color:#f2f5ff}
+.rn-feedback{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.55;display:none}
+.rn-feedback.correct{background:rgba(6,214,160,.18);color:#5cffc0;display:block}
+.rn-feedback.wrong{background:rgba(239,71,111,.18);color:#ff8fa8;display:block}
+.rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
+.rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
+.rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
+.rn-review-item .rv-mark{font-weight:700;font-size:13px}
+.rn-review-item .rv-mark.correct{color:#06a06a}
+.rn-review-item .rv-mark.wrong{color:#ef476f}
+.rn-review-item .rv-statement{color:var(--ink);line-height:1.5}
+.rn-review-item .rv-ans{margin-top:6px;font-size:12px;color:#64748b}
+.rn-review-item .rv-ans b{color:var(--ink)}
+.rn-review-item .rv-explanation{color:#64748b;margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;line-height:1.5}
+html[data-theme="navy"] .rn-review-item{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1);border-color:rgba(255,111,111,.4)}
+@media (min-width:700px){
+  .rn-statement{font-size:19px;line-height:1.7}
+  .rn-feedback{font-size:16px;line-height:1.65;padding:12px 14px;margin-top:14px;border-radius:10px}
+  .rn-statement-panel{padding:20px 22px}
+  .rn-genretag{font-size:13px}
+}
+/* 化学RUSH！ 横長の画面：左に器具・右に問題文の2列で、画面の高さに収める */
+@media (min-width:960px) and (orientation:landscape){
+  #runnerPanel:has(.rn-card){max-width:1240px}
+  .rn-card{flex-direction:row;min-height:0}
+  .rn-track{height:auto!important;flex:0 0 56%;border-radius:16px 0 0 16px}
+  .rn-statement-panel{flex:1;min-width:0;min-height:0;margin:14px 14px 14px 12px;padding:24px 26px}
+  .rn-statement{font-size:20px}
+  .rn-feedback{font-size:17px}
