@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#8b5cf6">
+<title>オンライン対戦 〜化学 10問先取バトル〜</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('swTheme')||'default');</script>
+<style>
+/* オンライン対戦（2026-10-30 化学基礎クエストから独立）。見た目は5クエストの共通の形（上の帯・カード・ボタン）に合わせる */
+:root{
+  --ink:#1e293b;
+  --bg:#fdf6ff;
+  --accent:#fb7185;
+  --accent-deep:#e11d48;
+  --blue:#8b5cf6;
+  --green:#16a34a;
+  --red:#dc2626;
+  --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  font-family:Century,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column;height:100dvh;
+}
+header{
+  background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:8px 12px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  flex:none;display:flex;align-items:center;gap:10px;
+}
+.questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
+.questSelect option{color:var(--ink)}
+.themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
+header .accountBtnWrap{margin-left:0;position:relative}
+.backbtn{border:none;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
+main{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;overflow-y:auto}
+.panel{min-height:100%;padding:16px 14px calc(20px + env(safe-area-inset-bottom));max-width:620px;margin:0 auto;display:flex;flex-direction:column}
+.panel h2{font-size:17px;margin:6px 0 12px}
+.card-ui{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:12px}
+.bigbtn{display:block;width:100%;padding:14px;border-radius:14px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;margin-top:10px}
+.bigbtn.secondary{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.bigbtn:disabled{background:#cbd5e1;color:#f1f5f9;border:none}
+.muted{color:#64748b;font-size:12px;line-height:1.6}
+.genreSelect{width:100%;padding:11px 12px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:13px;font-weight:700;color:#475569;font-family:inherit}
+.score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,41,59,.92);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;white-space:nowrap;max-width:92vw}
+#toast.show{opacity:1}
+/* ダークモード */
+html[data-theme="navy"]{--ink:#eef3f1;--bg:#12181a;--card:#1a2224;--blue:#4fd8c4}
+html[data-theme="navy"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="navy"] header{background:linear-gradient(135deg,#0b0f10,#1a2224);border-bottom:1px solid rgba(79,216,196,.25)}
+html[data-theme="navy"] .questSelect{background:rgba(255,255,255,.08);border-color:rgba(79,216,196,.3)}
+html[data-theme="navy"] .muted{color:#93a4a2}
+html[data-theme="navy"] .card-ui{background:rgba(255,255,255,.05);border:1px solid rgba(79,216,196,.2);box-shadow:0 0 20px rgba(79,216,196,.08)}
+html[data-theme="navy"] .bigbtn{background:var(--blue);color:#08201c;box-shadow:0 0 20px rgba(79,216,196,.35)}
+html[data-theme="navy"] .bigbtn.secondary{background:rgba(255,255,255,.05);color:var(--blue);border-color:var(--blue)}
+html[data-theme="navy"] .bigbtn:disabled{background:rgba(255,255,255,.08);color:rgba(255,255,255,.3)}
+html[data-theme="navy"] .genreSelect{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);color:var(--ink)}
+html[data-theme="navy"] .genreSelect option{color:#000}
+html[data-theme="navy"] #toast{background:rgba(19,32,34,.95);border:1px solid rgba(79,216,196,.3)}
+/* ---- 対戦（battle.js） ---- */
+.rb-lanes{position:relative;flex:0 0 auto;margin-bottom:6px;padding:4px 6px;border-radius:12px;background:#0b1120;border:1px solid rgba(255,255,255,.12);overflow:hidden}
+.rb-lane{display:flex;align-items:center;height:22px;gap:5px}
+.rb-rank{flex:0 0 32px;font-size:12px;font-weight:700;color:#cbd5e1;text-align:right}
+.rb-road{position:relative;flex:1;height:16px;border-radius:9px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px) 10%)}
+.rb-lane.me .rb-road{background-color:rgba(255,209,102,.25);box-shadow:0 0 0 1px rgba(255,209,102,.8)}
+.rb-lane.me .rb-rank{color:#ffd166}
+.rb-lane.empty .rb-road{opacity:.25}
+.rb-flag{position:absolute;right:-1px;top:50%;transform:translateY(-50%);font-size:12px;line-height:1}
+.rb-runner{position:absolute;top:-2px;left:0;width:20px;height:20px;transition:left .45s cubic-bezier(.3,1.3,.5,1)}
+.rb-runner .rb-av{width:20px;height:20px;border-radius:50%;display:block;box-shadow:0 0 0 2px #fff}
+.rb-lane.me .rb-runner .rb-av{box-shadow:0 0 0 2px #ffd166}
+.rb-runner.off .rb-av{opacity:.35}
+.rb-runner.out .rb-av{opacity:.25;filter:grayscale(1)}
+.rb-runner.done .rb-av{box-shadow:0 0 0 2px #06d6a0}
+.rb-av.rb-ghost{opacity:.5}
+.rb-best{font-size:13px;font-weight:800;color:#f4b942;margin:2px 0 4px}
+.rb-net{position:absolute;right:8px;bottom:2px;font-size:10px;color:#ffd166}
+.rb-hud{font-size:14px;letter-spacing:0;font-weight:800;color:#fff;background:rgba(6,10,20,.55);border:1px solid rgba(255,255,255,.25);padding:2px 10px;border-radius:20px}
+.rb-codecard{text-align:center}
+.rb-code{font-size:44px;font-weight:800;letter-spacing:10px;margin:2px 0 4px;color:var(--ink)}
+.rb-scope{font-size:12px;margin-top:6px;font-weight:700}
+.rb-rules{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;font-weight:700}
+.rb-rules select{font:inherit;padding:3px 6px;border-radius:8px}
+.rb-members{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rb-member{display:flex;align-items:center;gap:5px;padding:4px 10px 4px 4px;border:1px solid #e2e8f0;border-radius:20px;font-size:12px;max-width:100%}
+.rb-member.me{border-color:#f4b942}
+.rb-member.off{opacity:.45}
+.rb-member .rb-av,.rb-ravatar .rb-av{width:26px;height:26px;border-radius:50%;flex:0 0 auto}
+.rb-mname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rb-codein{width:100%;box-sizing:border-box;font-size:28px;letter-spacing:10px;text-align:center;padding:8px;margin:8px 0 10px;border:1.5px solid #cbd5e1;border-radius:12px;background:transparent;color:var(--ink)}
+.rb-err{color:#ef476f;font-size:13px;font-weight:700;margin:0 0 8px;text-align:center}
+.rb-countwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.rb-count{font-size:96px;font-weight:900;line-height:1;color:var(--ink)}
+.rb-row{display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid #e2e8f0;font-size:13px}
+.rb-row.me{font-weight:800}
+.rb-rmedal{flex:0 0 30px;text-align:center}
+.rb-ravatar{flex:0 0 26px;line-height:0}
+.rb-rname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rb-rstat{flex:0 0 auto;font-size:12px}
+html[data-theme="navy"] .rb-member,html[data-theme="navy"] .rb-row{border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .rb-codein{border-color:rgba(255,255,255,.25)}
+/* 分野選び（化学基礎・芳香族・脂肪族・無機・高分子） */
+.rb-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;margin:8px 0 12px}
+.rb-field{padding:10px 4px;border:1.5px solid #cbd5e1;border-radius:12px;background:transparent;color:var(--ink);font-size:14px;font-weight:800;cursor:pointer}
+.rb-field.on{border-color:var(--accent);background:var(--accent);color:#fff}
+html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
+/* 試合の画面：背景の写真の上に半透明の枠。外側の枠が時間のバー（12時から時計回りに減る）、その上にレーン */
+#battlePanel:has(.rb-play){max-width:1240px;height:100%}
+.rb-play{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.rb-play .rb-lanes{margin:0;padding:4px 8px;border-radius:14px;background:#1c2346;border-color:rgba(160,170,255,.18)}
+.rb-play .rb-road{background-color:#2a3263}
+.rb-frame{position:relative;flex:1;min-height:260px;border-radius:22px;background:#141a33 url(../chembasics-quest/assets_flask/bg_lab.webp) center/cover no-repeat}
+.rb-tsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:2}
+.rb-tbg{fill:none;stroke:rgba(255,255,255,.15);stroke-width:6}
+.rb-tbar{fill:none;stroke:#06d6a0;stroke-width:6;stroke-linecap:round}
+.rb-frame .rb-hud{position:absolute;top:-11px;right:22px;z-index:3;background:rgba(6,10,20,.85)}
+.rb-inner{position:absolute;inset:7px;border-radius:16px;background:rgba(8,12,26,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:12px;padding:14px;box-sizing:border-box;overflow-y:auto;color:#f2f5ff}
+.rb-q{flex:0 0 auto;display:flex;flex-direction:column;gap:10px}
+.rb-tag{align-self:flex-start;font-size:12px;font-weight:700;color:#cbd5e1;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:20px}
+.rb-q .rb-qimg{display:block;align-self:center;max-width:100%;max-height:130px;background:#fff;border-radius:12px;padding:6px;box-sizing:border-box}
+.rb-qt{font-size:17px;line-height:1.6;font-weight:700}
+.rb-multi{font-size:13px;font-weight:700;color:#ffd166}
+.rb-fb{display:none;font-size:14px;line-height:1.6;padding:10px 12px;border-radius:10px}
+.rb-fb.correct{display:block;background:rgba(6,214,160,.18);color:#8ff0cf}
+.rb-fb.wrong{display:block;background:rgba(239,71,111,.18);color:#ff9fb4}
+.rb-ch{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
+.rb-ch.imgs{display:grid;grid-template-columns:1fr 1fr}
+.rb-cbtn{display:flex;align-items:center;gap:10px;font:inherit;font-size:15px;font-weight:700;text-align:left;color:#fff;padding:10px 14px;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.35);-webkit-tap-highlight-color:transparent}
+.rb-cbtn b{flex:0 0 auto;width:18px;color:#ffd166}
+.rb-cbtn span{flex:1;min-width:0}
+.rb-cbtn.sel{border-color:#ffd166;background:rgba(255,209,102,.25)}
+.rb-cbtn.ok{border-color:#06d6a0;background:rgba(6,214,160,.32)}
+.rb-cbtn.ng{border-color:#ef476f;background:rgba(239,71,111,.32)}
+.rb-cbtn:disabled{cursor:default;color:#fff}
+/* 化学基礎の ○／×：大きな2つのボタンを横に並べる */
+.rb-ch.ox{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rb-ch.ox .rb-cbtn{justify-content:center;text-align:center;font-size:40px;line-height:1;padding:16px 10px}
+.rb-ch.ox .rb-cbtn span{flex:none}
+.rb-cimg{display:block;max-width:100%;max-height:90px;margin:0 auto;background:#fff;border-radius:8px;padding:3px;box-sizing:border-box}
+.rb-decide{font:inherit;font-size:16px;font-weight:800;color:#1b1b1b;background:#ffd166;border:0;border-radius:14px;padding:12px;cursor:pointer}
+.rb-decide:disabled{opacity:.45;cursor:default}
+.rb-ch.imgs .rb-decide{grid-column:1/-1}
+@media (orientation:landscape) and (min-width:700px){
+  .rb-inner{flex-direction:row;gap:18px;padding:18px;overflow:hidden}
+  .rb-q{flex:1.1 1 0;min-width:0;overflow-y:auto}
+  .rb-ch{flex:1 1 0;min-width:0;overflow-y:auto;justify-content:safe center}
+  .rb-ch.imgs,.rb-ch.ox{align-content:safe center}
+  .rb-qt{font-size:20px}
+  .rb-q .rb-qimg{max-height:180px}
+  .rb-cbtn{font-size:17px;padding:12px 16px}
+  .rb-ch.ox .rb-cbtn{font-size:56px;padding:28px 10px}
+  .rb-fb{font-size:15px}
+}
+/* 振り返り */
+.rb-cand{margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(244,185,66,.12);border:1px dashed #f4b942}
+.rv-statement .rb-qimg{display:block;max-width:100%;max-height:100px;margin-bottom:6px}
+.rv-statement .rb-cimg{display:inline-block;max-height:70px;margin:2px 4px 2px 0;vertical-align:middle}
+.rn-review-item{padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;font-size:12.5px}
+.rn-review-item.is-wrong{border-color:#f7c3ce;background:#fff8f9}
+.rn-review-item .rv-head{display:flex;justify-content:space-between;align-items:center;color:#94a3b8;font-size:11px;margin-bottom:4px}
+.rn-review-item .rv-mark{font-weight:700;font-size:13px}
+.rn-review-item .rv-mark.correct{color:#06a06a}
+.rn-review-item .rv-mark.wrong{color:#ef476f}
+.rn-review-item .rv-statement{color:var(--ink);line-height:1.5}
+.rn-review-item .rv-explanation{color:#64748b;margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;line-height:1.5}
+html[data-theme="navy"] .rn-review-item{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1);border-color:rgba(255,111,111,.4)}
+/* PC・タブレット（幅700px以上） */
+@media (min-width:700px){
+  header{padding-left:20px;padding-right:20px}
+  .panel{max-width:1100px;padding-left:28px;padding-right:28px}
+  .panel h2{font-size:22px}
+  .muted{font-size:14px}
+  .bigbtn{font-size:17px;padding:16px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <select class="questSelect" id="questSelect">
+    <option value="../aromatic-quest/index.html">芳香族クエスト</option>
+    <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
+    <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+    <option value="../polymer-quest/index.html">高分子クエスト</option>
+    <option value="../chembasics-quest/index.html">化学基礎クエスト</option>
+    <option value="index.html" selected>⚔️ オンライン対戦</option>
+  </select>
+  <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
+  <span class="accountBtnWrap"><button class="accountBtn" id="accountBtn" title="アカウント">👤</button><span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></span>
+</header>
+
+<main>
+  <div class="view"><div class="panel" id="battlePanel">
+    <h2>⚔️ オンライン対戦</h2>
+    <div class="card-ui"><div class="muted">ログイン（無料）すると対戦できます。</div><button class="bigbtn" id="loginBtn">ログインして始める</button></div>
+  </div></div>
+</main>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../shared/leaderboard.js?v=43"></script>
+<script src="battle.js?v=1"></script>
+<script>
+'use strict';
+// gameId は化学基礎クエストの中にあったときと同じ（ログイン状態・訪問の記録の数え方を変えないため）
+LB.init('chembasics');
+document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+document.getElementById('themeBtn').onclick=()=>{
+  const next = document.documentElement.getAttribute('data-theme')==='navy' ? 'default' : 'navy';
+  localStorage.setItem('swTheme', next);
+  document.documentElement.setAttribute('data-theme', next);
+};
+LB.onAuth(u=>{
+  const btn = document.getElementById('accountBtn');
+  if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
+  else if(u) btn.textContent = (u.nickname||'?')[0];
+  else btn.textContent = '👤';
+});
+LB.onMessages(count=>{
+  const b = document.getElementById('notifBadge');
+  b.textContent = count>9?'9+':count;
+  b.style.display = count>0?'':'none';
+});
+// 試合中にほかのクエストへ移るときは棄権の確認を出す
+document.getElementById('questSelect').addEventListener('change',e=>{
+  const to=e.target.value;
+  if(to==='index.html'){ RB.openHome(); return; }
+  if(RB.playing()&&!confirm('対戦を棄権してルームを出ますか？')){ e.target.value='index.html'; return; }
+  if(RB.playing()) RB.quit();
+  location.href=to;
+});
+window.addEventListener('pageshow',()=>{ document.getElementById('questSelect').value='index.html'; });
+
+/* 起動：#aro などで分野を選んだ状態で開く（#battle-aro は化学基礎クエストの中にあったときのURL）。
+   #intrude-1234 は管理画面の「乱入」 */
+const intrudeHash=/^#intrude-(\d{4})$/.exec(location.hash);
+const fieldHash=/^#(?:battle-?)?(\w*)$/.exec(location.hash);
+if(intrudeHash) history.replaceState(null,'',location.pathname+location.search);  // 再読み込みで二重に入らないように
+RB.preload();  // ログインの確定を待つあいだに問題データを読み始める
+const start=()=>LB.requireLogin(()=>{
+  if(intrudeHash) RB.intrudeFromLink(intrudeHash[1]);
+  else RB.openHome(fieldHash&&fieldHash[1]||undefined);
+},'オンライン対戦はログイン（無料）すると遊べます。');
+document.getElementById('loginBtn').onclick=start;  // ログインの画面を閉じてしまったとき用
+start();
+</script>
+</body>
+</html>

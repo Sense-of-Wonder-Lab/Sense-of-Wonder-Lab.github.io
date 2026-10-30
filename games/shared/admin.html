@@ -1036,7 +1036,7 @@ function renderRooms(){
   const live = rows.filter(x=>x.live), old = rows.filter(x=>!x.live);
   const hostName = x => (x.mem[x.meta.host] && x.mem[x.meta.host].name) || '（退室済み）';
   const status = x => x.meta.status==='play' ? '<b style="color:#dc2626">対戦中</b>' : '待機中';
-  const intrudeUrl = code => '../chembasics-quest/index.html#intrude-'+code;
+  const intrudeUrl = code => '../battle/index.html#intrude-'+code;
   const table = (list, withBtn) => `<table><thead><tr><th>コード</th><th>状態</th><th>出題</th><th>作った人</th><th>参加者</th><th>作成</th>${withBtn?'<th></th>':''}</tr></thead><tbody>`
     + list.map(x=>`<tr>
         <td><b style="font-size:20px;letter-spacing:2px;font-variant-numeric:tabular-nums">${escapeHtml(x.code)}</b></td>
