@@ -300,7 +300,7 @@ const RB=(function(){
   function detach(){
     if(!room) return;
     room.offs.forEach(f=>f()); room.roundOffs.forEach(f=>f());
-    clearInterval(room.tick); clearInterval(room.countdown); clearInterval(room.ghostTick);
+    clearInterval(room.tick); clearInterval(room.countdown); clearInterval(room.ghostTick); clearInterval(room.endTick);
     room=null;
   }
   function leave(){
@@ -375,7 +375,7 @@ const RB=(function(){
     await r.ref.child('meta').update({status:'play',round,qs,players,ghost,startAt:serverNow()+4000});
     if(r.meta.log){
       const names={}; players.forEach(p=>names[p]=nameOf(p));
-      logRef(r,round).child('start').set({at:TS(),genre:r.meta.genre,players:names,ghost:ghost?ghost.name:null,ghostMs:ghost?ghost.ms:null})
+      logRef(r,round).child('start').set({at:TS(),genre:r.meta.genre,players:names,ghost:ghost?ghost.name:null,ghostMs:ghost?ghost.ms:null,maxMiss:missLimit(),endAfter:endAfterMs()/1000})
         .catch(e=>console.warn('[RB] log',e));
     }
   }
@@ -452,20 +452,37 @@ const RB=(function(){
     for(const [at,ok] of room.ghost.log){ if(at>t) break; p=Math.max(0,p+(ok?1:-1)); }
     return Math.min(GOAL,p);
   }
+  // ゴーストもミスの上限を守る。上限に達する時刻（達しなければ null）
+  function ghostOutAt(){
+    const lim=missLimit(); if(!lim) return null;
+    let m=0; for(const [at,ok] of room.ghost.log){ if(!ok&&++m>=lim) return at; }
+    return null;
+  }
   // 記録どおりのタイミングで前進・後退させる（端末内だけ）
   function startGhostTick(){
     const r=room; clearInterval(r.ghostTick);
     if(!r.ghost) return;
+    const out=ghostOutAt();
     const step=()=>{
       if(room!==r||r.view!=='play'){ clearInterval(r.ghostTick); return; }
-      const t=Date.now()-r.localStart, p=ghostPos(t);
+      if(r.goal[GHOST]!=null) return;
+      const t=Date.now()-r.localStart;
+      if(out!=null&&t>=out){ r.goal[GHOST]=-2; toast('👻 ゴーストがミスの上限に達しました'); renderLanes(); return; }
+      const p=ghostPos(t);
       if(p!==r.pos[GHOST]){ r.pos[GHOST]=p; renderLanes(); }
-      if(t>=r.ghost.ms&&r.goal[GHOST]==null){ r.goal[GHOST]=r.ghost.ms; toast('👻 ゴーストがゴール！'); renderLanes(); }
+      if(t>=r.ghost.ms){ r.goal[GHOST]=r.ghost.ms; toast('👻 ゴーストがゴール！'); renderLanes(); }
     };
     r.ghostTick=setInterval(step,200); step();
   }
-  // 結果画面ではゴーストのタイムを最初から出す（決まっているので）
-  function revealGhost(){ const r=room; if(r&&r.ghost){ r.goal[GHOST]=r.ghost.ms; r.pos[GHOST]=GOAL; } }
+  // 結果画面ではゴーストの結果を最初から出す（決まっているので）。
+  // ミスの上限に達していれば -2、自分のゴールから強制終了までにゴールできなければ -3
+  function revealGhost(){
+    const r=room; if(!r||!r.ghost) return;
+    const out=ghostOutAt(), mine=r.goal[r.me.pid], ea=endAfterMs();
+    if(out!=null&&out<r.ghost.ms){ r.goal[GHOST]=-2; r.pos[GHOST]=ghostPos(out); }
+    else if(ea&&mine>=0&&r.ghost.ms>mine+ea){ r.goal[GHOST]=-3; r.pos[GHOST]=ghostPos(mine+ea); }
+    else{ r.goal[GHOST]=r.ghost.ms; r.pos[GHOST]=GOAL; }
+  }
   function vsGhost(){ return !!(room&&room.ghost); }
 
   /* ---------- プレイ記録（ゴースト用） ---------- */
@@ -517,6 +534,7 @@ const RB=(function(){
       if(meta.log) logRef(r,r.round).child('p/'+r.me.pid).update({uid:r.me.uid,name:r.me.name}).catch(e=>console.warn('[RB] log',e));
     }
     startGhostTick();
+    startEndTick();
     renderLanes();
   }
   function destroyRun(){
@@ -547,13 +565,55 @@ const RB=(function(){
       saveRecord(ms);
       logEnd(ms);
       setTimeout(()=>{ if(room!==r) return; destroyRun(); r.view='result'; render(); },900);
+    }else if(!correct&&missLimit()&&missCount()>=missLimit()){
+      endOut(-2,'❌ ミスが上限（'+missLimit()+'回）に達しました');
     }else if(st.choice){
       st.autoAdvanceTimeout=setTimeout(choiceGoNext,correct?1200:2200);  // まちがえたときは解説を読む時間を長めに
     }else{
       st.autoAdvanceTimeout=setTimeout(runnerGoNext,correct?1200:1600);
     }
   }
-  function hudHTML(){ const st=runnerState; return `<span class="rb-hud">🏁 ${st.battle.pos}/${GOAL}</span>`; }
+  /* ---------- ミスの上限・1位のゴール後の強制終了（2026-10-30 先生） ----------
+     ルームを作った人が待機画面で変える（meta.maxMiss 回・meta.endAfter 秒、0 は「なし」）。
+     終わり方の goal の値：-1 棄権 / -2 ミスの上限 / -3 1位のゴールから時間切れ */
+  const MISS_OPTS=[3,5,10,15,20,0], END_OPTS=[30,60,120,180,300,0];
+  const DEF_MISS=10, DEF_END=60;
+  function missLimit(){ const v=room&&room.meta&&room.meta.maxMiss; return v==null?DEF_MISS:+v; }
+  function endAfterMs(){ const v=room&&room.meta&&room.meta.endAfter; return (v==null?DEF_END:+v)*1000; }
+  const missCount=()=>room.log.filter(e=>!e[1]).length;
+  const fmtSec=s=>!s?'なし':s<60?s+'秒':(s/60)+'分';
+  // 自分の試合をゴール以外で終える（ミスの上限・時間切れ）
+  function endOut(code,msg){
+    const r=room; if(!r||r.goalSent) return;
+    r.goalSent=true; r.goal[r.me.pid]=code;
+    clearRunnerTimer();
+    r.ref.child('goal_'+r.round+'/'+r.me.pid).set(code).catch(()=>{});
+    logEnd(code);
+    toast(msg);
+    renderLanes();
+    setTimeout(()=>{ if(room!==r) return; destroyRun(); r.view='result'; render(); },900);
+  }
+  // 1位（ゴーストを含む）のゴールから endAfter たったら、まだの人は終了。各自の端末で判定する
+  function forceLeft(){
+    const r=room, ea=endAfterMs(); if(!r||!ea) return null;
+    const g=Object.values(r.goal).filter(v=>v>=0); if(!g.length) return null;
+    return r.localStart+Math.min(...g)+ea-Date.now();
+  }
+  function startEndTick(){
+    const r=room; clearInterval(r.endTick);
+    r.endTick=setInterval(()=>{
+      if(room!==r||r.view!=='play'||r.goalSent){ clearInterval(r.endTick); return; }
+      const left=forceLeft(); if(left==null) return;
+      if(left<=0){ endOut(-3,'⏰ 時間切れ（1位のゴールから'+fmtSec(endAfterMs()/1000)+'）'); return; }
+      const st=runnerState; if(!st||!st.battle) return;
+      if(st.choice) choiceHUD(); else runnerRenderHUD();
+    },500);
+  }
+  function hudText(){
+    const st=runnerState, lim=missLimit(), left=forceLeft();
+    return `🏁 ${st.battle.pos}/${GOAL}`+(lim?`　❌ ${missCount()}/${lim}`:'')+(left!=null&&left>0?`　⏱ 残り${Math.ceil(left/1000)}秒`:'');
+  }
+  function hudHTML(){ return `<span class="rb-hud">${esc(hudText())}</span>`; }
 
   /* ---------- 4分野の選択式の画面 ----------
      背景の写真の上に半透明の枠。横長の画面は問題文が左・選択肢が右、縦長は上から問題文・選択肢。
@@ -588,7 +648,7 @@ const RB=(function(){
     bar.setAttribute('stroke-dasharray',`0 ${(1-left)*1000} ${left*1000} 1000`);
     bar.style.stroke= left>.5?'#06d6a0':left>.2?'#ffd166':'#ef476f';
   }
-  function choiceHUD(){ const st=runnerState; if(st&&st.ce) st.ce.hud.textContent=`🏁 ${st.battle.pos}/${GOAL}`; }
+  function choiceHUD(){ const st=runnerState; if(st&&st.ce) st.ce.hud.textContent=hudText(); }
   function choiceGoNext(){ const st=runnerState; if(!st||!st.choice) return; clearRunnerTimer(); st.idx++; choiceShow(); }
   function choiceShow(){
     const st=runnerState, el=st.ce;
@@ -650,7 +710,7 @@ const RB=(function(){
     const r=room, order=sortedMembers();
     const players=racers();
     const g=pid=>r.goal[pid];
-    const cls=pid=>{ const v=g(pid); return v>=0?0 : v===-1?2 : isDropped(pid)?2 : 1; };
+    const cls=pid=>{ const v=g(pid); return v>=0?0 : v<0?2 : isDropped(pid)?2 : 1; };
     return players.slice().sort((a,b)=>cls(a)-cls(b)
       || (cls(a)===0 ? g(a)-g(b) : 0)
       || posOf(b)-posOf(a)
@@ -695,7 +755,7 @@ const RB=(function(){
       slot.rank.textContent=(idx+1)+'位';
       slot.runner.style.left=`calc((100% - ${LANE_H-2}px) * ${p/GOAL})`;
       slot.runner.classList.toggle('off',pid!==r.me.pid&&!isOnline(pid));
-      slot.runner.classList.toggle('out',gv===-1||(!(gv>=0)&&isDropped(pid)));
+      slot.runner.classList.toggle('out',gv<0||(!(gv>=0)&&isDropped(pid)));
       slot.runner.classList.toggle('done',gv>=0);
       slot.lane.title=nameOf(pid);
       if(slot.runner.style.transition==='none') void slot.runner.offsetWidth;
@@ -709,7 +769,7 @@ const RB=(function(){
     if(r.view==='play'){ renderLanes(); return; }
     if(r.view==='review') return;
     if(r.view==='countdown'){
-      if(!document.getElementById('rbCount')) runnerPanel.innerHTML=`<div class="rb-countwrap"><div class="muted">${vsGhost()?esc(r.names[GHOST])+' と対戦（記録 '+fmtMs(r.ghost.ms)+'）':'ルーム '+r.code+'　全員同じ問題・同じ順番です'}</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退</div></div>`;
+      if(!document.getElementById('rbCount')) runnerPanel.innerHTML=`<div class="rb-countwrap"><div class="muted">${vsGhost()?esc(r.names[GHOST])+' と対戦（記録 '+fmtMs(r.ghost.ms)+'）':'ルーム '+r.code+'　全員同じ問題・同じ順番です'}</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退<br>ミスの上限 ${missLimit()?missLimit()+'回':'なし'}・1位のゴールから${fmtSec(endAfterMs()/1000)}で終了</div></div>`;
       return;
     }
     if(r.view==='result') return renderResult();
@@ -729,6 +789,11 @@ const RB=(function(){
         <div class="rb-code">${esc(r.code)}</div>
         <div class="muted">この4桁を友だちに伝えてね（${MIN_PLAYERS}〜${MAX_PLAYERS}人・1人ならゴーストと対戦）</div>
         <div class="rb-scope">出題：${esc(scopeLabel(meta.genre))}</div>
+      </div>
+      <div class="card-ui rb-rules">${amHost&&!playing
+        ? `<label>ミスの上限 <select id="rbMiss">${MISS_OPTS.map(v=>`<option value="${v}" ${v===missLimit()?'selected':''}>${v?v+'回':'なし'}</option>`).join('')}</select></label>
+           <label>1位のゴールから <select id="rbEnd">${END_OPTS.map(v=>`<option value="${v}" ${v*1000===endAfterMs()?'selected':''}>${fmtSec(v)}</option>`).join('')}</select> で終了</label>`
+        : `<div class="muted">ミスの上限：<b>${missLimit()?missLimit()+'回':'なし'}</b>　1位のゴールから <b>${fmtSec(endAfterMs()/1000)}</b> で終了</div>`}
       </div>
       <div class="card-ui">
         <b>参加者 ${mems.length}/${MAX_PLAYERS}</b>
@@ -751,6 +816,9 @@ const RB=(function(){
       chip.appendChild(nm); box.appendChild(chip);
     });
     document.getElementById('rbLeave').onclick=()=>{ leave(); openHome(); };
+    const ms=document.getElementById('rbMiss'), es=document.getElementById('rbEnd');
+    if(ms) ms.onchange=()=>r.ref.child('meta/maxMiss').set(+ms.value).catch(()=>toast('変更できませんでした'));
+    if(es) es.onchange=()=>r.ref.child('meta/endAfter').set(+es.value).catch(()=>toast('変更できませんでした'));
     const sb=document.getElementById('rbStart');
     if(sb) sb.onclick=()=>{ sb.disabled=true; startMatch().catch(e=>{ sb.disabled=false; toast('開始できませんでした'); console.warn(e); }); };
   }
@@ -763,12 +831,13 @@ const RB=(function(){
     const allDone=S.every(p=>r.goal[p]!=null||isDropped(p));
     const rows=S.map((pid,i)=>{
       const gv=r.goal[pid];
-      const st= gv>=0 ? `<b>${fmtMs(gv)}</b>` : gv===-1 ? '棄権' : isDropped(pid) ? '通信切れ' : `プレイ中 ${posOf(pid)}/${GOAL}`;
+      const st= gv>=0 ? `<b>${fmtMs(gv)}</b>` : gv===-1 ? '棄権' : gv===-2 ? `ミス上限（${posOf(pid)}/${GOAL}）` : gv===-3 ? `時間切れ（${posOf(pid)}/${GOAL}）`
+        : isDropped(pid) ? '通信切れ' : `プレイ中 ${posOf(pid)}/${GOAL}`;
       const medal= gv>=0 ? ['🥇','🥈','🥉'][i]||(i+1)+'位' : '';
       return `<div class="rb-row${pid===r.me.pid?' me':''}" data-pid="${esc(pid)}"><span class="rb-rmedal">${medal}</span><span class="rb-ravatar"></span><span class="rb-rname">${esc(nameOf(pid))}</span><span class="rb-rstat">${st}</span></div>`;
     }).join('');
-    const head = !(mine>=0) ? '結果'
-      : vsGhost() ? (mine<r.ghost.ms ? '🏆 ゴーストに勝った！' : '👻 ゴーストの勝ち…')
+    const head = mine===-2 ? '❌ ミスが上限に達しました' : mine===-3 ? '⏰ 時間切れ' : !(mine>=0) ? '結果'
+      : vsGhost() ? (!(r.goal[GHOST]>=0)||mine<r.goal[GHOST] ? '🏆 ゴーストに勝った！' : '👻 ゴーストの勝ち…')
       : winner===r.me.pid&&r.goal[winner]>=0 ? '🏆 優勝！' : `ゴール！ ${S.indexOf(r.me.pid)+1}位`;
     const amHost=effectiveHost()===r.me.pid;
     runnerPanel.innerHTML=`

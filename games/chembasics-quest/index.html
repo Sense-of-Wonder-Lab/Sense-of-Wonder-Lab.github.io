@@ -389,6 +389,8 @@ html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
 .rb-codecard{text-align:center}
 .rb-code{font-size:44px;font-weight:800;letter-spacing:10px;margin:2px 0 4px;color:var(--ink)}
 .rb-scope{font-size:12px;margin-top:6px;font-weight:700}
+.rb-rules{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;font-weight:700}
+.rb-rules select{font:inherit;padding:3px 6px;border-radius:8px}
 .rb-members{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .rb-member{display:flex;align-items:center;gap:5px;padding:4px 10px 4px 4px;border:1px solid #e2e8f0;border-radius:20px;font-size:12px;max-width:100%}
 .rb-member.me{border-color:#f4b942}
@@ -3583,6 +3585,7 @@ function switchView(view){
   if(view==='grid'&&!gridState)renderGridHome();
   if(view==='runner'&&!runnerState)renderRunnerHome();
   if(view==='weak'&&!drill)renderWeakHome();
+  if(typeof syncQuestSelect==='function')syncQuestSelect();
 }
 // 画面を切り替える（遊んでいる途中なら終了の確認を出す）。after は切り替えたあとに行う処理
 function requestSwitch(target,after){
@@ -3624,17 +3627,30 @@ function requestSwitch(target,after){
 document.querySelectorAll('nav button').forEach(b=>{
   b.addEventListener('click',()=>requestSwitch(b.dataset.view));
 });
+// クエスト選択の表示：オンライン対戦の画面（入口・ルーム・試合・結果）にいる間は「⚔️ オンライン対戦」、それ以外は化学基礎クエスト（2026-10-30）
+function inBattleScreen(){
+  return document.getElementById('view-runner').classList.contains('active')
+    && typeof RB!=='undefined' && (RB.active()||!!document.getElementById('rbFields'));
+}
+function syncQuestSelect(){ document.getElementById('questSelect').value=inBattleScreen()?'index.html#battle':'index.html'; }
+new MutationObserver(syncQuestSelect).observe(runnerPanel,{childList:true});
 document.getElementById('questSelect').addEventListener('change',e=>{
   // オンライン対戦はこのページの中なので、ページ移動せずに化学RUSH！の対戦画面へ
   if(e.target.value==='index.html#battle'){
-    e.target.value='index.html';
+    syncQuestSelect();
     requestSwitch('runner',()=>RB.openHome());
+    return;
+  }
+  // 対戦中に「化学基礎クエスト」を選んだら、ページを読み込み直さずに暗記へ（試合中なら棄権の確認が出る）
+  if(e.target.value==='index.html'){
+    syncQuestSelect();
+    requestSwitch('home',()=>{ if(typeof RB!=='undefined'&&RB.active()) RB.quit(); syncQuestSelect(); });
     return;
   }
   location.href=e.target.value;
 });
 // ブラウザの「戻る」で戻ったとき、選んだ別のクエスト名が残らないようにこのクエストに戻す（5クエスト共通）
-window.addEventListener('pageshow',()=>{const s=document.getElementById('questSelect');const d=[...s.options].find(o=>o.defaultSelected);if(d)s.value=d.value;});
+window.addEventListener('pageshow',syncQuestSelect);
 
 /* ================= 起動 ================= */
 load();
@@ -3654,7 +3670,7 @@ else if(battleHash)LB.requireLogin(()=>{switchView('runner');RB.openHome(battleH
 else if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
 else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
-<script src="rush_battle.js?v=7"></script>
+<script src="rush_battle.js?v=8"></script>
 <script>if(/^#battle/.test(location.hash))RB.preload();  // ログインの確定を待つあいだに4分野の問題データを読み始める</script>
 </body>
 </html>

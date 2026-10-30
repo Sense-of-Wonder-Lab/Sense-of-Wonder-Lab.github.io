@@ -1105,7 +1105,7 @@ function renderBattleLog(){
   document.getElementById('battleLogDetail').innerHTML = '';
   const rooms = battleRows();
   if(!rooms.length){ box.innerHTML = '<div class="resultCount">まだ記録がありません</div>'; return; }
-  const endLabel = p => p.end>0 ? 'ゴール' : p.end===-1 ? '棄権' : '途中終了';
+  const endLabel = p => p.end>0 ? 'ゴール' : p.end===-1 ? '棄権' : p.end===-2 ? 'ミス上限' : p.end===-3 ? '時間切れ' : '途中終了';
   if(blView==='room'){
     const rows = rooms.map((r,i)=>{
       const ps = r.rounds.flatMap(x=>x.ps), people = new Set(ps.map(p=>p.uid));
@@ -1132,13 +1132,13 @@ function renderBattleLog(){
       if(r.host) get(r.host, r.hostName).made++;
       r.rounds.forEach(x=>x.ps.forEach(p=>{
         const u = get(p.uid, p.name), f = blField(x.genre);
-        u.rooms.add(r.key); u.matches++; if(p.end>0) u.goal++; else if(p.end===-1) u.quit++;
+        u.rooms.add(r.key); u.matches++; if(p.end>0) u.goal++; else if(p.end<0) u.quit++;  // 棄権・ミス上限・時間切れ
         u.ms += p.ms; u.n += p.n; u.c += p.c;
         const fs = u.fld[f] || (u.fld[f] = {n:0,c:0}); fs.n += p.n; fs.c += p.c;
       }));
     });
     const list = Object.values(U).sort((a,b)=>b.matches-a.matches||b.made-a.made);
-    box.innerHTML = `<table><thead><tr><th>名前</th><th>作ったルーム</th><th>参加ルーム</th><th>試合数</th><th>ゴール</th><th>棄権</th><th>プレイ時間</th><th>解答数</th><th>正答率</th><th>分野別</th></tr></thead><tbody>`
+    box.innerHTML = `<table><thead><tr><th>名前</th><th>作ったルーム</th><th>参加ルーム</th><th>試合数</th><th>ゴール</th><th title="棄権・ミスの上限・1位のゴール後の時間切れ">途中で終了</th><th>プレイ時間</th><th>解答数</th><th>正答率</th><th>分野別</th></tr></thead><tbody>`
       + list.map(u=>`<tr><td>${escapeHtml(blName(u.uid, u.name))}</td><td>${u.made}</td><td>${u.rooms.size}</td><td>${u.matches}</td><td>${u.goal}</td><td>${u.quit}</td><td>${blMs(u.ms)}</td><td>${u.n}</td><td>${blPct(u.c,u.n)}</td>
         <td style="font-size:12px">${Object.entries(u.fld).map(([f,s])=>`${escapeHtml(f)} ${blPct(s.c,s.n)}（${s.n}）`).join('　')}</td></tr>`).join('')
       + '</tbody></table>';
