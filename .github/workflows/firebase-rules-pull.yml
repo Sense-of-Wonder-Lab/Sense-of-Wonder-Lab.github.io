@@ -1,0 +1,25 @@
+# 手動実行：Firebase の今のルールを取ってきて firebase/database.rules.json にコミットする
+name: Firebase ルールを取得
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --no-save google-auth-library@9
+      - name: ルールを取得
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" node firebase/rules.js pull
+      - name: 変わっていればコミット
+        run: |
+          git add firebase/database.rules.json
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -m "Firebase の今のルールを取得"
+          git push
