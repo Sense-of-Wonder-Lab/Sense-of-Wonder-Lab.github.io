@@ -324,7 +324,7 @@ html[data-theme="navy"] #toast{background:rgba(19,32,56,.95);border:1px solid rg
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="../shared/leaderboard.js?v=42"></script>
+<script src="../shared/leaderboard.js?v=43"></script>
 <script src="data.js?v=2"></script>
 <script>
 'use strict';
@@ -947,6 +947,8 @@ document.querySelectorAll('nav button').forEach(b=>{
   });
 });
 document.getElementById('questSelect').addEventListener('change',e=>{location.href=e.target.value;});
+// ブラウザの「戻る」で戻ったとき、選んだ別のクエスト名が残らないようにこのクエストに戻す（5クエスト共通）
+window.addEventListener('pageshow',()=>{const s=document.getElementById('questSelect');const d=[...s.options].find(o=>o.defaultSelected);if(d)s.value=d.value;});
 
 /* ================= 起動 ================= */
 load();

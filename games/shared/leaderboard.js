@@ -145,12 +145,15 @@ const LB = (function(){
       completeEmailLinkSignIn();
       auth.onAuthStateChanged(fbUser=>{
         if(!fbUser){ user = null; messages = []; notifyMessages(); notifyAuth(null); markAuthReady(); return; }
-        db.ref('users/'+fbUser.uid).once('value').then(snap=>{
-          const data = snap.val();
+        // 2026-10-30 users/{uid} 全体（全クエストの進捗・問題統計まで）を読むとログインの確定が遅く、
+        // その間タブを押しても切り替わらなかった。名前・アイコン・登録日の3つだけ読む
+        const uref = db.ref('users/'+fbUser.uid);
+        Promise.all(['nickname','avatar','ts'].map(k=>uref.child(k).once('value').then(s=>s.val()))).then(([nick, av, ts])=>{
+          const data = (nick!=null || av!=null || ts!=null) ? {nickname:nick, avatar:av} : null;
           const nickname = (data && data.nickname) || (fbUser.displayName||'').slice(0,12) || 'ゲスト';
           const avatar = (data && data.avatar) || null;
           if(!data){
-            db.ref('users/'+fbUser.uid).set({email:fbUser.email||'', nickname, ts:firebase.database.ServerValue.TIMESTAMP});
+            uref.update({email:fbUser.email||'', nickname, ts:firebase.database.ServerValue.TIMESTAMP});
           }
           user = {uid:fbUser.uid, email:fbUser.email||'', nickname, avatar};
           recordActivity(fbUser.uid);
@@ -791,11 +794,17 @@ $1      .lb-inapp{font-size:12.5px;line-height:1.7;background:#fff7ed;border:1.5
   function getTrial(){ try{ return JSON.parse(localStorage.getItem(trialKey())) || {}; }catch(e){ return {}; } }
   function setTrial(t){ try{ localStorage.setItem(trialKey(), JSON.stringify(t)); }catch(e){} }
   // ログインが必要な操作。ログイン済み（確定待ちを含む）なら fn を実行、未ログインならログイン画面を出し、ログインしたら fn を実行
+  // ログインの確定待ちのあいだに何度押されても、最後に押したものだけ行う（タブを続けて押すと全部が順に動いていた）
+  let pendingLogin = null;
   function requireLogin(fn, lead){
-    whenAuthReady(()=>{
+    const run = (fn, lead)=>{
       if(user){ fn(); return; }
       openLoginModal({title:'🔒 ログインが必要です', lead: lead || 'このモードはログイン（無料）すると遊べます。登録なしで遊べるのは暗記モードの1セットまでです。', onLogin: fn});
-    });
+    };
+    if(authReady || !auth){ run(fn, lead); return; }
+    const first = !pendingLogin;
+    pendingLogin = {fn, lead};
+    if(first) whenAuthReady(()=>{ const p = pendingLogin; pendingLogin = null; run(p.fn, p.lead); });
   }
   // 暗記モードのセットを始めるとき。未ログインなら最初の1セットだけ（同じセットのやり直し・続きはOK）
   function canStartMemoSet(setKey, fn){

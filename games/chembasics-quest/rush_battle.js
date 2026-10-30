@@ -1,7 +1,7 @@
 /* ================= 化学RUSH！ みんなで対戦（ルーム制・リアルタイム） 2026-10-29 =================
    化学RUSH！の問題・判定・画面をそのまま使い、上に細いレーン表示を足した対戦モード。
    - 4桁のルームコードで1〜10人。作成者が開始ボタンを押す
-   - 1人のまま開始したらゴースト1体と対戦（自分のベスト記録 → なければ他の人の記録からランダム）。
+   - 1人のまま開始したらゴースト1体と対戦（同じ分野の自分のベスト記録 → なければ同じ分野の他の人の記録からランダム）。
      ゴーストの再生は端末内だけ（試合中の通信なし）
    - 10問先取。正解+1・不正解/時間切れ−1（0未満にしない）
    - 問題は開始時に全員分まとめて配布（全員同じ順番）
@@ -24,11 +24,23 @@
    },
    "rbRecs":    { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
    "rbBest":    { ".read": "auth != null", "$uid": { ".write": "auth != null && auth.uid === $uid" } },
-   "rbGhostAv": { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid" } }
+   "rbGhostAv": { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid" } },
+   2026-10-30 追加:
+   "rbBestF":   { ".read": "auth != null", "$f": { "$uid": { ".write": "auth != null && auth.uid === $uid" } } },
+   "mpLog": {
+     ".read": （users の ".read" と同じ管理者の条件）,
+     "$log": {
+       "info":   { ".write": "auth != null && !data.exists()" },
+       "rounds": { "$round": {
+         "start": { ".write": "auth != null && !data.exists()" },
+         "p": { "$pid": { ".write": "auth != null && $pid.beginsWith(auth.uid)" } } } }
+     }
+   }
 
    プレイ記録（ゴースト用）:
      rbRecs/{uid}/{push}  ゴールした試合すべて {ms, log, genre, n, at}
-     rbBest/{uid}         その人のベスト {ms, log, name, genre, at}   rbGhostAv/{uid} ベスト時の小さいアイコン
+     rbBestF/{分野}/{uid} その人の分野ごとのベスト {ms, log, name, genre, at}（分野は basic/aro/ali/ino/pol）
+     rbBest/{uid}         分野別にする前のベスト（読むだけ。分野が同じならゴーストに使う）   rbGhostAv/{uid} ベスト時の小さいアイコン
      log は "回答時刻ms,正誤(1/0);..."（時刻はスタートからの経過）
 
    データ構成 mpRooms/{code}:
@@ -37,7 +49,7 @@
      pos_{round}/{pid} 現在位置    goal_{round}/{pid} ゴールまでのミリ秒（棄権は -1）
 */
 const RB=(function(){
-  const ROOT='mpRooms', GOAL=10, MAX_PLAYERS=10, MIN_PLAYERS=1;
+  const ROOT='mpRooms', LOG='mpLog', GOAL=10, MAX_PLAYERS=10, MIN_PLAYERS=1;
   const GHOST='~ghost';         // ゴーストのレーン用の pid（Firebase のキーには使わない）
   const DROP_MS=60000;          // これより長く切断していたら「通信切れ」扱い（表示のみ）
   const ROOM_TTL=3*3600*1000;   // 古いルームのコードは再利用してよい
@@ -70,7 +82,9 @@ const RB=(function(){
     });
     return fieldsP;
   }
-  const fieldList=()=>[BASICS].concat(typeof RUSH_FIELDS!=='undefined'?RUSH_FIELDS:[]);
+  // 問題データを読み終わる前も分野のボタンは全部出しておく（あとから増えて画面がずれないように）
+  const FIELD_STUBS=[{key:'aro',label:'芳香族'},{key:'ali',label:'脂肪族'},{key:'ino',label:'無機'},{key:'pol',label:'高分子'}];
+  const fieldList=()=>[BASICS].concat(typeof RUSH_FIELDS!=='undefined'?RUSH_FIELDS:FIELD_STUBS);
   const fieldOf=key=>(typeof RUSH_FIELDS!=='undefined'&&RUSH_FIELDS.find(f=>f.key===key))||null;
   function parseScope(genre){
     const m=/^F:(\w+)(?::(\d+))?$/.exec(genre||'');
@@ -209,10 +223,12 @@ const RB=(function(){
   /* ---------- 入室・退室 ---------- */
   async function createRoom(genre){
     const m=me();
+    const log=getDb().ref(LOG).push().key;  // 記録（mpLog）のキー。ルームのコードは使い回されるので別に持つ
     for(let i=0;i<10;i++){
       const code=String(1000+Math.floor(Math.random()*9000));
       try{
-        await getDb().ref(ROOT+'/'+code).set({meta:{host:m.pid,status:'wait',genre,created:TS(),round:0}});
+        await getDb().ref(ROOT+'/'+code).set({meta:{host:m.pid,status:'wait',genre,created:TS(),round:0,log}});
+        getDb().ref(LOG+'/'+log+'/info').set({code,host:m.uid,hostName:m.name,genre,created:TS()}).catch(e=>console.warn('[RB] log',e));
         return enterRoom(code);
       }catch(e){
         if(!/permission/i.test(String(e&&(e.code||e.message)))) throw e;
@@ -305,6 +321,7 @@ const RB=(function(){
     if(room&&room.view==='play'&&!room.goalSent){
       room.goalSent=true;
       room.ref.child('goal_'+room.round+'/'+room.me.pid).set(-1).catch(()=>{});
+      logEnd(-1);
     }
     if(typeof runnerState!=='undefined'&&runnerState&&runnerState.battle) destroyRun();
     leave();
@@ -352,10 +369,29 @@ const RB=(function(){
     const r=room; if(!r||!r.meta) return;
     const players=sortedMembers().filter(isOnline).slice(0,MAX_PLAYERS);
     if(players.length<MIN_PLAYERS) return;
-    const ghost=players.length===1 ? await pickGhost() : null;  // 1人ならゴーストと対戦
+    const ghost=players.length===1 ? await pickGhost(r.meta.genre) : null;  // 1人ならゴーストと対戦（同じ分野の記録から）
     if(room!==r) return;
-    const qs=buildPool(r.meta.genre);
-    await r.ref.child('meta').update({status:'play',round:(r.meta.round||0)+1,qs,players,ghost,startAt:serverNow()+4000});
+    const qs=buildPool(r.meta.genre), round=(r.meta.round||0)+1;
+    await r.ref.child('meta').update({status:'play',round,qs,players,ghost,startAt:serverNow()+4000});
+    if(r.meta.log){
+      const names={}; players.forEach(p=>names[p]=nameOf(p));
+      logRef(r,round).child('start').set({at:TS(),genre:r.meta.genre,players:names,ghost:ghost?ghost.name:null,ghostMs:ghost?ghost.ms:null})
+        .catch(e=>console.warn('[RB] log',e));
+    }
+  }
+  /* ---------- 対戦の記録（管理画面用・消さない） 2026-10-30 ----------
+     mpLog/{log}/info {code, host(uid), hostName, genre, created}          … ルームを作った人が書く
+     mpLog/{log}/rounds/{round}/start {at, genre, players{pid:名前}, ghost, ghostMs} … スタートを押した人が書く
+     mpLog/{log}/rounds/{round}/p/{pid} {uid, name, a/{i}:{q,ok,t}, end}  … 各自が書く。
+       a は1問ごと（q 問題ID・ok 1/0・t スタートからのms）。棄権しても途中までの答えが残る。end はゴールのms、棄権は -1 */
+  const logRef=(r,round)=>getDb().ref(LOG+'/'+r.meta.log+'/rounds/'+round);
+  function logAnswer(qid,ok,t){
+    const r=room; if(!r||!r.meta||!r.meta.log) return;
+    logRef(r,r.round).child('p/'+r.me.pid+'/a/'+(r.log.length-1)).set({q:qid||'',ok:ok?1:0,t}).catch(e=>console.warn('[RB] log',e));
+  }
+  function logEnd(v){
+    const r=room; if(!r||!r.meta||!r.meta.log) return;
+    logRef(r,r.round).child('p/'+r.me.pid+'/end').set(v).catch(e=>console.warn('[RB] log',e));
   }
   function rematch(){ if(room) room.ref.child('meta').update({status:'wait'}); }
 
@@ -372,18 +408,28 @@ const RB=(function(){
     }
     return {uid:null,name:'練習ゴースト',ms:log[log.length-1][0],log:encLog(log),own:false};
   }
-  // 自分のベストがあればそれ、なければ他の人のベストからランダムに1つ
-  async function pickGhost(){
-    const d=getDb(), uid=room.me.uid;
+  // ゴーストは分野ごと（2026-10-30）。ルームの genre から分野のキー（basic/aro/ali/ino/pol）を出す
+  const fieldKeyOf=genre=>{ const m=/^F:(\w+)/.exec(genre||''); return m?m[1]:BASICS.key; };
+  // 同じ分野の自分のベストがあればそれ、なければ同じ分野の他の人のベストからランダムに1つ。
+  // 分野別にする前の rbBest（1人1つ）も、分野が同じなら使う
+  async function pickGhost(genre){
+    const d=getDb(), uid=room.me.uid, fk=fieldKeyOf(genre);
+    const sameField=g=>g&&g.log&&g.ms>0&&fieldKeyOf(g.genre)===fk;
     try{
-      const mine=(await d.ref('rbBest/'+uid).once('value')).val();
+      let mine=(await d.ref('rbBestF/'+fk+'/'+uid).once('value')).val();
+      if(!mine||!mine.log){ const old=(await d.ref('rbBest/'+uid).once('value')).val(); if(sameField(old)) mine=old; }
       if(mine&&mine.log) return {uid,name:mine.name||room.me.name,ms:mine.ms,log:mine.log,own:true};
       // ランダムなキーの位置から数件だけ読む（全員分は読まない）
       const abc='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
       let k=''; for(let i=0;i<28;i++) k+=abc[Math.floor(Math.random()*abc.length)];
-      const take=async q=>{ const v=(await q.once('value')).val()||{}; return Object.keys(v).filter(id=>id!==uid&&v[id]&&v[id].log&&v[id].ms>0).map(id=>Object.assign({uid:id},v[id])); };
-      let c=await take(d.ref('rbBest').orderByKey().startAt(k).limitToFirst(3));
-      if(!c.length) c=await take(d.ref('rbBest').orderByKey().limitToFirst(3));
+      const take=async(q,ok)=>{ const v=(await q.once('value')).val()||{}; return Object.keys(v).filter(id=>id!==uid&&ok(v[id])).map(id=>Object.assign({uid:id},v[id])); };
+      const has=g=>g&&g.log&&g.ms>0;
+      const ref=d.ref('rbBestF/'+fk);
+      let c=await take(ref.orderByKey().startAt(k).limitToFirst(3),has);
+      if(!c.length) c=await take(ref.orderByKey().limitToFirst(3),has);
+      // 分野別の記録がまだ無いときは、前の rbBest から同じ分野のものを探す
+      if(!c.length) c=await take(d.ref('rbBest').orderByKey().startAt(k).limitToFirst(10),sameField);
+      if(!c.length) c=await take(d.ref('rbBest').orderByKey().limitToFirst(10),sameField);
       if(c.length){ const g=c[Math.floor(Math.random()*c.length)]; return {uid:g.uid,name:g.name||'?',ms:g.ms,log:g.log,own:false}; }
     }catch(e){ console.warn('[RB] ghost',e); }
     return practiceGhost();
@@ -426,10 +472,11 @@ const RB=(function(){
   function saveRecord(ms){
     const r=room, uid=r.me.uid, log=encLog(r.log), genre=r.meta.genre, d=getDb();
     d.ref('rbRecs/'+uid).push({ms,log,genre,n:racers().length,at:TS()}).catch(e=>console.warn('[RB] rec',e));
-    d.ref('rbBest/'+uid+'/ms').once('value').then(s=>{
+    const best=d.ref('rbBestF/'+fieldKeyOf(genre)+'/'+uid);  // ベストは分野ごと
+    best.child('ms').once('value').then(s=>{
       const b=s.val(); if(b!=null&&b<=ms) return;
       return Promise.all([
-        d.ref('rbBest/'+uid).set({ms,log,name:r.me.name,genre,at:TS()}),
+        best.set({ms,log,name:r.me.name,genre,at:TS()}),
         r.myAv?d.ref('rbGhostAv/'+uid).set(r.myAv):null
       ]).then(()=>{ r.newBest=true; if(room===r&&r.view==='result') render(); });
     }).catch(e=>console.warn('[RB] best',e));
@@ -465,7 +512,10 @@ const RB=(function(){
     const opt={pool,genre:meta.genre,pos:myPos,idx:resume&&resume.idx|0};
     if(parseScope(meta.genre)) startChoiceRun(opt);  // 4分野は選択式の画面
     else startRunner('battle',opt);
-    if(!resume) r.ref.child('pos_'+r.round+'/'+r.me.pid).set(0);
+    if(!resume){
+      r.ref.child('pos_'+r.round+'/'+r.me.pid).set(0);
+      if(meta.log) logRef(r,r.round).child('p/'+r.me.pid).update({uid:r.me.uid,name:r.me.name}).catch(e=>console.warn('[RB] log',e));
+    }
     startGhostTick();
     renderLanes();
   }
@@ -484,6 +534,8 @@ const RB=(function(){
     const p=st.battle.pos;
     r.pos[r.me.pid]=p;
     r.log.push([Date.now()-r.localStart,correct]);
+    const h=st.history[st.history.length-1];
+    logAnswer(h&&h.qid,correct,r.log[r.log.length-1][0]);
     r.ref.child('pos_'+r.round+'/'+r.me.pid).set(p);
     const sess=loadSess(); if(sess) saveSess(Object.assign(sess,{pos:p,idx:st.idx+1,log:encLog(r.log)}));
     if(st.choice) choiceHUD(); else runnerRenderHUD();
@@ -493,6 +545,7 @@ const RB=(function(){
       r.goalSent=true; r.goal[r.me.pid]=ms; r.myGoalSaved=false;
       r.ref.child('goal_'+r.round+'/'+r.me.pid).set(ms).then(()=>{ r.myGoalSaved=true; if(room===r) render(); });
       saveRecord(ms);
+      logEnd(ms);
       setTimeout(()=>{ if(room!==r) return; destroyRun(); r.view='result'; render(); },900);
     }else if(st.choice){
       st.autoAdvanceTimeout=setTimeout(choiceGoNext,correct?1200:2200);  // まちがえたときは解説を読む時間を長めに
@@ -582,7 +635,8 @@ const RB=(function(){
     const dec=el.ch.querySelector('.rb-decide'); if(dec) dec.remove();
     const fb=document.getElementById('rbFb');
     fb.className='rb-fb '+(ok?'correct':'wrong');
-    fb.innerHTML=(ok?'⭕ 正解！ ':picked?'❌ 残念！ 緑が正解。 ':'⏰ 時間切れ！ 緑が正解。 ')+q.explanation;
+    // タイムを競うので、正解のときは解説を出さない（2026-10-30 先生）
+    fb.innerHTML=ok?'⭕ 正解！':(picked?'❌ 残念！ 緑が正解。 ':'⏰ 時間切れ！ 緑が正解。 ')+q.explanation;
     // 縦長の画面で解説が隠れるときは見えるところまで送る
     if(el.inner.scrollHeight>el.inner.clientHeight) fb.scrollIntoView({block:'nearest',behavior:'smooth'});
     drawTime(0);
@@ -787,10 +841,9 @@ const RB=(function(){
     const bindFields=()=>runnerPanel.querySelectorAll('.rb-field').forEach(b=>b.onclick=()=>{ field=b.dataset.f; err.textContent=''; drawScopes(); });
     bindFields(); drawScopes();
     loadFields().then(()=>{
-      const box=document.getElementById('rbFields');
-      if(room||!box||box.children.length>1) return;
-      if(!fieldOf(field)&&field!==BASICS.key) field=BASICS.key;
-      box.innerHTML=fieldBtns(); bindFields(); drawScopes();
+      // 読み終わったら範囲の一覧だけ入れ替える（その間に別の画面へ移っていたら何もしない）
+      if(room||document.getElementById('rbGenre')!==sel) return;
+      drawScopes();
     }).catch(e=>{
       if(document.getElementById('rbErr')) err.textContent=e.message+'（化学基礎だけ選べます）';
       if(field!==BASICS.key&&document.getElementById('rbFields')){ field=BASICS.key; drawScopes(); }
@@ -819,5 +872,8 @@ const RB=(function(){
     });
   }
 
-  return {openHome, intrudeFromLink, active, render, quit, onAnswer, hudHTML, laneHTML, renderLanes, TRACK_MIN_H:180, STATEMENT_MIN_H:200};
+  // ほかのクエストから #battle で来たとき、ログインの確認を待つあいだに問題データを読み始める
+  function preload(){ loadFields().catch(()=>{}); }
+
+  return {openHome, intrudeFromLink, preload, active, render, quit, onAnswer, hudHTML, laneHTML, renderLanes, TRACK_MIN_H:180, STATEMENT_MIN_H:200};
 })();

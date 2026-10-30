@@ -148,6 +148,7 @@
     <button class="tabbtn" id="tabRunner">🏃 化学RUSH！</button>
     <button class="tabbtn" id="tabVisits">📈 アクセス</button>
     <button class="tabbtn" id="tabRooms">⚔️ 対戦ルーム</button>
+    <button class="tabbtn" id="tabBattleLog">📊 対戦記録</button>
   </div>
 
   <div class="layout" id="usersView">
@@ -224,6 +225,17 @@
   <div class="card" id="roomsView" style="display:none">
     <div class="resultCount">化学RUSH！のオンライン対戦ルーム（自動で更新）。作成から3時間を過ぎたルームは入れないので「期限切れ」にまとめています。「乱入」は試合中・満員でも入れます（管理者だけ）。</div>
     <div class="tw" id="roomsTable"></div>
+  </div>
+
+  <div class="card" id="battleLogView" style="display:none">
+    <div class="resultCount">オンライン対戦の記録（2026-10-30 から）。正答率は1問ずつの記録から出すので、棄権・途中で閉じた試合も、それまでに答えた分が入ります。プレイ時間はゴールまで（棄権・途中終了は最後に答えたところまで）。</div>
+    <div class="toolbar">
+      <button class="tabbtn active" data-blv="room">ルームごと</button>
+      <button class="tabbtn" data-blv="user">生徒ごと</button>
+      <button class="tabbtn" data-blv="q">問題ごと</button>
+    </div>
+    <div class="tw" id="battleLogTable"></div>
+    <div id="battleLogDetail" style="margin-top:16px"></div>
   </div>
 
   <div class="card" id="runnerView" style="display:none">
@@ -978,7 +990,8 @@ function renderQuestions(){
     </tr>`).join('');
 }
 function setActiveTab(id){
-  ['tabUsers','tabQuestions','tabRunner','tabVisits','tabRooms'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
+  ['tabUsers','tabQuestions','tabRunner','tabVisits','tabRooms','tabBattleLog'].forEach(t=>document.getElementById(t).classList.toggle('active', t===id));
+  document.getElementById('battleLogView').style.display = id==='tabBattleLog' ? '' : 'none';
   document.getElementById('usersView').style.display = id==='tabUsers' ? '' : 'none';
   document.getElementById('questionsView').style.display = id==='tabQuestions' ? '' : 'none';
   document.getElementById('runnerView').style.display = id==='tabRunner' ? '' : 'none';
@@ -1038,6 +1051,121 @@ function renderRooms(){
     (live.length ? table(live, true) : '<div class="resultCount">いま入れるルームはありません</div>')
     + (old.length ? `<details style="margin-top:16px"><summary class="resultCount" style="cursor:pointer">期限切れ ${old.length}件</summary>${table(old, false)}</details>` : '');
 }
+/* ================= 対戦記録（mpLog/{log}：rush_battle.js の「対戦の記録」） 2026-10-30 ================= */
+let battleLog = null, blView = 'room', blFieldsP = null;
+// 4分野の問題文は rush_fields.js（RUSH_FIELDS）から引く。化学基礎は全問題一覧と同じ RUNNER_QUESTIONS
+function loadRushFields(){
+  if(typeof RUSH_FIELDS!=='undefined') return Promise.resolve();
+  if(!blFieldsP) blFieldsP = new Promise(resolve=>{
+    const s = document.createElement('script');
+    s.src = '../chembasics-quest/rush_fields.js';
+    s.onload = resolve; s.onerror = ()=>{ console.warn('[admin] rush_fields.js を読めませんでした'); resolve(); };
+    document.head.appendChild(s);
+  });
+  return blFieldsP;
+}
+function battleQText(qid){
+  const [fk, cid] = String(qid).split('|');
+  if(cid!=null){
+    const f = typeof RUSH_FIELDS!=='undefined' && RUSH_FIELDS.find(x=>x.key===fk);
+    if(f) for(const d of f.decks){ const it = d.items.find(x=>x.id===cid); if(it) return {field:FIELD_LABEL[fk]||fk, set:d.name, q:String(it.q).replace(/<[^>]+>/g,'')}; }
+    return {field:FIELD_LABEL[fk]||fk, set:'', q:qid};
+  }
+  const it = (allQuestions||[]).find(x=>x.gameKey==='chemrunner' && x.id===qid);
+  return {field:'化学基礎', set:it?it.set:'', q:it?it.q:qid};
+}
+const blField = g => { const m = /^F:(\w+)/.exec(g||''); return m ? (FIELD_LABEL[m[1]]||m[1]) : '化学基礎'; };
+const blPct = (c,n) => n ? Math.round(c/n*100)+'%' : '<span class="noProg">-</span>';
+const blMs = ms => { if(!(ms>0)) return '<span class="noProg">-</span>'; const s = Math.round(ms/1000); return s>=60 ? Math.floor(s/60)+'分'+String(s%60).padStart(2,'0')+'秒' : s+'秒'; };
+const blName = (uid, fallback) => (allUsers[uid] && allUsers[uid].nickname) || fallback || uid || '?';
+// 記録を「試合 × 参加者」の行に平らにする
+function battleRows(){
+  const rooms = [];
+  for(const [key, L] of Object.entries(battleLog||{})){
+    const info = L.info||{}, rounds = [];
+    for(const [rn, R] of Object.entries(L.rounds||{})){
+      const st = R.start||{}, ps = [];
+      for(const [pid, p] of Object.entries(R.p||{})){
+        const ans = Object.values(p.a||{});
+        const lastT = ans.reduce((m,a)=>Math.max(m, a.t||0), 0);
+        ps.push({pid, uid:p.uid||pid, name:blName(p.uid, p.name || (st.players||{})[pid]), ans,
+          n:ans.length, c:ans.filter(a=>a.ok===1).length, end:p.end,
+          ms: p.end>0 ? p.end : lastT});
+      }
+      rounds.push({round:+rn, at:st.at||0, genre:st.genre||info.genre, ghost:st.ghost||null, ghostMs:st.ghostMs||null, ps});
+    }
+    rounds.sort((a,b)=>a.round-b.round);
+    rooms.push({key, code:info.code||'?', host:info.host, hostName:blName(info.host, info.hostName), genre:info.genre, created:info.created||0, rounds});
+  }
+  return rooms.sort((a,b)=>b.created-a.created);
+}
+function renderBattleLog(){
+  const box = document.getElementById('battleLogTable');
+  document.querySelectorAll('#battleLogView [data-blv]').forEach(b=>b.classList.toggle('active', b.dataset.blv===blView));
+  document.getElementById('battleLogDetail').innerHTML = '';
+  const rooms = battleRows();
+  if(!rooms.length){ box.innerHTML = '<div class="resultCount">まだ記録がありません</div>'; return; }
+  const endLabel = p => p.end>0 ? 'ゴール' : p.end===-1 ? '棄権' : '途中終了';
+  if(blView==='room'){
+    const rows = rooms.map((r,i)=>{
+      const ps = r.rounds.flatMap(x=>x.ps), people = new Set(ps.map(p=>p.uid));
+      const n = ps.reduce((s,p)=>s+p.n,0), c = ps.reduce((s,p)=>s+p.c,0);
+      const time = r.rounds.reduce((s,x)=>s+Math.max(0,...x.ps.map(p=>p.ms)),0);
+      return `<tr data-i="${i}" style="cursor:pointer">
+        <td>${fmtDateTime(r.created)}</td><td><b>${escapeHtml(r.code)}</b></td><td>${escapeHtml(roomGenreLabel(r.genre))}</td>
+        <td>${escapeHtml(r.hostName)}</td><td>${r.rounds.length}</td><td>${people.size}人</td><td>${blMs(time)}</td><td>${n}</td><td>${blPct(c,n)}</td></tr>`;
+    }).join('');
+    box.innerHTML = `<table><thead><tr><th>作成</th><th>コード</th><th>出題</th><th>作った人</th><th>試合数</th><th>参加</th><th>プレイ時間</th><th>解答数</th><th>正答率</th></tr></thead><tbody>${rows}</tbody></table>`;
+    box.querySelectorAll('tr[data-i]').forEach(tr=>tr.onclick=()=>{
+      const r = rooms[+tr.dataset.i];
+      document.getElementById('battleLogDetail').innerHTML = `<b>ルーム ${escapeHtml(r.code)}（${escapeHtml(r.hostName)} が作成・${fmtDateTime(r.created)}）</b>`
+        + r.rounds.map(x=>`<div style="margin-top:10px;font-weight:700">第${x.round}試合 ${fmtDateTime(x.at)}${x.ghost?`　👻 ${escapeHtml(x.ghost)}（${blMs(x.ghostMs)}）と対戦`:''}</div>
+          <table><thead><tr><th>名前</th><th>結果</th><th>時間</th><th>解答数</th><th>正答率</th><th>1問ずつ（○×）</th></tr></thead><tbody>`
+          + x.ps.sort((a,b)=>(b.end>0)-(a.end>0)||(a.end>0?a.end-b.end:b.c-a.c)).map(p=>`<tr><td>${escapeHtml(p.name)}</td><td>${endLabel(p)}</td><td>${blMs(p.ms)}</td><td>${p.n}</td><td>${blPct(p.c,p.n)}</td>
+            <td style="font-size:12px">${p.ans.map(a=>`<span title="${escapeHtml(battleQText(a.q).q)}" style="color:${a.ok===1?'#16a34a':'#dc2626'}">${a.ok===1?'○':'×'}</span>`).join('')}</td></tr>`).join('')
+          + '</tbody></table>').join('');
+    });
+  } else if(blView==='user'){
+    const U = {};
+    const get = (uid,name) => U[uid] || (U[uid] = {uid, name, made:0, rooms:new Set(), matches:0, goal:0, quit:0, ms:0, n:0, c:0, fld:{}});
+    rooms.forEach(r=>{
+      if(r.host) get(r.host, r.hostName).made++;
+      r.rounds.forEach(x=>x.ps.forEach(p=>{
+        const u = get(p.uid, p.name), f = blField(x.genre);
+        u.rooms.add(r.key); u.matches++; if(p.end>0) u.goal++; else if(p.end===-1) u.quit++;
+        u.ms += p.ms; u.n += p.n; u.c += p.c;
+        const fs = u.fld[f] || (u.fld[f] = {n:0,c:0}); fs.n += p.n; fs.c += p.c;
+      }));
+    });
+    const list = Object.values(U).sort((a,b)=>b.matches-a.matches||b.made-a.made);
+    box.innerHTML = `<table><thead><tr><th>名前</th><th>作ったルーム</th><th>参加ルーム</th><th>試合数</th><th>ゴール</th><th>棄権</th><th>プレイ時間</th><th>解答数</th><th>正答率</th><th>分野別</th></tr></thead><tbody>`
+      + list.map(u=>`<tr><td>${escapeHtml(blName(u.uid, u.name))}</td><td>${u.made}</td><td>${u.rooms.size}</td><td>${u.matches}</td><td>${u.goal}</td><td>${u.quit}</td><td>${blMs(u.ms)}</td><td>${u.n}</td><td>${blPct(u.c,u.n)}</td>
+        <td style="font-size:12px">${Object.entries(u.fld).map(([f,s])=>`${escapeHtml(f)} ${blPct(s.c,s.n)}（${s.n}）`).join('　')}</td></tr>`).join('')
+      + '</tbody></table>';
+  } else {
+    // 問題ごと（4分野は選択肢の並び違いをまとめる）
+    const Q = {};
+    rooms.forEach(r=>r.rounds.forEach(x=>x.ps.forEach(p=>p.ans.forEach(a=>{
+      const id = String(a.q).split('|').slice(0,2).join('|');
+      const s = Q[id] || (Q[id] = {id, n:0, c:0}); s.n++; if(a.ok===1) s.c++;
+    }))));
+    const list = Object.values(Q).map(s=>Object.assign(s, battleQText(s.id))).sort((a,b)=>a.c/a.n-b.c/b.n||b.n-a.n);
+    box.innerHTML = `<table><thead><tr><th>分野</th><th>セット</th><th>問題</th><th>解答数</th><th>正答率</th></tr></thead><tbody>`
+      + list.map(s=>`<tr><td>${escapeHtml(s.field)}</td><td>${escapeHtml(s.set)}</td><td class="qCell">${escapeHtml(s.q)}</td><td>${s.n}</td><td>${blPct(s.c,s.n)}</td></tr>`).join('')
+      + '</tbody></table>';
+  }
+}
+function openBattleLog(){
+  setActiveTab('tabBattleLog');
+  const box = document.getElementById('battleLogTable');
+  box.innerHTML = '<div class="resultCount">読み込み中...</div>';
+  Promise.all([db.ref('mpLog').orderByKey().limitToLast(500).once('value'), loadAllQuestions(), loadRushFields()]).then(([snap])=>{
+    battleLog = snap.val()||{};
+    renderBattleLog();
+  }).catch(err=>{ box.innerHTML = '<div class="resultCount" style="color:#dc2626">読み込めませんでした（Firebase のルールに mpLog が入っているか確認してください）: '+escapeHtml(String(err && err.message || err))+'</div>'; });
+}
+document.querySelectorAll('#battleLogView [data-blv]').forEach(b=>b.addEventListener('click', ()=>{ blView = b.dataset.blv; renderBattleLog(); }));
+document.getElementById('tabBattleLog').addEventListener('click', openBattleLog);
 /* ================= アクセス（visits/{日付}/{ページ}/{端末ID} = 0 ログインなし / 1 ログインあり） ================= */
 const VISIT_PAGES = [['top','トップ'],['chembasics','化学基礎'],['inorganic','無機'],['aliphatic','脂肪族'],['aromatic','芳香族'],['polymer','高分子']];
 function jstDayOffset(n){ return new Date(Date.now()+9*3600*1000-n*86400000).toISOString().slice(0,10); }
