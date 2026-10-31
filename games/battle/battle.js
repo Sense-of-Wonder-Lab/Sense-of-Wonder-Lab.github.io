@@ -1,14 +1,17 @@
 /* ================= オンライン対戦（ルーム制・リアルタイム） 2026-10-30 独立ページ化 =================
    もとは化学基礎クエストの化学RUSH！の中にあった rush_battle.js。オンライン対戦は化学RUSH！とは別物として
    このページ（games/battle/index.html）だけで動く。問題データは化学RUSH！・各クエストのものを読んで使う。
-   - 4桁のルームコードで1〜10人。作成者が開始ボタンを押す
+   - 4桁のルームコードで1〜12人（うち観戦者を含む）。作成者が開始ボタンを押す
+   - 2026-11 追加：ルーム作成時に「公開（コード不要・ロビー一覧に出る）」か「非公開（コード制・従来通り）」を選べる。
+     対戦中の公開ルームに入ると観戦者（閲覧のみ）になる。対戦が終わると全員待機画面に戻り、観戦者も参加者になれる
    - 1人のまま開始したらゴースト1体と対戦（同じ分野の自分のベスト記録 → なければ同じ分野の他の人の記録からランダム）。
      ゴーストの再生は端末内だけ（試合中の通信なし）
    - 10問先取。正解+1・不正解/時間切れ−1（0未満にしない）
    - 問題は開始時に全員分まとめて配布（全員同じ順番）
    - 試合中に送るのは自分の現在位置（数字）とゴールタイム（各自の端末で計測）だけ
-   - 切断してもすぐ負けにせず、DROP_MS のあいだ再接続を待つ
-   - ?demo=1 を付けると、同じアカウントでもタブごとに別の参加者として入れる（動作確認用）
+   - 切断してもすぐ負けにせず、DROP_MS のあいだ再接続を待つ（その間は席が残る。それを過ぎたら退室扱い）
+   - 同じアカウントで別のタブ・端末から入ると後から入った方が勝ち、古い方は追い出される（SESSION_KEY で判定）
+   - ?demo=1 を付けると、同じアカウントでもタブごとに別の参加者として入れる（動作確認用。多重入室の追い出しも働かない）
    - 分野は 化学基礎（化学RUSH！の○×問題）／芳香族・脂肪族・無機・高分子（各クエストの暗記カード）から選ぶ。
      化学基礎の問題は化学基礎クエストの index.html の RUNNER_QUESTIONS をそのまま読む（管理画面と同じやり方。写しは作らない）。
      4分野は ../chembasics-quest/rush_fields.js（tools/build_rush_fields.js で作る）を読み、元の選択式（多答は「決定」）のまま出す。
@@ -16,15 +19,33 @@
      化学基礎は ○／× の2択
    問題ID：化学基礎は化学RUSH！のID（例 "q001"）、4分野は "分野|カードID|選択肢の並び"（例 "aro|d4-0|20413"）
    ルームの genre：化学基礎は化学RUSH！の範囲の値（'all' など）、4分野は "F:分野" か "F:分野:単元番号"
-   Firebase のパス（mpRooms・mpLog・rbRecs・rbBest・rbBestF・rbGhostAv）は化学基礎クエストの中にあったときと同じ。
+   Firebase のパス（mpRooms・mpLobby・mpLog・rbRecs・rbBest・rbBestF・rbGhostAv）は化学基礎クエストの中にあったときと同じ。
 
    Firebase Realtime Database のルールに次を追加すること（ルート "rules" の中）:
    "mpRooms": {
      "$code": {
        ".read": "auth != null",
        ".write": "auth != null && (!data.exists() || !data.child('meta/created').exists() || data.child('meta/created').val() < now - 10800000)",
-       "meta": { ".write": "auth != null && data.exists()" },
+       "meta": {
+         ".write": "auth != null && data.exists()",
+         "host":   { ".write": "auth != null && data.exists() && root.child('mpRooms/'+$code+'/members/'+newData.val()).exists()" }
+       },
+       "members": { "$pid": { ".write": "auth != null && $pid.beginsWith(auth.uid)" } },
        "$sub": { "$pid": { ".write": "auth != null && $pid.beginsWith(auth.uid)" } }
+     }
+   },
+   2026-11 追加（公開ルーム一覧。mpRooms の要約だけを置くミラー。本体は mpRooms のまま）:
+   "mpLobby": {
+     "$quest": {
+       ".read": "auth != null",
+       "$code": {
+         ".write": "auth != null && (!newData.exists() || (
+             newData.child('host').val() === root.child('mpRooms/'+$code+'/meta/host').val() &&
+             newData.child('genre').val() === root.child('mpRooms/'+$code+'/meta/genre').val() &&
+             newData.child('status').val() === root.child('mpRooms/'+$code+'/meta/status').val() &&
+             newData.child('created').val() === root.child('mpRooms/'+$code+'/meta/created').val()
+           ))"
+       }
      }
    },
    "rbRecs":    { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
@@ -41,6 +62,8 @@
          "p": { "$pid": { ".write": "auth != null && $pid.beginsWith(auth.uid)" } } } }
      }
    }
+   注：公開一覧(mpLobby)は mpRooms の値と一致する場合だけ書ける値なので、非公開ルームのコードや内容をここに書いて一覧に出すことはできない。
+   mpRooms 自体は常に ".read": "auth != null" なので非公開ルームも「コードを知っていれば」読めるのは今まで通り（コードを知らない人が一覧から見つける方法が無いことが非公開の条件）。
 
    プレイ記録（ゴースト用）:
      rbRecs/{uid}/{push}  ゴールした試合すべて {ms, log, genre, n, at}
@@ -49,19 +72,31 @@
      log は "回答時刻ms,正誤(1/0);..."（時刻はスタートからの経過）
 
    データ構成 mpRooms/{code}:
-     meta    {host, status:'wait'|'play', genre, created, round, startAt, qs:[問題ID], players:[pid], ghost:{uid,name,ms,log,own}|null}
-     members/{pid} {name, joined}   av/{pid} 小さいアイコン(dataURL)   conn/{pid} true か 切断時刻
+     meta    {host, status:'wait'|'play', visibility:'public'|'private', genre, created, round, startAt,
+              qs:[問題ID], players:[pid], ghost:{uid,name,ms,log,own}|null, maxMiss, endAfter}
+     members/{pid} {name, joined, role:'player'|'spectator', session}
+       session はこの pid の「今つながっている接続」を表すランダムな文字列。入室時に新しく発行し、
+       自分の session と違う値に変わったら（後から別タブ/端末で入り直された）自分は追い出される
+     av/{pid} 小さいアイコン(dataURL)   conn/{pid} true か 切断時刻
      pos_{round}/{pid} 現在位置    goal_{round}/{pid} ゴールまでのミリ秒（棄権は -1）
+   データ構成 mpLobby/{quest}/{code}（公開ルームだけ。一覧表示用のミラー。$quest は basic/aro/ali/ino/pol）:
+     {host, hostName, genre, status:'wait'|'play', playerCount, created}
 */
 const RB=(function(){
-  const ROOT='mpRooms', LOG='mpLog', GOAL=10, MAX_PLAYERS=10, MIN_PLAYERS=1;
+  const ROOT='mpRooms', LOBBY='mpLobby', LOG='mpLog', GOAL=10, MIN_PLAYERS=1;
+  const MAX_PLAYERS=10;          // レース（観戦者を含まない）の目安人数・ロビー一覧の「満室」表示に使う
+  const HARD_CAP=12;             // 観戦者を含めた絶対上限。これを超える入室はトランザクションで拒否
   const GHOST='~ghost';         // ゴーストのレーン用の pid（Firebase のキーには使わない）
   const DROP_MS=60000;          // これより長く切断していたら「通信切れ」扱い（表示のみ）
+  const LEAVE_GRACE_MS=45000;   // 切断からこの時間を過ぎたら実際に退室させる（iPhoneのアプリ切替・短いスリープ用の猶予）
+  const EMPTY_ROOM_GRACE_MS=15000;  // 作成直後の一瞬だけメンバーが空なのを「誰もいない」と誤判定しないための猶予
   const ROOM_TTL=3*3600*1000;   // 古いルームのコードは再利用してよい
+  const LOBBY_LIST_MAX=20;      // ロビー一覧に出す最大件数
   const QUESTION_COUNT=120;     // 配布する問題数（足りなければ同じ順番でもう一周）
   const AV_SIZE=48;
   const SESS_KEY='rbSession_v1';
   const DEMO=/[?&]demo=1\b/.test(location.search);
+  const randTag=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
   const TS=()=>firebase.database.ServerValue.TIMESTAMP;
   const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const panel=document.getElementById('battlePanel');
@@ -250,8 +285,22 @@ const RB=(function(){
   let lastRun=null;  // 振り返り用（直前の試合の答えた履歴）
   function newRoom(code){
     return {code, ref:getDb().ref(ROOT+'/'+code), me:me(), meta:null, members:{}, names:{}, imgs:{}, conn:{},
-      pos:{}, goal:{}, round:0, offs:[], roundOffs:[], view:'lobby', laneSlots:null, tick:null,
-      goalSent:false, localStart:0, countdown:null, toasted:{}, ghost:null, ghostTick:null, log:[], myAv:null};
+      pos:{}, goal:{}, round:0, offs:[], roundOffs:[], view:'lobby', laneSlots:null, tick:null, dropTick:null,
+      goalSent:false, localStart:0, countdown:null, toasted:{}, ghost:null, ghostTick:null, log:[], myAv:null, mySession:null};
+  }
+  const roleOf=pid=>(room.members[pid]&&room.members[pid].role)||'player';
+  // 公開ルームの一覧（mpLobby/{quest}/{code}）。本体(mpRooms)の値をそのまま写すだけ（ルールが一致を強制する）
+  function questKeyOf(genre){ return fieldKeyOf(genre); }
+  function mirrorLobby(r){
+    if(!r||!r.meta||r.meta.visibility!=='public') return;
+    getDb().ref(LOBBY+'/'+questKeyOf(r.meta.genre)+'/'+r.code).set({
+      host:r.meta.host, hostName:nameOf(r.meta.host)||'?', genre:r.meta.genre,
+      status:r.meta.status, playerCount:Object.keys(r.members||{}).length, created:r.meta.created
+    }).catch(e=>console.warn('[RB] lobby mirror',e));
+  }
+  function unmirrorLobby(r){
+    if(!r||!r.meta||r.meta.visibility!=='public') return;
+    getDb().ref(LOBBY+'/'+questKeyOf(r.meta.genre)+'/'+r.code).remove().catch(()=>{});
   }
   function listen(ref,ev,cb,list){ ref.on(ev,cb); (list||room.offs).push(()=>ref.off(ev,cb)); }
   function active(){ return !!room; }
@@ -276,34 +325,45 @@ const RB=(function(){
   }
 
   /* ---------- 入室・退室 ---------- */
-  async function createRoom(genre){
+  async function createRoom(genre,visibility){
     const m=me();
     const log=getDb().ref(LOG).push().key;  // 記録（mpLog）のキー。ルームのコードは使い回されるので別に持つ
+    const vis=visibility==='public'?'public':'private';
     for(let i=0;i<10;i++){
       const code=String(1000+Math.floor(Math.random()*9000));
       try{
-        await getDb().ref(ROOT+'/'+code).set({meta:{host:m.pid,status:'wait',genre,created:TS(),round:0,log}});
+        await getDb().ref(ROOT+'/'+code).set({meta:{host:m.pid,status:'wait',visibility:vis,genre,created:TS(),round:0,log}});
         getDb().ref(LOG+'/'+log+'/info').set({code,host:m.uid,hostName:m.name,genre,created:TS()}).catch(e=>console.warn('[RB] log',e));
-        return enterRoom(code);
+        return enterRoom(code,'player');
       }catch(e){
         if(!/permission/i.test(String(e&&(e.code||e.message)))) throw e;
       }
     }
     throw new Error('ルームを作れませんでした。時間をおいてもう一度試してね。（管理者の方へ：Firebase のルールに mpRooms が入っているか確認してください）');
   }
+  // 入室はトランザクションで判定：部屋が無ければ拒否／満員(観戦者を含め12人)なら拒否／対戦中なら観戦者として受け入れ
   async function joinRoom(code){
     if(!/^\d{4}$/.test(code)) throw new Error('4桁の数字を入れてね');
     const m=me();
-    const snap=await getDb().ref(ROOT+'/'+code+'/meta').once('value');
-    const meta=snap.val();
-    if(!meta||!meta.created||serverNow()-meta.created>ROOM_TTL) throw new Error('そのコードのルームは見つかりませんでした');
-    const memSnap=await getDb().ref(ROOT+'/'+code+'/members').once('value');
-    const mem=memSnap.val()||{};
-    if(!mem[m.pid]){
-      if(meta.status!=='wait') throw new Error('このルームは試合中です。終わってから入ってね');
-      if(Object.keys(mem).length>=MAX_PLAYERS) throw new Error('このルームは満員です（最大'+MAX_PLAYERS+'人）');
+    const roomRef=getDb().ref(ROOT+'/'+code);
+    const meta=(await roomRef.child('meta').once('value')).val();
+    if(!meta||!meta.created||serverNow()-meta.created>ROOM_TTL) throw new Error('そのコードのルームは見つかりませんでした。解散したのかもしれません');
+    const role=meta.status==='play'?'spectator':'player';
+    const txn=await roomRef.child('members').transaction(curr=>{
+      if(curr===null) return;              // members が無い＝消えている最中。拒否してあとで判定する
+      if(curr[m.pid]) return curr;          // 再入室（同じ人）。人数は変わらないのでそのまま
+      if(Object.keys(curr).length>=HARD_CAP) return;  // undefined を返すとトランザクション失敗＝満員で拒否
+      curr[m.pid]={name:m.name,joined:Date.now(),role};
+      return curr;
+    });
+    if(!txn.committed){
+      const meta2=(await roomRef.child('meta').once('value')).val();
+      if(!meta2) throw new Error('そのコードのルームは見つかりませんでした。解散したのかもしれません');
+      throw new Error('このルームは満員です（観戦者を含め最大'+HARD_CAP+'人）');
     }
-    return enterRoom(code);
+    const after=txn.snapshot.val()||{};
+    const finalRole=(after[m.pid]&&after[m.pid].role)||role;
+    return enterRoom(code,finalRole);
   }
   // 管理者だけの乱入（管理画面のルーム一覧から #intrude-1234 で来る）。
   // 試合中・満員でも入れる。試合中なら players に自分を足し、届いた時点からスタート。
@@ -315,14 +375,14 @@ const RB=(function(){
     catch(e){ throw new Error('乱入は管理者だけです'); }
     const meta=(await getDb().ref(ROOT+'/'+code+'/meta').once('value')).val();
     if(!meta) throw new Error('そのコードのルームは見つかりませんでした');
-    await enterRoom(code);
+    await enterRoom(code,'player');
     if(meta.status==='play'){
       await getDb().ref(ROOT+'/'+code+'/meta/players').transaction(p=>{
         p=p||[]; if(!p.includes(m.pid)) p.push(m.pid); return p;
       });
     }
   }
-  async function enterRoom(code){
+  async function enterRoom(code,role){
     if(room) detach();
     room=newRoom(code);
     const r=room, m=r.me;
@@ -336,8 +396,17 @@ const RB=(function(){
     if(room!==r) return;
     r.myAv=av;
     const joined=(same&&sess.joined)||Date.now();
+    const mySession=randTag();  // 多重入室対策：自分の在室印。後から別タブ/端末で入り直すとここが書き換わる
+    r.mySession=mySession;
     saveSess(same?sess:{code,pid:m.pid,joined});
-    await r.ref.update({['members/'+m.pid]:{name:m.name,joined},['av/'+m.pid]:av});
+    // members はピンポイント更新（role・session を消さないように、まるごと置き換えない）
+    await r.ref.update({
+      ['members/'+m.pid+'/name']:m.name,
+      ['members/'+m.pid+'/joined']:joined,
+      ['members/'+m.pid+'/role']:role||'player',
+      ['members/'+m.pid+'/session']:mySession,
+      ['av/'+m.pid]:av
+    });
     // 切断を検知したら時刻を書く。つながり直したら true に戻す
     const connRef=r.ref.child('conn/'+m.pid);
     listen(getDb().ref('.info/connected'),'value',s=>{
@@ -345,17 +414,62 @@ const RB=(function(){
       connRef.onDisconnect().set(TS());
       connRef.set(true);
     });
-    listen(r.ref.child('members'),'value',s=>{ r.members=s.val()||{}; for(const k in r.members) r.names[k]=r.members[k].name; render(); });
+    // 自分の session が書き換わったら、別の画面で入り直されたということ＝自分は退出する（後勝ち）
+    if(!DEMO) listen(r.ref.child('members/'+m.pid+'/session'),'value',s=>{
+      const v=s.val();
+      if(v!=null&&v!==mySession) kicked();
+    });
+    listen(r.ref.child('members'),'value',s=>{
+      const v=s.val();
+      r.members=v||{};
+      for(const k in r.members) r.names[k]=r.members[k].name;
+      render();
+      mirrorLobby(r);
+      // 全員いなくなってから少し経ったら、見ている人がいないのでルームを消す（作成直後の一瞬だけ空なのは除く）
+      if(!v&&r.meta&&typeof r.meta.created==='number'&&serverNow()-r.meta.created>EMPTY_ROOM_GRACE_MS){
+        unmirrorLobby(r); r.ref.remove().catch(()=>{});
+      }
+    });
     // アイコンは1人1回だけ受け取る（child_added）
     listen(r.ref.child('av'),'child_added',s=>{ img(s.key).src=s.val(); if(r.view==='lobby') render(); });
     listen(r.ref.child('conn'),'value',s=>{ r.conn=s.val()||{}; render(); });
     listen(r.ref.child('meta'),'value',s=>onMeta(s.val()));
     r.tick=setInterval(()=>{ if(r.view==='play'||r.view==='result') render(); },2000);
+    r.dropTick=setInterval(checkDrops,5000);
+  }
+  // 切断してから LEAVE_GRACE_MS を過ぎた人を実際に退室させる（復帰の猶予が終わった人だけ）
+  function checkDrops(){
+    const r=room; if(!r||!r.meta) return;
+    const now=serverNow();
+    let removedAny=false;
+    sortedMembers().forEach(pid=>{
+      if(pid===r.me.pid) return;
+      const c=r.conn[pid];
+      if(typeof c!=='number'||now-c<=LEAVE_GRACE_MS) return;
+      removedAny=true;
+      if(r.meta.host===pid){
+        const next=sortedMembers().filter(p=>p!==pid&&isOnline(p))[0];
+        if(next) r.ref.child('meta/host').set(next).catch(()=>{});
+      }
+      r.ref.update({['members/'+pid]:null,['av/'+pid]:null,['conn/'+pid]:null}).catch(()=>{});
+    });
+    if(removedAny) r.ref.child('members').once('value').then(snap=>{
+      if(!snap.val()){ unmirrorLobby(r); r.ref.remove().catch(()=>{}); }
+    }).catch(()=>{});
+  }
+  // 別タブ/別端末で入り直されて追い出されたとき
+  function kicked(){
+    if(!room) return;
+    toast('別の画面で入室したため退出しました');
+    if(st) destroyRun();
+    detach();
+    saveSess(null);
+    openHome();
   }
   function detach(){
     if(!room) return;
     room.offs.forEach(f=>f()); room.roundOffs.forEach(f=>f());
-    clearInterval(room.tick); clearInterval(room.countdown); clearInterval(room.ghostTick); clearInterval(room.endTick);
+    clearInterval(room.tick); clearInterval(room.countdown); clearInterval(room.ghostTick); clearInterval(room.endTick); clearInterval(room.dropTick);
     room=null;
   }
   function leave(){
@@ -367,7 +481,10 @@ const RB=(function(){
       const next=sortedMembers().filter(p=>p!==pid&&isOnline(p))[0];
       if(next) r.ref.child('meta/host').set(next);
     }
-    r.ref.update(upd).catch(()=>{});
+    r.ref.update(upd).then(()=>r.ref.child('members').once('value')).then(snap=>{
+      // 自分が最後の1人だったら、誰も見ていないので自分でルームを消す
+      if(!snap.val()){ unmirrorLobby(r); r.ref.remove(); }
+    }).catch(()=>{});
     detach();
     saveSess(null);
   }
@@ -387,6 +504,7 @@ const RB=(function(){
     const r=room; if(!r) return;
     if(!meta){ toast('ルームがなくなりました'); if(st) destroyRun(); detach(); saveSess(null); openHome(); return; }
     r.meta=meta;
+    mirrorLobby(r);
     if(meta.status==='play'&&(meta.players||[]).includes(r.me.pid)){
       if(r.round!==meta.round||r.view==='lobby'){
         if(r.round!==meta.round) setupRound(meta.round);
@@ -422,7 +540,8 @@ const RB=(function(){
   }
   async function startMatch(){
     const r=room; if(!r||!r.meta) return;
-    const players=sortedMembers().filter(isOnline).slice(0,MAX_PLAYERS);
+    // 観戦者はレースに入れない（対戦中に入ってきた人・待機中でも自分で観戦のままにはできない仕様なので通常は player のみ）
+    const players=sortedMembers().filter(pid=>isOnline(pid)&&roleOf(pid)==='player').slice(0,MAX_PLAYERS);
     if(players.length<MIN_PLAYERS) return;
     const ghost=players.length===1 ? await pickGhost(r.meta.genre) : null;  // 1人ならゴーストと対戦（同じ分野の記録から）
     if(room!==r) return;
@@ -448,7 +567,16 @@ const RB=(function(){
     const r=room; if(!r||!r.meta||!r.meta.log) return;
     logRef(r,r.round).child('p/'+r.me.pid+'/end').set(v).catch(e=>console.warn('[RB] log',e));
   }
-  function rematch(){ if(room) room.ref.child('meta').update({status:'wait'}); }
+  // 再戦：対戦中に入ってきた観戦者も、次の対戦からは参加者になる
+  function rematch(){
+    const r=room; if(!r) return;
+    r.ref.child('meta').update({status:'wait'});
+    r.ref.child('members').transaction(curr=>{
+      if(!curr) return curr;
+      for(const k in curr) if(curr[k]) curr[k].role='player';
+      return curr;
+    });
+  }
 
   /* ---------- ゴースト（1人で始めたとき） ---------- */
   const encLog=log=>log.map(e=>e[0]+','+(e[1]?1:0)).join(';');
@@ -833,14 +961,16 @@ const RB=(function(){
     const mems=sortedMembers(), host=effectiveHost();
     const amHost=host===r.me.pid;
     const playing=meta.status==='play';
-    const aliveN=mems.filter(isOnline).length;
+    const myRole=roleOf(r.me.pid);
+    const aliveN=mems.filter(pid=>isOnline(pid)&&roleOf(pid)==='player').length;
+    const specN=mems.filter(pid=>roleOf(pid)==='spectator').length;
     panel.innerHTML=`
       <button class="backbtn" id="rbLeave">← ルームを出る</button>
-      <h2>⚔️ 対戦ルーム</h2>
+      <h2>⚔️ 対戦ルーム${meta.visibility==='public'?'　<span class="rb-pub">🌐 公開</span>':''}</h2>
       <div class="card-ui rb-codecard">
         <div class="muted">ルームコード</div>
         <div class="rb-code">${esc(r.code)}</div>
-        <div class="muted">この4桁を友だちに伝えてね（${MIN_PLAYERS}〜${MAX_PLAYERS}人・1人ならゴーストと対戦）</div>
+        <div class="muted">${meta.visibility==='public'?'公開ルームなのでロビー一覧からも入れるよ。':'この4桁を友だちに伝えてね。'}（${MIN_PLAYERS}〜${MAX_PLAYERS}人・観戦者を含め最大${HARD_CAP}人・1人ならゴーストと対戦）</div>
         <div class="rb-scope">出題：${esc(scopeLabel(meta.genre))}</div>
       </div>
       <div class="card-ui rb-rules">${amHost&&!playing
@@ -849,11 +979,12 @@ const RB=(function(){
         : `<div class="muted">ミスの上限：<b>${missLimit()?missLimit()+'回':'なし'}</b>　1位のゴールから <b>${fmtSec(endAfterMs()/1000)}</b> で終了</div>`}
       </div>
       <div class="card-ui">
-        <b>参加者 ${mems.length}/${MAX_PLAYERS}</b>
+        <b>参加者 ${mems.length}/${HARD_CAP}${specN?`（参加 ${mems.length-specN}・観戦 ${specN}）`:''}</b>
         <div class="rb-members" id="rbMembers"></div>
       </div>
       <div id="rbStartArea">${
-        playing ? `<div class="card-ui muted" style="text-align:center">いまは試合中です。終わるまで待ってね</div>`
+        myRole==='spectator' ? `<div class="card-ui muted" style="text-align:center">👀 観戦中：対戦が終わるまでお待ちください。次の対戦から参加できます</div>`
+        : playing ? `<div class="card-ui muted" style="text-align:center">いまは試合中です。終わるまで待ってね</div>`
         : amHost ? `<button class="bigbtn" id="rbStart" ${aliveN<MIN_PLAYERS?'disabled':''}>⚔️ スタート！</button>
                     <div class="muted" style="text-align:center">${aliveN<=1?'このまま始めると 👻 ゴーストと対戦します':'全員そろったらスタートを押してね'}</div>`
         : `<div class="card-ui muted" style="text-align:center">ルームを作った人がスタートするのを待っています…</div>`
@@ -865,7 +996,7 @@ const RB=(function(){
       chip.className='rb-member'+(isOnline(pid)?'':' off')+(pid===r.me.pid?' me':'');
       chip.appendChild(img(pid).cloneNode());
       const nm=document.createElement('span'); nm.className='rb-mname';
-      nm.textContent=(pid===meta.host?'👑':'')+nameOf(pid)+(isOnline(pid)?'':'（接続待ち）');
+      nm.textContent=(pid===meta.host?'👑':'')+(roleOf(pid)==='spectator'?'👀':'')+nameOf(pid)+(isOnline(pid)?'':'（接続待ち）');
       chip.appendChild(nm); box.appendChild(chip);
     });
     document.getElementById('rbLeave').onclick=()=>{ leave(); openHome(); };
@@ -934,35 +1065,76 @@ const RB=(function(){
 
   /* ---------- 入口（ルームを作る／入る） ---------- */
   // fkey: ほかのクエストから来たときの分野（'aro' など）。なければ前回選んだ分野
+  // 公開ルーム一覧を1回だけ取得（常時監視はしない。「更新」を押したときだけ読み直す）
+  async function fetchLobby(questKey){
+    const m=me(), sess=loadSess();
+    const snap=await getDb().ref(LOBBY+'/'+questKey).orderByChild('created').limitToLast(LOBBY_LIST_MAX).once('value');
+    const rows=[];
+    snap.forEach(s=>{ const v=s.val(); if(v) rows.push(Object.assign({code:s.key},v)); });
+    rows.reverse();  // 新しい順
+    // 自分が作った部屋・自分が今いる部屋（前のルーム）は出さない。一覧は古い前提で、正確な判定は入室時に行う
+    return rows.filter(v=>v.host!==m.pid&&!(sess&&sess.code===v.code));
+  }
+  let homeTab='create';
   function openHome(fkey){
     if(room){ render(); return; }  // ルームに入っている（試合中も含む）ならその画面のまま
     const sess=loadSess();
     const m=me();
     const pref=loadFieldPref();
     let field=(typeof fkey==='string'&&fieldList().some(f=>f.key===fkey)&&fkey)||pref.field||BASICS.key;
+    let visibility='private';
+    let err,run;  // draw() のたびに作り直す。loadLobby() からも使うので openHome のスコープに置く
     const fieldBtns=()=>fieldList().map(f=>`<button class="rb-field${f.key===field?' on':''}" data-f="${esc(f.key)}">${esc(f.label)}</button>`).join('');
+    const draw=()=>{
     panel.innerHTML=`
       <h2>⚔️ オンライン対戦</h2>
-      <div class="card-ui"><div class="muted"><b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！<br>化学基礎は○×問題、芳香族・脂肪族・無機・高分子は各クエストと同じ選択式です。</div></div>
+      <div class="card-ui"><div class="muted"><b>10問先取</b>のスピード勝負。正解で1マス前進、まちがい・時間切れで1マス後退。${MIN_PLAYERS}〜${MAX_PLAYERS}人で遊べるよ（観戦者を含め最大${HARD_CAP}人）。1人で始めると、みんなのプレイ記録から作った 👻 ゴーストと対戦！<br>化学基礎は○×問題、芳香族・脂肪族・無機・高分子は各クエストと同じ選択式です。</div></div>
       ${sess&&sess.code?`<div class="card-ui"><b>前のルーム ${esc(sess.code)}</b><button class="bigbtn" id="rbResume">ルーム ${esc(sess.code)} に戻る</button></div>`:''}
+      <div class="card-ui rb-hometabs">
+        <button class="rb-tab${homeTab==='create'?' on':''}" data-tab="create">作る／コードで入る</button>
+        <button class="rb-tab${homeTab==='public'?' on':''}" data-tab="public">🌐 公開ルームを探す</button>
+      </div>
+      ${homeTab==='create'?`
       <div class="card-ui">
         <b>① 分野を選ぶ</b>
         <div class="rb-fields" id="rbFields">${fieldBtns()}</div>
         <b>② 範囲を選んでルームを作る</b>
         <select class="genreSelect" id="rbGenre" style="margin-top:8px"></select>
+        <div class="rb-vis" id="rbVis">
+          <button class="rb-visbtn${visibility==='public'?' on':''}" data-v="public">🌐 公開（コード不要・一覧に出る）</button>
+          <button class="rb-visbtn${visibility==='private'?' on':''}" data-v="private">🔒 非公開（コードを知っている人だけ）</button>
+        </div>
         <button class="bigbtn" id="rbCreate" style="margin-top:10px">ルームを作る</button>
       </div>
       <div class="card-ui">
-        <b>ルームに入る</b>
+        <b>コードでルームに入る</b>
         <div class="muted">分野と範囲はルームを作った人が決めます</div>
         <input class="rb-codein" id="rbCode" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4桁のコード">
         <button class="bigbtn" id="rbJoin">参加する</button>
-      </div>
+      </div>`:`
+      <div class="card-ui">
+        <b>分野を選ぶ</b>
+        <div class="rb-fields" id="rbFields">${fieldBtns()}</div>
+        <div class="rb-lobbyhead"><b>公開ルーム一覧</b><button class="bigbtn secondary" id="rbLobbyRefresh">🔄 更新</button></div>
+        <div class="rb-lobbylist" id="rbLobbyList"><div class="muted">読み込み中…</div></div>
+      </div>`}
       <div class="rb-err" id="rbErr"></div>
-      ${DEMO&&m?`<div class="muted">デモモード：このタブは「${esc(m.name)}」として参加します（タブごとに別の参加者になります）</div>`:''}`;
-    const err=document.getElementById('rbErr');
+      ${DEMO&&m?`<div class="muted">デモモード：このタブは「${esc(m.name)}」として参加します（タブごとに別の参加者になります。多重入室の追い出しは働きません）</div>`:''}`;
+    err=document.getElementById('rbErr');
     const busy=(on)=>panel.querySelectorAll('.bigbtn').forEach(b=>b.disabled=on);
-    const run=(p)=>{ err.textContent=''; busy(true); p.catch(e=>{ busy(false); err.textContent=(e&&e.message)||'通信できませんでした'; console.warn('[RB]',e); }); };
+    run=(p)=>{ err.textContent=''; busy(true); p.catch(e=>{ busy(false); err.textContent=(e&&e.message)||'通信できませんでした'; console.warn('[RB]',e); }); };
+    panel.querySelectorAll('.rb-tab').forEach(b=>b.onclick=()=>{ homeTab=b.dataset.tab; draw(); });
+    const bindFields=()=>panel.querySelectorAll('.rb-field').forEach(b=>b.onclick=()=>{
+      field=b.dataset.f; err.textContent='';
+      if(homeTab==='create') drawScopes(); else loadLobby();
+    });
+    if(homeTab==='public'){
+      bindFields();
+      const refreshBtn=document.getElementById('rbLobbyRefresh');
+      refreshBtn.onclick=loadLobby;
+      loadLobby();
+      return;
+    }
     const sel=document.getElementById('rbGenre'), createBtn=document.getElementById('rbCreate');
     // 分野を選ぶと範囲の一覧を入れ替える（前回その分野で選んだ範囲を最初に選ぶ）
     const drawScopes=()=>{
@@ -973,7 +1145,6 @@ const RB=(function(){
         : '<option value="">問題データを読み込み中…</option>';
       sel.disabled=createBtn.disabled=!opts.length;
     };
-    const bindFields=()=>panel.querySelectorAll('.rb-field').forEach(b=>b.onclick=()=>{ field=b.dataset.f; err.textContent=''; drawScopes(); });
     bindFields(); drawScopes();
     loadAll().then(res=>{
       // 読み終わったら範囲の一覧だけ入れ替える（その間に別の画面へ移っていたら何もしない）
@@ -982,10 +1153,14 @@ const RB=(function(){
       const bad=res.find(x=>x.status==='rejected');
       if(bad) err.textContent=bad.reason.message;
     });
+    document.getElementById('rbVis').querySelectorAll('.rb-visbtn').forEach(b=>b.onclick=()=>{
+      visibility=b.dataset.v;
+      panel.querySelectorAll('.rb-visbtn').forEach(x=>x.classList.toggle('on',x.dataset.v===visibility));
+    });
     createBtn.onclick=()=>{
       if(!sel.value) return;
       saveFieldPref({field,genre:sel.value});
-      run(createRoom(sel.value));
+      run(createRoom(sel.value,visibility));
     };
     const code=document.getElementById('rbCode');
     code.oninput=()=>{ code.value=code.value.replace(/\D/g,'').slice(0,4); };
@@ -993,6 +1168,24 @@ const RB=(function(){
     document.getElementById('rbJoin').onclick=()=>run(joinRoom(code.value));
     const rs=document.getElementById('rbResume');
     if(rs) rs.onclick=()=>run(joinRoom(sess.code).catch(e=>{ saveSess(null); throw e; }));
+    };
+    function loadLobby(){
+      const box=document.getElementById('rbLobbyList'); if(!box) return;
+      panel.querySelectorAll('.rb-field').forEach(b=>b.classList.toggle('on',b.dataset.f===field));
+      box.innerHTML='<div class="muted">読み込み中…</div>';
+      fetchLobby(field).then(rows=>{
+        if(document.getElementById('rbLobbyList')!==box) return;
+        if(!rows.length){ box.innerHTML='<div class="muted">公開ルームはまだ無いみたい。「作る」からあなたが最初の公開ルームを作れるよ</div>'; return; }
+        box.innerHTML=rows.map(v=>`
+          <button class="rb-lobbyrow" data-code="${esc(v.code)}">
+            <span class="rb-lobbyhost">${esc(v.hostName||'?')}</span>
+            <span class="rb-lobbyscope">${esc(scopeLabel(v.genre))}</span>
+            <span class="rb-lobbystat">${v.status==='play'?'🏃 対戦中':(v.playerCount>=MAX_PLAYERS?'満室':'待機中')}　${v.playerCount}人</span>
+          </button>`).join('');
+        box.querySelectorAll('.rb-lobbyrow').forEach(b=>b.onclick=()=>run(joinRoom(b.dataset.code)));
+      }).catch(e=>{ box.innerHTML='<div class="muted">読み込めませんでした。通信を確認してね</div>'; console.warn('[RB] lobby',e); });
+    }
+    draw();
   }
 
   // 管理画面の「乱入」リンクから。失敗したら対戦の入口画面にエラーを出す
