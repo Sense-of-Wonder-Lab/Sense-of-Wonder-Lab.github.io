@@ -133,7 +133,6 @@ html[data-theme="navy"] .rb-openroom{background:rgba(255,255,255,.05);border-col
 .rb-qt{font-size:17px;line-height:1.6;font-weight:700}
 .rb-multi{font-size:13px;font-weight:700;color:#ffd166}
 .rb-fb{display:none;font-size:14px;line-height:1.6;padding:10px 12px;border-radius:10px}
-.rb-fb.correct{display:block;background:rgba(6,214,160,.18);color:#8ff0cf}
 .rb-fb.wrong{display:block;background:rgba(239,71,111,.18);color:#ff9fb4}
 .rb-ch{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
 .rb-ch.imgs{display:grid;grid-template-columns:1fr 1fr}
@@ -154,17 +153,8 @@ html[data-theme="navy"] .rb-openroom{background:rgba(255,255,255,.05);border-col
 .rb-ch.ox .rb-cbtn:nth-child(2):not(.ok):not(.ng){color:#ff6f8f;border-color:rgba(255,111,143,.7);
   box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
 .rb-ch.ox .rb-cbtn span{flex:none}
-.rb-frame.ox{background:#05070c}
-/* ○×の判定エフェクト。rb-q の中だけに出すので画面下の○×ボタンにはかぶらない */
-.rb-afx{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:5}
-.rb-afx.show{display:flex}
-.rb-afx-box{text-align:center;animation:rbafxpop .32s cubic-bezier(.34,1.56,.64,1)}
-@keyframes rbafxpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
-.rb-afx-symbol{font-size:72px;font-weight:900;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.4)}
-.rb-afx-symbol.ok{color:#06d6a0}
-.rb-afx-symbol.ng{color:#ef476f}
-.rb-afx-sub{font-size:16px;margin-top:2px;color:#fff}
-.rb-afx-confetti{font-size:22px;margin-top:4px;letter-spacing:4px}
+.rb-ch.ox .rb-cbtn.ok{color:#5cffc0;border-color:#06d6a0;background:rgba(6,214,160,.32)}
+.rb-ch.ox .rb-cbtn.ng{color:#ff6f8f;border-color:#ef476f;background:rgba(239,71,111,.32)}
 .rb-cimg{display:block;max-width:100%;max-height:90px;margin:0 auto;background:#fff;border-radius:8px;padding:3px;box-sizing:border-box}
 .rb-decide{font:inherit;font-size:16px;font-weight:800;color:#1b1b1b;background:#ffd166;border:0;border-radius:14px;padding:12px;cursor:pointer}
 .rb-decide:disabled{opacity:.45;cursor:default}
@@ -232,7 +222,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="../shared/leaderboard.js?v=43"></script>
-<script src="battle.js?v=1"></script>
+<script src="battle.js?v=2"></script>
 <script>
 'use strict';
 // gameId は化学基礎クエストの中にあったときと同じ（ログイン状態・訪問の記録の数え方を変えないため）

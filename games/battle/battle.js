@@ -619,7 +619,6 @@ const RB=(function(){
     if(!st) return;
     clearInterval(st.timerInterval); st.timerInterval=null;
     clearTimeout(st.autoAdvanceTimeout); st.autoAdvanceTimeout=null;
-    clearTimeout(st.afxTimeout); st.afxTimeout=null;
   }
   function destroyRun(){
     if(!st) return;
@@ -738,8 +737,7 @@ const RB=(function(){
     el.frame.classList.toggle('ox',!!q.ox);
     el.q.innerHTML=`<span class="rb-tag">${esc(q.genre)}</span>${q.pic}<div class="rb-qt">${q.q}</div>`
       +(q.multi?'<div class="rb-multi">☑ あてはまるものをすべて選んで「決定」</div>':'')
-      +'<div class="rb-fb" id="rbFb"></div>'
-      +'<div class="rb-afx" id="rbAfx"></div>';
+      +'<div class="rb-fb" id="rbFb"></div>';
     el.ch.className='rb-ch'+(q.ci?' imgs':'')+(q.ox?' ox':'');
     el.ch.innerHTML=q.choices.map((c,i)=>`<button class="rb-cbtn" data-i="${i}">${q.ox?'':`<b>${i+1}</b>`}<span>${c.html}</span></button>`).join('')
       +(q.multi?'<button class="rb-decide" disabled>決定</button>':'');
@@ -774,20 +772,12 @@ const RB=(function(){
     });
     const dec=el.ch.querySelector('.rb-decide'); if(dec) dec.remove();
     const fb=document.getElementById('rbFb');
-    fb.className='rb-fb '+(ok?'correct':'wrong');
-    // タイムを競うので、正解のときは解説を出さない（2026-10-30 先生）
-    fb.innerHTML=ok?'⭕ 正解！':(picked?'❌ 残念！ 緑が正解。 ':'⏰ 時間切れ！ 緑が正解。 ')+q.explanation;
-    // 縦長の画面で解説が隠れるときは見えるところまで送る
-    if(el.inner.scrollHeight>el.inner.clientHeight) fb.scrollIntoView({block:'nearest',behavior:'smooth'});
-    // 正誤のポップアップ（問題文の中だけに出すので、画面下の○×ボタンにはかぶらない）
-    const afx=document.getElementById('rbAfx');
-    if(afx){
-      afx.innerHTML=ok
-        ?'<div class="rb-afx-box"><div class="rb-afx-symbol ok">○</div><div class="rb-afx-confetti">🎉🎊✨</div></div>'
-        :'<div class="rb-afx-box"><div class="rb-afx-symbol ng">×</div><div class="rb-afx-sub">( ；∀；)</div></div>';
-      afx.classList.add('show');
-      clearTimeout(st.afxTimeout);
-      st.afxTimeout=setTimeout(()=>afx.classList.remove('show'),900);
+    // 正解のときは選択肢の枠が緑になるだけ（他のモードと同じ。2026-10-31 先生）。不正解・時間切れのときだけ解説を出す
+    if(!ok){
+      fb.className='rb-fb wrong';
+      fb.innerHTML=(picked?'❌ 残念！ 緑が正解。 ':'⏰ 時間切れ！ 緑が正解。 ')+q.explanation;
+      // 縦長の画面で解説が隠れるときは見えるところまで送る
+      if(el.inner.scrollHeight>el.inner.clientHeight) fb.scrollIntoView({block:'nearest',behavior:'smooth'});
     }
     drawTime(0);
     onAnswer(ok);
