@@ -108,6 +108,13 @@ html[data-theme="navy"] .rb-codein{border-color:rgba(255,255,255,.25)}
 .rb-field{padding:10px 4px;border:1.5px solid #cbd5e1;border-radius:12px;background:transparent;color:var(--ink);font-size:14px;font-weight:800;cursor:pointer}
 .rb-field.on{border-color:var(--accent);background:var(--accent);color:#fff}
 html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
+/* 開設中のルーム一覧（ルームに入るカードの中。誰でも見える） */
+.rb-openrooms{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.rb-openroom{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font:inherit;text-align:left;color:var(--ink)}
+.rb-openroom b{font-size:18px;letter-spacing:3px;color:var(--blue)}
+.rb-openroom span{font-size:12px;color:#64748b}
+.rb-openroom span:last-child{margin-left:auto;flex:none;font-weight:700;color:var(--ink)}
+html[data-theme="navy"] .rb-openroom{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
 /* 試合の画面：背景の写真の上に半透明の枠。外側の枠が時間のバー（12時から時計回りに減る）、その上にレーン */
 #battlePanel:has(.rb-play){max-width:1240px;height:100%}
 .rb-play{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
@@ -120,7 +127,7 @@ html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
 .rb-frame .rb-hud{position:absolute;top:-11px;right:22px;z-index:3;background:rgba(6,10,20,.85)}
 .rb-inner{position:absolute;inset:7px;border-radius:16px;background:rgba(8,12,26,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
   border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:12px;padding:14px;box-sizing:border-box;overflow-y:auto;color:#f2f5ff}
-.rb-q{flex:0 0 auto;display:flex;flex-direction:column;gap:10px}
+.rb-q{position:relative;flex:0 0 auto;display:flex;flex-direction:column;gap:10px}
 .rb-tag{align-self:flex-start;font-size:12px;font-weight:700;color:#cbd5e1;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:20px}
 .rb-q .rb-qimg{display:block;align-self:center;max-width:100%;max-height:130px;background:#fff;border-radius:12px;padding:6px;box-sizing:border-box}
 .rb-qt{font-size:17px;line-height:1.6;font-weight:700}
@@ -138,10 +145,26 @@ html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
 .rb-cbtn.ok{border-color:#06d6a0;background:rgba(6,214,160,.32)}
 .rb-cbtn.ng{border-color:#ef476f;background:rgba(239,71,111,.32)}
 .rb-cbtn:disabled{cursor:default;color:#fff}
-/* 化学基礎の ○／×：大きな2つのボタンを横に並べる */
-.rb-ch.ox{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.rb-ch.ox .rb-cbtn{justify-content:center;text-align:center;font-size:40px;line-height:1;padding:16px 10px}
+/* 化学基礎の ○／×：画面の一番下に固定し、化学RUSH！と同じ丸ボタン・配色・背景にする */
+.rb-ch.ox{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:auto;padding-bottom:env(safe-area-inset-bottom)}
+.rb-ch.ox .rb-cbtn{justify-content:center;text-align:center;font-size:40px;line-height:1;font-weight:800;padding:20px 10px;border-radius:22px;
+  background:rgba(8,14,26,.55);backdrop-filter:blur(4px);border:2px solid transparent;color:#fff}
+.rb-ch.ox .rb-cbtn:nth-child(1):not(.ok):not(.ng){color:#5cffc0;border-color:rgba(92,255,192,.7);
+  box-shadow:0 0 14px rgba(92,255,192,.45),inset 0 0 12px rgba(92,255,192,.15);text-shadow:0 0 10px rgba(92,255,192,.9)}
+.rb-ch.ox .rb-cbtn:nth-child(2):not(.ok):not(.ng){color:#ff6f8f;border-color:rgba(255,111,143,.7);
+  box-shadow:0 0 14px rgba(255,111,143,.45),inset 0 0 12px rgba(255,111,143,.15);text-shadow:0 0 10px rgba(255,111,143,.9)}
 .rb-ch.ox .rb-cbtn span{flex:none}
+.rb-frame.ox{background:#05070c}
+/* ○×の判定エフェクト。rb-q の中だけに出すので画面下の○×ボタンにはかぶらない */
+.rb-afx{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:5}
+.rb-afx.show{display:flex}
+.rb-afx-box{text-align:center;animation:rbafxpop .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes rbafxpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.rb-afx-symbol{font-size:72px;font-weight:900;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.4)}
+.rb-afx-symbol.ok{color:#06d6a0}
+.rb-afx-symbol.ng{color:#ef476f}
+.rb-afx-sub{font-size:16px;margin-top:2px;color:#fff}
+.rb-afx-confetti{font-size:22px;margin-top:4px;letter-spacing:4px}
 .rb-cimg{display:block;max-width:100%;max-height:90px;margin:0 auto;background:#fff;border-radius:8px;padding:3px;box-sizing:border-box}
 .rb-decide{font:inherit;font-size:16px;font-weight:800;color:#1b1b1b;background:#ffd166;border:0;border-radius:14px;padding:12px;cursor:pointer}
 .rb-decide:disabled{opacity:.45;cursor:default}
@@ -151,6 +174,7 @@ html[data-theme="navy"] .rb-field:not(.on){border-color:rgba(255,255,255,.25)}
   .rb-q{flex:1.1 1 0;min-width:0;overflow-y:auto}
   .rb-ch{flex:1 1 0;min-width:0;overflow-y:auto;justify-content:safe center}
   .rb-ch.imgs,.rb-ch.ox{align-content:safe center}
+  .rb-ch.ox{margin-top:0}
   .rb-qt{font-size:20px}
   .rb-q .rb-qimg{max-height:180px}
   .rb-cbtn{font-size:17px;padding:12px 16px}

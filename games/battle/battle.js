@@ -209,6 +209,29 @@ const RB=(function(){
   }
   const serverNow=()=>Date.now()+offset;
 
+  /* ---------- 開設中のルーム一覧（ルームに入るカードに出す。誰でも読める） ---------- */
+  let roomsOverviewRef=null;
+  function stopRoomsOverview(){ if(roomsOverviewRef){ roomsOverviewRef.off(); roomsOverviewRef=null; } }
+  function watchRoomsOverview(box,run){
+    stopRoomsOverview();
+    if(!box) return;
+    const empty='<div class="muted" style="text-align:center;padding:4px 0">開設中のルームなし</div>';
+    box.innerHTML=empty;
+    roomsOverviewRef=getDb().ref(ROOT);
+    roomsOverviewRef.on('value',snap=>{
+      if(!document.body.contains(box)) return;  // すでに画面を離れていたら何もしない
+      const all=snap.val()||{}, now=serverNow();
+      const open=Object.entries(all).filter(([,r])=>{
+        const meta=r&&r.meta;
+        return meta&&meta.status==='wait'&&meta.created&&now-meta.created<ROOM_TTL&&Object.keys(r.members||{}).length<MAX_PLAYERS;
+      }).sort((a,b)=>(b[1].meta.created||0)-(a[1].meta.created||0));
+      box.innerHTML=open.length ? open.map(([code,r])=>
+        `<button class="rb-openroom" data-code="${esc(code)}"><b>${esc(code)}</b><span>${esc(scopeLabel(r.meta.genre))}</span><span>${Object.keys(r.members||{}).length}人</span></button>`
+      ).join('') : empty;
+      box.querySelectorAll('.rb-openroom').forEach(b=>b.onclick=()=>run(joinRoom(b.dataset.code)));
+    },()=>{ box.innerHTML=empty; });
+  }
+
   /* ---------- 自分 ---------- */
   function me(){
     const u=LB.currentUser(); if(!u) return null;
@@ -323,6 +346,7 @@ const RB=(function(){
     }
   }
   async function enterRoom(code){
+    stopRoomsOverview();
     if(room) detach();
     room=newRoom(code);
     const r=room, m=r.me;
@@ -427,7 +451,7 @@ const RB=(function(){
     const ghost=players.length===1 ? await pickGhost(r.meta.genre) : null;  // 1人ならゴーストと対戦（同じ分野の記録から）
     if(room!==r) return;
     const qs=buildPool(r.meta.genre), round=(r.meta.round||0)+1;
-    await r.ref.child('meta').update({status:'play',round,qs,players,ghost,startAt:serverNow()+4000});
+    await r.ref.child('meta').update({status:'play',round,qs,players,ghost,startAt:serverNow()+3000});
     if(r.meta.log){
       const names={}; players.forEach(p=>names[p]=nameOf(p));
       logRef(r,round).child('start').set({at:TS(),genre:r.meta.genre,players:names,ghost:ghost?ghost.name:null,ghostMs:ghost?ghost.ms:null,maxMiss:missLimit(),endAfter:endAfterMs()/1000})
@@ -509,8 +533,8 @@ const RB=(function(){
   }
   // ゴーストもミスの上限を守る。上限に達する時刻（達しなければ null）
   function ghostOutAt(){
-    const lim=missLimit(); if(!lim) return null;
-    let m=0; for(const [at,ok] of room.ghost.log){ if(!ok&&++m>=lim) return at; }
+    const lim=missLimit(); if(lim<0) return null;
+    let m=0; for(const [at,ok] of room.ghost.log){ if(!ok&&++m>lim) return at; }
     return null;
   }
   // 記録どおりのタイミングで前進・後退させる（端末内だけ）
@@ -595,6 +619,7 @@ const RB=(function(){
     if(!st) return;
     clearInterval(st.timerInterval); st.timerInterval=null;
     clearTimeout(st.autoAdvanceTimeout); st.autoAdvanceTimeout=null;
+    clearTimeout(st.afxTimeout); st.afxTimeout=null;
   }
   function destroyRun(){
     if(!st) return;
@@ -624,8 +649,8 @@ const RB=(function(){
       saveRecord(ms);
       logEnd(ms);
       setTimeout(()=>{ if(room!==r) return; destroyRun(); r.view='result'; render(); },900);
-    }else if(!correct&&missLimit()&&missCount()>=missLimit()){
-      endOut(-2,'❌ ミスが上限（'+missLimit()+'回）に達しました');
+    }else if(!correct&&missLimit()>=0&&missCount()>missLimit()){
+      endOut(-2,'❌ ミスが上限（'+fmtMiss(missLimit())+'）に達しました');
     }else{
       st.autoAdvanceTimeout=setTimeout(choiceGoNext,correct?1200:2200);  // まちがえたときは解説を読む時間を長めに
     }
@@ -633,12 +658,13 @@ const RB=(function(){
   /* ---------- ミスの上限・1位のゴール後の強制終了（2026-10-30 先生） ----------
      ルームを作った人が待機画面で変える（meta.maxMiss 回・meta.endAfter 秒、0 は「なし」）。
      終わり方の goal の値：-1 棄権 / -2 ミスの上限 / -3 1位のゴールから時間切れ */
-  const MISS_OPTS=[3,5,10,15,20,0], END_OPTS=[30,60,120,180,300,0];
+  const MISS_OPTS=[0,1,3,5,10,15,20,-1], END_OPTS=[30,60,120,180,300,0];
   const DEF_MISS=10, DEF_END=60;
   function missLimit(){ const v=room&&room.meta&&room.meta.maxMiss; return v==null?DEF_MISS:+v; }
   function endAfterMs(){ const v=room&&room.meta&&room.meta.endAfter; return (v==null?DEF_END:+v)*1000; }
   const missCount=()=>room.log.filter(e=>!e[1]).length;
   const fmtSec=s=>!s?'なし':s<60?s+'秒':(s/60)+'分';
+  const fmtMiss=v=>v<0?'なし':v+'回';  // ミスの上限：-1は「なし」、0は「ミス1回で即アウト」
   // 自分の試合をゴール以外で終える（ミスの上限・時間切れ）
   function endOut(code,msg){
     const r=room; if(!r||r.goalSent) return;
@@ -667,7 +693,7 @@ const RB=(function(){
   }
   function hudText(){
     const lim=missLimit(), left=forceLeft();
-    return `🏁 ${st.pos}/${GOAL}`+(lim?`　❌ ${missCount()}/${lim}`:'')+(left!=null&&left>0?`　⏱ 残り${Math.ceil(left/1000)}秒`:'');
+    return `🏁 ${st.pos}/${GOAL}`+(lim>=0?`　❌ ${missCount()}/${lim}`:'')+(left!=null&&left>0?`　⏱ 残り${Math.ceil(left/1000)}秒`:'');
   }
 
   /* ---------- 試合の画面（どの分野も同じ） ----------
@@ -709,10 +735,11 @@ const RB=(function(){
     st.answered=false;
     if(st.idx>=st.pool.length) st.idx=0;
     const q=st.pool[st.idx];
+    el.frame.classList.toggle('ox',!!q.ox);
     el.q.innerHTML=`<span class="rb-tag">${esc(q.genre)}</span>${q.pic}<div class="rb-qt">${q.q}</div>`
       +(q.multi?'<div class="rb-multi">☑ あてはまるものをすべて選んで「決定」</div>':'')
-      +(q.ox?'<div class="rb-multi">正しければ ○、誤りなら ×</div>':'')
-      +'<div class="rb-fb" id="rbFb"></div>';
+      +'<div class="rb-fb" id="rbFb"></div>'
+      +'<div class="rb-afx" id="rbAfx"></div>';
     el.ch.className='rb-ch'+(q.ci?' imgs':'')+(q.ox?' ox':'');
     el.ch.innerHTML=q.choices.map((c,i)=>`<button class="rb-cbtn" data-i="${i}">${q.ox?'':`<b>${i+1}</b>`}<span>${c.html}</span></button>`).join('')
       +(q.multi?'<button class="rb-decide" disabled>決定</button>':'');
@@ -752,6 +779,16 @@ const RB=(function(){
     fb.innerHTML=ok?'⭕ 正解！':(picked?'❌ 残念！ 緑が正解。 ':'⏰ 時間切れ！ 緑が正解。 ')+q.explanation;
     // 縦長の画面で解説が隠れるときは見えるところまで送る
     if(el.inner.scrollHeight>el.inner.clientHeight) fb.scrollIntoView({block:'nearest',behavior:'smooth'});
+    // 正誤のポップアップ（問題文の中だけに出すので、画面下の○×ボタンにはかぶらない）
+    const afx=document.getElementById('rbAfx');
+    if(afx){
+      afx.innerHTML=ok
+        ?'<div class="rb-afx-box"><div class="rb-afx-symbol ok">○</div><div class="rb-afx-confetti">🎉🎊✨</div></div>'
+        :'<div class="rb-afx-box"><div class="rb-afx-symbol ng">×</div><div class="rb-afx-sub">( ；∀；)</div></div>';
+      afx.classList.add('show');
+      clearTimeout(st.afxTimeout);
+      st.afxTimeout=setTimeout(()=>afx.classList.remove('show'),900);
+    }
     drawTime(0);
     onAnswer(ok);
   }
@@ -822,7 +859,7 @@ const RB=(function(){
     if(r.view==='play'){ renderLanes(); return; }
     if(r.view==='review') return;
     if(r.view==='countdown'){
-      if(!document.getElementById('rbCount')) panel.innerHTML=`<div class="rb-countwrap"><div class="muted">${vsGhost()?esc(r.names[GHOST])+' と対戦（記録 '+fmtMs(r.ghost.ms)+'）':'ルーム '+r.code+'　全員同じ問題・同じ順番です'}</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退<br>ミスの上限 ${missLimit()?missLimit()+'回':'なし'}・1位のゴールから${fmtSec(endAfterMs()/1000)}で終了</div></div>`;
+      if(!document.getElementById('rbCount')) panel.innerHTML=`<div class="rb-countwrap"><div class="muted">${vsGhost()?esc(r.names[GHOST])+' と対戦（記録 '+fmtMs(r.ghost.ms)+'）':'ルーム '+r.code+'　全員同じ問題・同じ順番です'}</div><div class="rb-count" id="rbCount"></div><div class="muted">10問先取！ 正解で前進、まちがえると後退<br>ミスの上限 ${fmtMiss(missLimit())}・1位のゴールから${fmtSec(endAfterMs()/1000)}で終了</div></div>`;
       return;
     }
     if(r.view==='result') return renderResult();
@@ -844,9 +881,9 @@ const RB=(function(){
         <div class="rb-scope">出題：${esc(scopeLabel(meta.genre))}</div>
       </div>
       <div class="card-ui rb-rules">${amHost&&!playing
-        ? `<label>ミスの上限 <select id="rbMiss">${MISS_OPTS.map(v=>`<option value="${v}" ${v===missLimit()?'selected':''}>${v?v+'回':'なし'}</option>`).join('')}</select></label>
+        ? `<label>ミスの上限 <select id="rbMiss">${MISS_OPTS.map(v=>`<option value="${v}" ${v===missLimit()?'selected':''}>${fmtMiss(v)}</option>`).join('')}</select></label>
            <label>1位のゴールから <select id="rbEnd">${END_OPTS.map(v=>`<option value="${v}" ${v*1000===endAfterMs()?'selected':''}>${fmtSec(v)}</option>`).join('')}</select> で終了</label>`
-        : `<div class="muted">ミスの上限：<b>${missLimit()?missLimit()+'回':'なし'}</b>　1位のゴールから <b>${fmtSec(endAfterMs()/1000)}</b> で終了</div>`}
+        : `<div class="muted">ミスの上限：<b>${fmtMiss(missLimit())}</b>　1位のゴールから <b>${fmtSec(endAfterMs()/1000)}</b> で終了</div>`}
       </div>
       <div class="card-ui">
         <b>参加者 ${mems.length}/${MAX_PLAYERS}</b>
@@ -955,6 +992,7 @@ const RB=(function(){
       <div class="card-ui">
         <b>ルームに入る</b>
         <div class="muted">分野と範囲はルームを作った人が決めます</div>
+        <div class="rb-openrooms" id="rbOpenRooms"></div>
         <input class="rb-codein" id="rbCode" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4桁のコード">
         <button class="bigbtn" id="rbJoin">参加する</button>
       </div>
@@ -963,6 +1001,7 @@ const RB=(function(){
     const err=document.getElementById('rbErr');
     const busy=(on)=>panel.querySelectorAll('.bigbtn').forEach(b=>b.disabled=on);
     const run=(p)=>{ err.textContent=''; busy(true); p.catch(e=>{ busy(false); err.textContent=(e&&e.message)||'通信できませんでした'; console.warn('[RB]',e); }); };
+    watchRoomsOverview(document.getElementById('rbOpenRooms'),run);
     const sel=document.getElementById('rbGenre'), createBtn=document.getElementById('rbCreate');
     // 分野を選ぶと範囲の一覧を入れ替える（前回その分野で選んだ範囲を最初に選ぶ）
     const drawScopes=()=>{
