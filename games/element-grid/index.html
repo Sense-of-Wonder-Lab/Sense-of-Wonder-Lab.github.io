@@ -1,810 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
 <meta charset="UTF-8">
-<title>元素グリッドEX</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#8b5cf6">
+<title>元素グリッドEX｜原子番号の順にタップする元素記号タイムアタック（無料）</title>
+<meta name="description" content="マスに並んだ元素記号を、原子番号の小さい順（H→He→Li…）にタップしていくタイムアタックゲーム。Easy・Normal・Hardの3レベルで水素からマンガンまで。全国ランキングつき。登録なしで1回遊べます。化学基礎の元素記号の暗記に。">
+<link rel="canonical" href="https://sense-of-wonder-lab.github.io/games/element-grid/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="元素グリッドEX｜元素記号タイムアタック">
+<meta property="og:description" content="元素記号を原子番号の小さい順にタップ！全国ランキングつきの無料ゲーム。">
+<meta property="og:url" content="https://sense-of-wonder-lab.github.io/games/element-grid/">
+<meta property="og:image" content="https://sense-of-wonder-lab.github.io/images/thumb-elementgrid.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('swTheme')||'default');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:ital,wght@0,600;0,800;1,800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-  :root{
-    --bg:#12181a;
-    --bg-deep:#0b0f10;
-    --panel:#1a2224;
-    --panel-2:#212b2d;
-    --line:#2c3739;
-    --ink:#eef3f1;
-    --ink-dim:#93a4a2;
-    --accent:#4fd8c4;
-    --accent-ink:#08201c;
-    --danger:#ff6b6b;
-    --good:#7be08a;
-
-    --c-metal:#ff9457;
-    --c-nonmetal:#4fd8c4;
-
-    --font-display:'Big Shoulders', 'Zen Kaku Gothic New', sans-serif;
-    --font-body:'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif;
-    --font-mono:'JetBrains Mono', ui-monospace, monospace;
-  }
-
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--ink);
-    font-family:var(--font-body);
-    -webkit-tap-highlight-color:transparent;
-    overscroll-behavior:none;
-  }
-
-  #stage{
-    position:relative;
-    height:100vh;
-    height:100dvh;
-    min-height:560px;
-    max-width:560px;
-    margin:0 auto;
-    display:flex;
-    flex-direction:column;
-    background:
-      radial-gradient(ellipse at 18% -10%, rgba(79,216,196,0.10), transparent 55%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 28px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 28px),
-      var(--bg);
-    overflow:hidden;
-  }
-
-  /* ---------- shared ---------- */
-  .screen{
-    position:absolute; inset:0;
-    display:flex; flex-direction:column;
-    padding:20px 18px calc(20px + env(safe-area-inset-bottom));
-  }
-  .eyebrow{
-    font-family:var(--font-mono);
-    font-size:11px;
-    letter-spacing:0.16em;
-    color:var(--accent);
-    text-transform:uppercase;
-  }
-  .stencil{
-    font-family:var(--font-display);
-    font-weight:800;
-    letter-spacing:0.02em;
-    text-wrap:balance;
-  }
-  button{ font-family:inherit; }
-
-  /* ---------- MENU ---------- */
-  #menu{ justify-content:center; gap:0; overflow-y:auto; }
-  .menu-head{ padding-top:10px; flex-shrink:0; }
-  .menu-title{
-    font-size:52px;
-    line-height:0.92;
-    margin:6px 0 4px;
-    color:var(--ink);
-    -webkit-text-stroke:0.5px rgba(79,216,196,0.35);
-  }
-  .menu-sub{
-    font-family:var(--font-mono);
-    font-size:12px;
-    color:var(--ink-dim);
-    letter-spacing:0.08em;
-  }
-
-  .rule-card{
-    margin-top:16px;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:14px 16px;
-    font-size:13px;
-    line-height:1.7;
-    color:var(--ink-dim);
-    flex-shrink:0;
-  }
-  .rule-card b{ color:var(--ink); font-weight:700; }
-
-  .level-list{
-    margin-top:16px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    flex-shrink:0;
-  }
-  .level-card{
-    position:relative;
-    text-align:left;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:14px 18px;
-    color:var(--ink);
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    transition:border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
-  }
-  .level-card:active{ transform:scale(0.98); background:var(--panel-2); }
-  .level-card .lc-name{
-    font-family:var(--font-display);
-    font-weight:800;
-    font-size:24px;
-    letter-spacing:0.02em;
-  }
-  .level-card .lc-grid{
-    font-family:var(--font-mono);
-    font-size:10px;
-    color:var(--ink-dim);
-    letter-spacing:0.06em;
-    margin-left:8px;
-  }
-  .level-card .lc-range{
-    font-family:var(--font-mono);
-    font-size:11px;
-    color:var(--ink-dim);
-    margin-top:2px;
-    letter-spacing:0.04em;
-  }
-  .level-card.lv-basic{ border-color:rgba(79,216,196,0.35); }
-  .level-card.lv-mid{ border-color:rgba(155,126,222,0.35); }
-  .level-card.lv-advanced{ border-color:rgba(232,93,158,0.35); }
-  .lc-best{
-    text-align:right;
-    font-family:var(--font-mono);
-    font-size:12px;
-    color:var(--ink-dim);
-    flex-shrink:0;
-  }
-  .lc-best .lc-best-val{
-    display:block;
-    font-size:17px;
-    color:var(--accent);
-    font-weight:700;
-  }
-  .level-card.lv-mid .lc-best-val{ color:#9b7ede; }
-  .level-card.lv-advanced .lc-best-val{ color:#e85d9e; }
-
-  .legend{
-    margin-top:18px;
-    padding-top:16px;
-    border-top:1px solid var(--line);
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px 14px;
-    flex-shrink:0;
-  }
-  .legend-item{
-    display:flex; align-items:center; gap:6px;
-    font-size:11px; color:var(--ink-dim);
-    font-family:var(--font-mono);
-  }
-  .legend-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-
-  /* ---------- PLAY ---------- */
-  #play{ display:none; padding:14px 14px calc(10px + env(safe-area-inset-bottom)); }
-  #play.active{ display:flex; }
-
-  .hud{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:0 2px 12px;
-    flex-shrink:0;
-  }
-  .hud-quit{
-    width:34px; height:34px;
-    border-radius:9px;
-    border:1px solid var(--line);
-    background:var(--panel);
-    color:var(--ink-dim);
-    font-size:16px;
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink:0;
-  }
-  .hud-mid{ flex:1; min-width:0; }
-  .hud-timer{
-    font-family:var(--font-mono);
-    font-weight:700;
-    font-size:22px;
-    color:var(--ink);
-    font-variant-numeric:tabular-nums;
-    line-height:1;
-  }
-  .hud-progress-track{
-    margin-top:6px;
-    height:5px;
-    border-radius:3px;
-    background:var(--panel-2);
-    overflow:hidden;
-  }
-  .hud-progress-fill{
-    height:100%;
-    width:0%;
-    background:var(--accent);
-    border-radius:3px;
-    transition:width 0.25s ease;
-  }
-  .hud-miss{
-    font-family:var(--font-mono);
-    font-size:12px;
-    color:var(--danger);
-    text-align:right;
-    flex-shrink:0;
-    min-width:44px;
-  }
-  .hud-miss b{ font-size:18px; display:block; line-height:1; }
-
-  .target-pill{
-    flex-shrink:0;
-    display:flex;
-    align-items:center;
-    gap:14px;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:10px 16px;
-    margin-bottom:12px;
-  }
-  .target-label{
-    font-family:var(--font-mono);
-    font-size:10px;
-    letter-spacing:0.14em;
-    color:var(--ink-dim);
-    text-transform:uppercase;
-  }
-  .target-symbol{
-    font-family:var(--font-display);
-    font-weight:800;
-    font-size:34px;
-    line-height:1;
-    min-width:1.6ch;
-  }
-  .target-name{
-    font-size:14px;
-    color:var(--ink-dim);
-    margin-top:2px;
-  }
-  .target-z{
-    margin-left:auto;
-    font-family:var(--font-mono);
-    font-size:11px;
-    color:var(--ink-dim);
-    text-align:right;
-  }
-  .target-z b{ display:block; font-size:20px; color:var(--ink); }
-
-  #field{
-    position:relative;
-    flex:1;
-    min-height:0;
-    border-radius:16px;
-    border:1px solid var(--line);
-    background:
-      radial-gradient(circle at 30% 20%, rgba(79,216,196,0.06), transparent 60%),
-      var(--bg-deep);
-    overflow:hidden;
-  }
-  #field.pre-start .tile{ opacity:0; }
-
-  .countdown-overlay{
-    position:absolute; inset:0;
-    display:none;
-    align-items:center; justify-content:center;
-    background:rgba(11,15,16,0.72);
-    backdrop-filter:blur(2px);
-    z-index:20;
-    pointer-events:none;
-  }
-  .countdown-overlay.active{ display:flex; }
-  .countdown-num{
-    font-size:110px;
-    color:var(--accent);
-    text-shadow:0 0 30px rgba(79,216,196,0.5);
-    animation:countpop .5s ease-out;
-  }
-  @keyframes countpop{
-    0%{ transform:scale(0.4); opacity:0; }
-    60%{ transform:scale(1.1); opacity:1; }
-    100%{ transform:scale(1); opacity:1; }
-  }
-
-  .tile{
-    position:absolute;
-    transform:translate(-50%,-50%);
-    width:60px; height:60px;
-    border-radius:14px;
-    border:1.5px solid var(--tile-color, var(--accent));
-    background:var(--panel);
-    color:var(--ink);
-    font-family:var(--font-display);
-    font-weight:800;
-    font-size:19px;
-    display:flex; align-items:center; justify-content:center;
-    box-shadow:0 0 0 0 transparent, inset 0 0 14px -4px var(--tile-color, var(--accent));
-    transition:transform 0.12s ease, opacity 0.25s ease, box-shadow 0.15s ease;
-    touch-action:manipulation;
-  }
-  .tile:active{ transform:translate(-50%,-50%) scale(0.9); }
-  .tile.correct{
-    animation:pop 0.4s ease forwards;
-    pointer-events:none;
-  }
-  .tile.wrong{
-    animation:shake 0.32s ease;
-    border-color:var(--danger);
-    box-shadow:inset 0 0 16px -3px var(--danger);
-  }
-  @keyframes pop{
-    0%{ transform:translate(-50%,-50%) scale(1); }
-    40%{ transform:translate(-50%,-50%) scale(1.2); box-shadow:0 0 22px 4px var(--tile-color, var(--accent)); }
-    100%{ transform:translate(-50%,-50%) scale(0.3); opacity:0; }
-  }
-  @keyframes shake{
-    0%,100%{ transform:translate(-50%,-50%); }
-    25%{ transform:translate(calc(-50% - 6px),-50%); }
-    75%{ transform:translate(calc(-50% + 6px),-50%); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .tile, .tile.correct, .tile.wrong{ animation:none; transition:opacity 0.2s ease; }
-    .tile.correct{ opacity:0; }
-  }
-
-  /* ---------- RESULT ---------- */
-  #result{ display:none; align-items:center; text-align:center; }
-  #result.active{ display:flex; }
-  .result-inner{ margin:auto; width:100%; }
-  .result-eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:0.14em; color:var(--ink-dim); }
-  .result-title{
-    font-family:var(--font-display);
-    font-weight:800;
-    font-size:44px;
-    margin:6px 0 18px;
-    color:var(--accent);
-  }
-  .result-time{
-    font-family:var(--font-mono);
-    font-size:52px;
-    font-weight:700;
-    font-variant-numeric:tabular-nums;
-    color:var(--ink);
-    line-height:1;
-  }
-  .result-record{
-    display:inline-block;
-    margin-top:10px;
-    font-family:var(--font-mono);
-    font-size:11px;
-    letter-spacing:0.1em;
-    color:var(--bg);
-    background:var(--good);
-    padding:4px 10px;
-    border-radius:999px;
-    font-weight:700;
-  }
-  .result-stats{
-    margin-top:22px;
-    display:flex;
-    justify-content:center;
-    gap:28px;
-  }
-  .result-stat-label{ font-size:11px; color:var(--ink-dim); font-family:var(--font-mono); }
-  .result-stat-val{ font-size:22px; font-weight:700; font-family:var(--font-mono); margin-top:2px; }
-
-  .result-actions{
-    margin-top:32px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-  .btn{
-    border:none;
-    border-radius:12px;
-    padding:14px;
-    font-family:var(--font-body);
-    font-weight:700;
-    font-size:15px;
-    cursor:pointer;
-  }
-  .btn-primary{ background:var(--accent); color:var(--accent-ink); }
-  .btn-primary:active{ background:#3fc2af; }
-  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); }
-  .btn-ghost:active{ background:var(--panel); }
+/* 元素グリッドEX（2026-11-02 化学基礎クエストから独立）。見た目は5クエストの共通の形（上の帯・カード・ボタン）に合わせる */
+:root{
+  --ink:#1e293b;
+  --bg:#fdf6ff;
+  --accent:#fb7185;
+  --accent-deep:#e11d48;
+  --blue:#8b5cf6;
+  --green:#16a34a;
+  --red:#dc2626;
+  --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  font-family:Century,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column;height:100dvh;
+}
+header{
+  background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:8px 12px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  flex:none;display:flex;align-items:center;gap:10px;
+}
+.questSelect{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;font-size:13px;padding:4px 6px;font-family:inherit}
+.questSelect option,.questSelect optgroup{color:var(--ink)}
+.themeBtn{flex:none;margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;display:flex;align-items:center;justify-content:center}
+header .accountBtnWrap{margin-left:0;position:relative}
+main{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;overflow-y:auto}
+.panel{min-height:100%;padding:16px 14px calc(20px + env(safe-area-inset-bottom));max-width:620px;margin:0 auto}
+.panel h1,.panel h2{font-size:17px;margin:6px 0 12px}
+.card-ui{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:12px}
+.bigbtn{display:block;width:100%;padding:14px;border-radius:14px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;margin-top:10px}
+.bigbtn.secondary{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.muted{color:#64748b;font-size:12px;line-height:1.6}
+.score-line{text-align:center;font-size:15px;font-weight:700;margin:6px 0 2px}
+.rankbig{font-size:64px;font-weight:900;text-align:center;line-height:1.1}
+.rank-S{color:#d97706}.rank-A{color:#dc2626}.rank-B{color:#2563eb}.rank-C{color:#16a34a}.rank-D{color:#64748b}
+.eg-howto{margin:8px 0 0 1.2em;font-size:12px;line-height:1.7;color:#64748b}
+.eg-trial{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f5f3ff;border:1px dashed var(--blue);font-size:12.5px;font-weight:700;line-height:1.6}
+/* ---- 元素グリッド ---- */
+#gridPanel{--eg-metal:#8b5cf6;--eg-nonmetal:#16a34a}
+.eg-levelgrid{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.eg-levelbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid #e2e8f0;background:#fff;font-family:inherit}
+.eg-levelbtn:active{border-color:var(--blue)}
+.eg-lv-name{font-size:16px;font-weight:800;color:var(--ink)}
+.eg-lv-sub{display:block;font-size:11.5px;color:#64748b;margin-top:2px}
+.eg-lv-best{text-align:right;font-size:11px;color:#64748b;flex:none}
+.eg-lv-best b{display:block;font-size:16px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+.eg-top-label{margin:12px 0 4px;font-size:13px;font-weight:800;color:var(--ink)}
+.eg-top-label span{margin-left:6px;font-size:11px;font-weight:500;color:#64748b}
+.eg-legend{display:flex;gap:14px;margin-top:12px;font-size:12px;color:#64748b}
+.eg-legend span{display:inline-flex;align-items:center;gap:5px}
+.eg-legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.eg-hud{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.eg-timer{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:var(--ink)}
+.eg-miss{font-size:12px;color:var(--red);font-weight:700}
+.eg-target{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:10px 14px;margin-bottom:12px}
+.eg-target-label{font-size:10.5px;color:#94a3b8}
+.eg-target-symbol{font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:30px;line-height:1;color:var(--blue);min-width:1.6ch}
+.eg-target-name{font-size:12px;color:#64748b}
+.eg-target-z{margin-left:auto;font-size:10.5px;color:#94a3b8;text-align:right}
+.eg-target-z b{display:block;font-size:18px;color:var(--ink);font-family:'JetBrains Mono',monospace}
+.eg-fieldwrap{position:relative;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:10px}
+.eg-field{display:grid;gap:8px}
+.eg-tile{aspect-ratio:1;border-radius:12px;border:2px solid var(--tile-color,var(--blue));background:#fff;color:var(--ink);font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,opacity .3s ease,box-shadow .15s ease;touch-action:manipulation}
+.eg-field.eg-cols-3 .eg-tile{font-size:24px}
+.eg-field.eg-pre-start .eg-tile{opacity:0}
+.eg-tile:active{transform:scale(.9)}
+.eg-tile.eg-correct{animation:eg-pop .4s ease forwards;pointer-events:none}
+.eg-tile.eg-wrong{animation:eg-shake .32s ease;border-color:var(--red)}
+@keyframes eg-pop{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(.3);opacity:0}}
+@keyframes eg-shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.eg-countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.85);border-radius:16px;z-index:5}
+.eg-countdown.active{display:flex}
+.eg-countdown-num{font-family:'Big Shoulders',sans-serif;font-weight:800;font-size:70px;color:var(--blue);animation:eg-countpop .5s ease-out}
+@keyframes eg-countpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+/* ダークモード */
+html[data-theme="navy"]{--ink:#eef3f1;--bg:#12181a;--card:#1a2224;--blue:#4fd8c4}
+html[data-theme="navy"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="navy"] header{background:linear-gradient(135deg,#0b0f10,#1a2224);border-bottom:1px solid rgba(79,216,196,.25)}
+html[data-theme="navy"] .questSelect{background:rgba(255,255,255,.08);border-color:rgba(79,216,196,.3)}
+html[data-theme="navy"] .muted,html[data-theme="navy"] .eg-howto{color:#93a4a2}
+html[data-theme="navy"] .card-ui{background:rgba(255,255,255,.05);border:1px solid rgba(79,216,196,.2);box-shadow:0 0 20px rgba(79,216,196,.08)}
+html[data-theme="navy"] .bigbtn{background:var(--blue);color:#08201c;box-shadow:0 0 20px rgba(79,216,196,.35)}
+html[data-theme="navy"] .bigbtn.secondary{background:rgba(255,255,255,.05);color:var(--blue);border-color:var(--blue)}
+html[data-theme="navy"] .eg-trial{background:rgba(79,216,196,.08)}
+html[data-theme="navy"] .eg-levelbtn{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16)}
+html[data-theme="navy"] .eg-levelbtn:active{border-color:var(--blue)}
+html[data-theme="navy"] .eg-target{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
+html[data-theme="navy"] .eg-fieldwrap{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.14)}
+html[data-theme="navy"] .eg-tile{background:rgba(255,255,255,.05);color:var(--ink)}
+html[data-theme="navy"] .eg-countdown{background:rgba(10,15,16,.85)}
+/* PC・タブレット（幅700px以上） */
+@media (min-width:700px){
+  header{padding-left:20px;padding-right:20px}
+  .panel h1,.panel h2{font-size:22px}
+  .muted,.eg-howto{font-size:14px}
+  .bigbtn{font-size:17px;padding:16px}
+}
 </style>
+</head>
+<body>
 
-<div id="stage">
+<header>
+  <select class="questSelect" id="questSelect">
+    <option value="../aromatic-quest/index.html">芳香族クエスト</option>
+    <option value="../aliphatic-quest/index.html">脂肪族クエスト</option>
+    <option value="../inorganic-quest/index.html">無機化学クエスト</option>
+    <option value="../polymer-quest/index.html">高分子クエスト</option>
+    <option value="../chembasics-quest/index.html">化学基礎クエスト</option>
+    <option value="../battle/index.html">⚔️ オンライン対戦</option>
+    <optgroup label="息抜き">
+      <option value="index.html" selected>🔢 元素グリッドEX</option>
+    </optgroup>
+  </select>
+  <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
+  <span class="accountBtnWrap"><button class="accountBtn" id="accountBtn" title="アカウント">👤</button><span class="lb-notif-badge" id="notifBadge" style="display:none">0</span></span>
+</header>
 
-  <!-- MENU -->
-  <div id="menu" class="screen">
-    <div class="menu-head">
-      <div class="eyebrow">元素記号 早押しゲーム・グリッド版</div>
-      <h1 class="menu-title stencil">元素<br>グリッドEX</h1>
-      <div class="menu-sub">ELEMENT GRID EX — TAP IN ATOMIC ORDER</div>
-    </div>
+<main>
+  <div class="view" id="gridView"><div class="panel" id="gridPanel">
+    <h1>🔢 元素グリッドEX</h1>
+    <div class="card-ui"><div class="muted">マスに並んだ元素記号を、原子番号の小さい順にタップしていくタイムアタックです。</div></div>
+  </div></div>
+</main>
 
-    <div class="rule-card">
-      マスに並んだ元素記号を、<b>原子番号の小さい順</b>にタップしていくタイムアタック。レベルが上がるほどマスと元素の数が増える。
-    </div>
-
-    <div class="level-list">
-      <button class="level-card lv-basic" data-level="basic">
-        <span>
-          <span class="lc-name stencil">初級</span><span class="lc-grid">3×3</span>
-          <span class="lc-range">H → F ・ 9元素</span>
-        </span>
-        <span class="lc-best" data-best="basic">
-          BEST
-          <span class="lc-best-val">--:--.-</span>
-        </span>
-      </button>
-      <button class="level-card lv-mid" data-level="mid">
-        <span>
-          <span class="lc-name stencil">中級</span><span class="lc-grid">4×4</span>
-          <span class="lc-range">H → S ・ 16元素</span>
-        </span>
-        <span class="lc-best" data-best="mid">
-          BEST
-          <span class="lc-best-val">--:--.-</span>
-        </span>
-      </button>
-      <button class="level-card lv-advanced" data-level="advanced">
-        <span>
-          <span class="lc-name stencil">上級</span><span class="lc-grid">5×5</span>
-          <span class="lc-range">H → Mn ・ 25元素</span>
-        </span>
-        <span class="lc-best" data-best="advanced">
-          BEST
-          <span class="lc-best-val">--:--.-</span>
-        </span>
-      </button>
-    </div>
-
-    <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-metal)"></span>金属</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-nonmetal)"></span>非金属</span>
-    </div>
-  </div>
-
-  <!-- PLAY -->
-  <div id="play" class="screen">
-    <div class="hud">
-      <button class="hud-quit" id="quitBtn" aria-label="メニューに戻る">✕</button>
-      <div class="hud-mid">
-        <div class="hud-timer" id="timerDisp">00:00.0</div>
-        <div class="hud-progress-track"><div class="hud-progress-fill" id="progressFill"></div></div>
-      </div>
-      <div class="hud-miss">MISS<b id="missCount">0</b></div>
-    </div>
-
-    <div class="target-pill" id="targetPill">
-      <div>
-        <div class="target-label">次にタップ</div>
-        <div class="target-symbol" id="targetSymbol">H</div>
-        <div class="target-name" id="targetName">水素</div>
-      </div>
-      <div class="target-z"><span style="font-family:var(--font-body)">原子番号</span><b id="targetZ">1</b></div>
-    </div>
-
-    <div id="field"></div>
-
-    <div class="countdown-overlay" id="countdownOverlay">
-      <div class="countdown-num stencil" id="countdownNum">3</div>
-    </div>
-  </div>
-
-  <!-- RESULT -->
-  <div id="result" class="screen">
-    <div class="result-inner">
-      <div class="result-eyebrow">CLEAR</div>
-      <div class="result-title stencil" id="resultLevelName">初級クリア!</div>
-      <div class="result-time" id="resultTime">00:00.0</div>
-      <div id="resultRecordBadge" style="display:none;" class="result-record">NEW RECORD</div>
-      <div class="result-stats">
-        <div>
-          <div class="result-stat-label">MISS</div>
-          <div class="result-stat-val" id="resultMiss">0</div>
-        </div>
-        <div>
-          <div class="result-stat-label">BEST</div>
-          <div class="result-stat-val" id="resultBest">--:--.-</div>
-        </div>
-      </div>
-      <div class="result-actions">
-        <button class="btn btn-primary" id="retryBtn">もう一度</button>
-        <button class="btn btn-ghost" id="backBtn">レベル選択に戻る</button>
-      </div>
-    </div>
-  </div>
-
-</div>
-
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../shared/leaderboard.js?v=43"></script>
 <script>
-(function(){
-  var ELEMENTS = [
-    {s:'H',  n:'水素',       z:1,  cat:'nonmetal'},
-    {s:'He', n:'ヘリウム',    z:2,  cat:'nonmetal'},
-    {s:'Li', n:'リチウム',    z:3,  cat:'metal'},
-    {s:'Be', n:'ベリリウム',  z:4,  cat:'metal'},
-    {s:'B',  n:'ホウ素',     z:5,  cat:'nonmetal'},
-    {s:'C',  n:'炭素',       z:6,  cat:'nonmetal'},
-    {s:'N',  n:'窒素',       z:7,  cat:'nonmetal'},
-    {s:'O',  n:'酸素',       z:8,  cat:'nonmetal'},
-    {s:'F',  n:'フッ素',     z:9,  cat:'nonmetal'},
-    {s:'Ne', n:'ネオン',     z:10, cat:'nonmetal'},
-    {s:'Na', n:'ナトリウム',  z:11, cat:'metal'},
-    {s:'Mg', n:'マグネシウム',z:12, cat:'metal'},
-    {s:'Al', n:'アルミニウム',z:13, cat:'metal'},
-    {s:'Si', n:'ケイ素',     z:14, cat:'nonmetal'},
-    {s:'P',  n:'リン',       z:15, cat:'nonmetal'},
-    {s:'S',  n:'硫黄',       z:16, cat:'nonmetal'},
-    {s:'Cl', n:'塩素',       z:17, cat:'nonmetal'},
-    {s:'Ar', n:'アルゴン',    z:18, cat:'nonmetal'},
-    {s:'K',  n:'カリウム',    z:19, cat:'metal'},
-    {s:'Ca', n:'カルシウム',  z:20, cat:'metal'},
-    {s:'Sc', n:'スカンジウム',z:21, cat:'metal'},
-    {s:'Ti', n:'チタン',     z:22, cat:'metal'},
-    {s:'V',  n:'バナジウム',  z:23, cat:'metal'},
-    {s:'Cr', n:'クロム',     z:24, cat:'metal'},
-    {s:'Mn', n:'マンガン',    z:25, cat:'metal'}
-  ];
+'use strict';
+// gameId・ランキングの種類（gridBasic など）は化学基礎クエストの中にあったときと同じ（全国ランキングをそのまま引き継ぐため）
+LB.init('chembasics');
+document.getElementById('accountBtn').onclick=()=>LB.openAccountModal();
+document.getElementById('themeBtn').onclick=()=>{
+  const next = document.documentElement.getAttribute('data-theme')==='navy' ? 'default' : 'navy';
+  localStorage.setItem('swTheme', next);
+  document.documentElement.setAttribute('data-theme', next);
+};
+LB.onAuth(u=>{
+  const btn = document.getElementById('accountBtn');
+  if(u && u.avatar) btn.innerHTML = `<img src="${u.avatar}">`;
+  else if(u) btn.textContent = (u.nickname||'?')[0];
+  else btn.textContent = '👤';
+});
+LB.onMessages(count=>{
+  const b = document.getElementById('notifBadge');
+  b.textContent = count>9?'9+':count;
+  b.style.display = count>0?'':'none';
+});
+// 遊んでいる途中でほかのクエストへ移るときは確認を出す
+document.getElementById('questSelect').addEventListener('change',e=>{
+  const to=e.target.value;
+  if(to==='index.html') return;
+  if(gridState&&!gridState.locked&&!confirm('元素グリッドを終了しますか？記録は保存されません。')){ e.target.value='index.html'; return; }
+  location.href=to;
+});
+window.addEventListener('pageshow',()=>{ document.getElementById('questSelect').value='index.html'; });
 
-  var LEVELS = {
-    basic:    { label:'初級', cols:3, rows:3, list: ELEMENTS.slice(0,9),  storeKey:'elementGridEx_best_basic' },
-    mid:      { label:'中級', cols:4, rows:4, list: ELEMENTS.slice(0,16), storeKey:'elementGridEx_best_mid' },
-    advanced: { label:'上級', cols:5, rows:5, list: ELEMENTS.slice(0,25), storeKey:'elementGridEx_best_advanced' }
-  };
-
-  var CAT_VAR = {
-    metal:'--c-metal', nonmetal:'--c-nonmetal'
-  };
-
-  var $ = function(id){ return document.getElementById(id); };
-  var menu = $('menu'), playScreen = $('play'), resultScreen = $('result');
-  var field = $('field');
-  var stageEl = $('stage');
-
-  // Some in-app WebViews miscompute 100dvh (report a much larger value than
-  // the real visible viewport). Force the actual pixel height via JS so the
-  // stage never grows taller than what's on screen.
-  function fixStageHeight(){
-    var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    stageEl.style.height = Math.max(h, 1) + 'px';
-    if(state) layoutTiles();
-  }
-  window.addEventListener('load', fixStageHeight);
-  window.addEventListener('resize', fixStageHeight);
-  window.addEventListener('orientationchange', fixStageHeight);
-  if(window.visualViewport) window.visualViewport.addEventListener('resize', fixStageHeight);
-  fixStageHeight();
-
-  var state = null; // active game state
-  var rafId = null;
-
-  function fmtTime(ms){
-    var totalMs = Math.max(0, ms);
-    var m = Math.floor(totalMs/60000);
-    var s = Math.floor((totalMs%60000)/1000);
-    var t = Math.floor(totalMs%1000);
-    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s+'.'+(t<100?(t<10?'00':'0'):'')+t;
-  }
-
-  function getBest(key){
-    try{
-      var v = localStorage.getItem(key);
-      return v ? parseFloat(v) : null;
-    }catch(e){ return null; }
-  }
-  function setBest(key, ms){
-    try{ localStorage.setItem(key, String(ms)); }catch(e){}
-  }
-
-  function refreshMenuBests(){
-    Object.keys(LEVELS).forEach(function(k){
-      var best = getBest(LEVELS[k].storeKey);
-      var el = document.querySelector('.lc-best[data-best="'+k+'"] .lc-best-val');
-      el.textContent = best ? fmtTime(best) : '--:--.-';
-    });
-  }
-
-  function shuffle(arr){
-    var a = arr.slice();
-    for(var i=a.length-1;i>0;i--){
-      var j = Math.floor(Math.random()*(i+1));
-      var tmp = a[i]; a[i]=a[j]; a[j]=tmp;
-    }
-    return a;
-  }
-
-  // Fixed cols x rows grid layout sized to the level: cells are always square
-  // (min of the width- and height-derived cell size), and the resulting grid
-  // is centered in the field so rows never stretch out with empty gaps.
-  function layoutTiles(){
-    if(!state) return;
-    var rect = field.getBoundingClientRect();
-    var n = state.tiles.length;
-    if(n === 0 || rect.width === 0) return;
-    var cols = state.levelDef.cols, rows = state.levelDef.rows;
-
-    var pad = 10;
-    var innerW = rect.width - pad*2, innerH = rect.height - pad*2;
-    var cell = Math.min(innerW / cols, innerH / rows);
-    var gridW = cell * cols, gridH = cell * rows;
-    var offX = pad + (innerW - gridW) / 2;
-    var offY = pad + (innerH - gridH) / 2;
-    var size = Math.max(30, cell - 10);
-
-    state.tiles.forEach(function(tileObj, i){
-      if(tileObj.done) return;
-      var idx = state.cellAssign[i];
-      var cx = idx % cols, cy = Math.floor(idx / cols);
-      var x = offX + cx*cell + cell/2;
-      var y = offY + cy*cell + cell/2;
-      tileObj.el.style.left = x + 'px';
-      tileObj.el.style.top = y + 'px';
-      tileObj.el.style.width = size + 'px';
-      tileObj.el.style.height = size + 'px';
-      tileObj.el.style.fontSize = Math.max(12, size*0.32) + 'px';
-    });
-  }
-
-  function updateTarget(){
-    var levelDef = state.levelDef;
-    var idx = state.currentIndex;
-    if(idx >= levelDef.list.length) return;
-    var el = levelDef.list[idx];
-    $('targetSymbol').textContent = el.s;
-    $('targetSymbol').style.color = 'var(' + CAT_VAR[el.cat] + ')';
-    $('targetName').textContent = el.n;
-    $('targetZ').textContent = el.z;
-    $('progressFill').style.width = (idx / levelDef.list.length * 100) + '%';
-  }
-
-  function startLevel(levelKey){
-    var levelDef = LEVELS[levelKey];
-    field.innerHTML = '';
-    state = {
-      levelKey: levelKey,
-      levelDef: levelDef,
-      currentIndex: 0,
-      misses: 0,
-      startTime: null,
-      tiles: [],
-      cellAssign: shuffle(Array.from({length: levelDef.cols*levelDef.rows}, function(_,i){ return i; })).slice(0, levelDef.list.length)
-    };
-
-    var order = shuffle(levelDef.list);
-    order.forEach(function(el){
-      var d = document.createElement('div');
-      d.className = 'tile';
-      d.textContent = el.s;
-      d.style.setProperty('--tile-color', 'var(' + CAT_VAR[el.cat] + ')');
-      d.dataset.z = el.z;
-      d.addEventListener('pointerdown', function(ev){ onTileTap(el, d, ev); }, {passive:true});
-      field.appendChild(d);
-      state.tiles.push({ el:d, z:el.z, done:false });
-    });
-
-    $('missCount').textContent = '0';
-    $('timerDisp').textContent = '00:00.0';
-    updateTarget();
-
-    menu.style.display = 'none';
-    resultScreen.classList.remove('active');
-    playScreen.classList.add('active');
-
-    state.locked = true;
-    field.classList.add('pre-start');
-    layoutTiles();
-    runCountdown();
-  }
-
-  function runCountdown(){
-    var st = state;
-    var overlay = $('countdownOverlay'), numEl = $('countdownNum');
-    var steps = ['3','2','1','START'];
-    var i = 0;
-    overlay.classList.add('active');
-    function showNext(){
-      if(state !== st) return;
-      numEl.textContent = steps[i];
-      numEl.style.animation = 'none';
-      void numEl.offsetWidth;
-      numEl.style.animation = '';
-      i++;
-      if(i < steps.length){
-        setTimeout(showNext, 600);
-      } else {
-        setTimeout(function(){
-          overlay.classList.remove('active');
-          if(state !== st) return;
-          field.classList.remove('pre-start');
-          st.locked = false;
-          st.startTime = performance.now();
-          tick();
-        }, 450);
-      }
-    }
-    showNext();
-  }
-
-  function tick(){
-    if(!state || !state.startTime) return;
-    var elapsed = performance.now() - state.startTime;
-    $('timerDisp').textContent = fmtTime(elapsed);
-    rafId = requestAnimationFrame(tick);
-  }
-
-  function onTileTap(el, tileEl, ev){
-    if(!state || state.locked || tileEl.classList.contains('correct')) return;
-    var expected = state.levelDef.list[state.currentIndex];
-    if(el.z === expected.z){
-      tileEl.classList.add('correct');
-      var rec = state.tiles.find(function(t){ return t.el === tileEl; });
-      if(rec) rec.done = true;
-      state.currentIndex++;
-      if(state.currentIndex >= state.levelDef.list.length){
-        finishLevel();
-      } else {
-        updateTarget();
-      }
-    } else {
-      tileEl.classList.remove('wrong');
-      void tileEl.offsetWidth;
-      tileEl.classList.add('wrong');
-      state.misses++;
-      $('missCount').textContent = state.misses;
-      if(navigator.vibrate){ try{ navigator.vibrate(60); }catch(e){} }
-      setTimeout(function(){ tileEl.classList.remove('wrong'); }, 320);
-    }
-  }
-
-  function finishLevel(){
-    if(rafId) cancelAnimationFrame(rafId);
-    var elapsed = performance.now() - state.startTime;
-    var key = state.levelDef.storeKey;
-    var prevBest = getBest(key);
-    var isRecord = !prevBest || elapsed < prevBest;
-    if(isRecord) setBest(key, elapsed);
-
-    $('resultLevelName').textContent = state.levelDef.label + 'クリア!';
-    $('resultTime').textContent = fmtTime(elapsed);
-    $('resultMiss').textContent = state.misses;
-    $('resultBest').textContent = fmtTime(isRecord ? elapsed : prevBest);
-    $('resultRecordBadge').style.display = isRecord ? 'inline-block' : 'none';
-
-    setTimeout(function(){
-      playScreen.classList.remove('active');
-      resultScreen.classList.add('active');
-    }, 260);
-  }
-
-  function backToMenu(){
-    if(rafId) cancelAnimationFrame(rafId);
-    state = null;
-    $('countdownOverlay').classList.remove('active');
-    playScreen.classList.remove('active');
-    resultScreen.classList.remove('active');
-    menu.style.display = 'flex';
-    refreshMenuBests();
-  }
-
-  document.querySelectorAll('.level-card').forEach(function(card){
-    card.addEventListener('click', function(){
-      startLevel(card.dataset.level);
-    });
+/* ================= 記録（自己ベスト） ================= */
+// 化学基礎クエストの中にあったときは chembasicsQuest1 の gridBestList に保存していた。初回だけそこから取り込む
+const SKEY='elementGridEx1', OLD_SKEY='chembasicsQuest1';
+let state={};
+try{ state=JSON.parse(localStorage.getItem(SKEY))||{}; }catch(e){ state={}; }
+function importOld(old){
+  if(!old||!old.gridBestList) return false;
+  if(!state.gridBestList) state.gridBestList={};
+  Object.keys(old.gridBestList).forEach(lv=>{
+    state.gridBestList[lv]=(state.gridBestList[lv]||[]).concat(old.gridBestList[lv]||[]);
   });
-  $('quitBtn').addEventListener('click', backToMenu);
-  $('backBtn').addEventListener('click', backToMenu);
-  $('retryBtn').addEventListener('click', function(){
-    var lvl = state ? state.levelKey : (resultScreen.dataset.lastLevel || 'basic');
-    startLevel(lvl);
-  });
+  return true;
+}
+function save(){ try{ localStorage.setItem(SKEY,JSON.stringify(state)); }catch(e){} LB.pushState(SKEY,state); }
+if(!state.oldImported){
+  try{ importOld(JSON.parse(localStorage.getItem(OLD_SKEY))); }catch(e){}
+  state.oldImported=true;
+  try{ localStorage.setItem(SKEY,JSON.stringify(state)); }catch(e){}
+}
+LB.attachStateSync(SKEY,()=>localStorage.getItem(SKEY));
 
-  window.addEventListener('resize', function(){
-    if(state) layoutTiles();
+/* ================= お試し（ログインなしは1回まで） ================= */
+const TRIAL_KEY='egGuestPlayed';
+function trialUsed(){ try{ return localStorage.getItem(TRIAL_KEY)==='1'; }catch(e){ return false; } }
+function useTrial(){ try{ localStorage.setItem(TRIAL_KEY,'1'); }catch(e){} }
+function canPlay(fn){
+  LB.whenAuthReady(()=>{
+    if(LB.isLoggedIn()||!trialUsed()){ fn(); return; }
+    LB.requireLogin(fn,'登録なしで遊べるのは1回までです。続きはログイン（無料）して遊んでね。全国ランキングにも参加できます。');
   });
+}
 
-  refreshMenuBests();
-})();
+/* ================= 元素グリッド(タイムアタック) ================= */
+const gridPanel=document.getElementById('gridPanel');
+let gridState=null, gridRafId=null;
+const GRID_ELEMENTS=[
+  {s:'H',  n:'水素',       z:1,  cat:'nonmetal'},
+  {s:'He', n:'ヘリウム',    z:2,  cat:'nonmetal'},
+  {s:'Li', n:'リチウム',    z:3,  cat:'metal'},
+  {s:'Be', n:'ベリリウム',  z:4,  cat:'metal'},
+  {s:'B',  n:'ホウ素',     z:5,  cat:'nonmetal'},
+  {s:'C',  n:'炭素',       z:6,  cat:'nonmetal'},
+  {s:'N',  n:'窒素',       z:7,  cat:'nonmetal'},
+  {s:'O',  n:'酸素',       z:8,  cat:'nonmetal'},
+  {s:'F',  n:'フッ素',     z:9,  cat:'nonmetal'},
+  {s:'Ne', n:'ネオン',     z:10, cat:'nonmetal'},
+  {s:'Na', n:'ナトリウム',  z:11, cat:'metal'},
+  {s:'Mg', n:'マグネシウム',z:12, cat:'metal'},
+  {s:'Al', n:'アルミニウム',z:13, cat:'metal'},
+  {s:'Si', n:'ケイ素',     z:14, cat:'nonmetal'},
+  {s:'P',  n:'リン',       z:15, cat:'nonmetal'},
+  {s:'S',  n:'硫黄',       z:16, cat:'nonmetal'},
+  {s:'Cl', n:'塩素',       z:17, cat:'nonmetal'},
+  {s:'Ar', n:'アルゴン',    z:18, cat:'nonmetal'},
+  {s:'K',  n:'カリウム',    z:19, cat:'metal'},
+  {s:'Ca', n:'カルシウム',  z:20, cat:'metal'},
+  {s:'Sc', n:'スカンジウム',z:21, cat:'metal'},
+  {s:'Ti', n:'チタン',     z:22, cat:'metal'},
+  {s:'V',  n:'バナジウム',  z:23, cat:'metal'},
+  {s:'Cr', n:'クロム',     z:24, cat:'metal'},
+  {s:'Mn', n:'マンガン',    z:25, cat:'metal'}
+];
+const GRID_LEVELS={
+  basic:   {label:'Easy', cols:3, rows:3, list:GRID_ELEMENTS.slice(0,9),  kind:'gridBasic',    bands:[6,9,13,18]},
+  mid:     {label:'Normal', cols:4, rows:4, list:GRID_ELEMENTS.slice(0,16), kind:'gridMid',      bands:[12,17,23,30]},
+  advanced:{label:'Hard', cols:5, rows:5, list:GRID_ELEMENTS.slice(0,25), kind:'gridAdvanced', bands:[20,28,38,50]}
+};
+// クラウドとのマージで同じ記録が重なることがあるので、読むたびに並べ直して上位3つにする
+function gridBestList(lv){
+  if(!state.gridBestList)state.gridBestList={};
+  const seen=new Set();
+  return (state.gridBestList[lv]||[]).filter(r=>r&&typeof r.sec==='number'&&!seen.has(r.sec)&&seen.add(r.sec))
+    .sort((a,b)=>a.sec-b.sec).slice(0,3);
+}
+function getGridBest(lv){
+  const list=gridBestList(lv);
+  return list.length?list[0].sec:null;
+}
+function addGridResult(lv,sec,rank){
+  const list=gridBestList(lv).slice();
+  list.push({sec,rank});
+  list.sort((a,b)=>a.sec-b.sec);
+  state.gridBestList[lv]=list.slice(0,3);
+  save();
+}
+function fmtGridTime(sec){
+  sec=Math.max(0,sec||0);
+  const m=Math.floor(sec/60), s=sec-m*60;
+  return (m<10?'0':'')+m+':'+(s<10?'0':'')+s.toFixed(3);
+}
+function gridRank(lv,sec){
+  const b=GRID_LEVELS[lv].bands;
+  if(sec<=b[0])return 'S';
+  if(sec<=b[1])return 'A';
+  if(sec<=b[2])return 'B';
+  if(sec<=b[3])return 'C';
+  return 'D';
+}
+function shuffleGrid(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t;}
+  return a;
+}
+function refreshGridLbBox(kind){
+  const box=document.getElementById('lbBox');
+  if(!box)return;
+  if(LB.currentUser()){
+    box.innerHTML=`<b>🌏 全国ランキング TOP10</b><div class="lb-loading">読み込み中...</div>`;
+    LB.fetchTop(kind,10).then(list=>{
+      const b=document.getElementById('lbBox');
+      if(b)b.innerHTML=`<b>🌏 全国ランキング TOP10</b>`+LB.renderBoardHTML(list,LB.currentUser().uid,kind);
+    });
+  }else{
+    box.innerHTML=`<b>🌏 全国ランキング</b><div class="lb-cta">ログイン（無料）すると、続けて遊べて、他の人と全国ランキングで競えます。</div><button class="bigbtn secondary" id="lbRegisterBtnGrid" style="width:100%">ログインする</button>`;
+    document.getElementById('lbRegisterBtnGrid').onclick=()=>LB.openAccountModal();
+  }
+}
+function renderGridHome(){
+  gridState=null;
+  const rows=Object.keys(GRID_LEVELS).map(lv=>{
+    const def=GRID_LEVELS[lv], best=getGridBest(lv);
+    return `<button class="eg-levelbtn" data-lv="${lv}">
+      <span><span class="eg-lv-name">${def.label}</span><span class="eg-lv-sub">${def.cols}×${def.rows}・${def.list.length}元素</span></span>
+      <span class="eg-lv-best">BEST<b>${best?fmtGridTime(best):'--:--.-'}</b></span>
+    </button>`;
+  }).join('');
+  const guest=!LB.isLoggedIn();
+  gridPanel.innerHTML=`
+    <h1>🔢 元素グリッドEX</h1>
+    <div class="card-ui">
+      <div class="muted">マスに並んだ元素記号を、<b>原子番号の小さい順</b>（H → He → Li → …）にタップしていくタイムアタック。レベルが上がるほどマスと元素の数が増えるよ。</div>
+      <ul class="eg-howto">
+        <li>Easy は水素〜フッ素の9元素、Normal はネオン〜硫黄までの16元素、Hard はマンガンまでの25元素</li>
+        <li>まちがえるとMISSが増えるよ。タイムが速いほどランクが上がる（S〜D）</li>
+      </ul>
+      <div class="eg-levelgrid">${rows}</div>
+      <div class="eg-legend"><span><i style="background:var(--eg-metal)"></i>金属</span><span><i style="background:var(--eg-nonmetal)"></i>非金属</span></div>
+      ${guest?`<div class="eg-trial">${trialUsed()?'🔒 お試しの1回は終わりました。続きはログイン（無料）して遊んでね。':'🎁 登録なしで1回遊べます。'}</div>`:''}
+    </div>
+    <div class="card-ui" id="egTopBox"><b>🌏 全国ランキング 各モード1位</b><div class="lb-loading">読み込み中...</div></div>`;
+  gridPanel.querySelectorAll('.eg-levelbtn').forEach(btn=>{
+    btn.addEventListener('click',()=>canPlay(()=>startGridLevel(btn.dataset.lv)));
+  });
+  refreshGridTopBox();
+}
+function refreshGridTopBox(){
+  const lvs=Object.keys(GRID_LEVELS);
+  Promise.all(lvs.map(lv=>LB.fetchTop(GRID_LEVELS[lv].kind,1))).then(results=>{
+    const box=document.getElementById('egTopBox');
+    if(!box)return;
+    const uid=LB.currentUser()?LB.currentUser().uid:null;
+    box.innerHTML=`<b>🌏 全国ランキング 各モード1位</b>`+lvs.map((lv,i)=>{
+      const def=GRID_LEVELS[lv];
+      return `<div class="eg-top-label">${def.label}<span>${def.cols}×${def.rows}</span></div>`+LB.renderBoardHTML(results[i],uid,def.kind);
+    }).join('');
+  });
+}
+function stopGridLevel(){
+  if(gridRafId){cancelAnimationFrame(gridRafId); gridRafId=null;}
+  gridState=null;
+}
+function startGridLevel(lv){
+  const def=GRID_LEVELS[lv];
+  gridState={lv,def,order:shuffleGrid(def.list),currentIndex:0,misses:0,startTime:null,locked:true};
+  gridPanel.innerHTML=`
+    <div class="eg-hud">
+      <div class="eg-timer" id="egTimer">00:00.0</div>
+      <div class="eg-miss">MISS <b id="egMiss">0</b></div>
+    </div>
+    <div class="eg-target">
+      <div><div class="eg-target-label">次にタップ</div><div class="eg-target-symbol" id="egSymbol">-</div><div class="eg-target-name" id="egName"></div></div>
+      <div class="eg-target-z">原子番号<b id="egZ">-</b></div>
+    </div>
+    <div class="eg-fieldwrap">
+      <div class="eg-field eg-pre-start eg-cols-${def.cols}" id="egField" style="grid-template-columns:repeat(${def.cols},1fr)"></div>
+      <div class="eg-countdown active" id="egCountdown"><div class="eg-countdown-num" id="egCountNum">3</div></div>
+    </div>
+    <button class="bigbtn secondary" id="egQuit" style="margin-top:12px">やめる</button>`;
+  const field=document.getElementById('egField');
+  gridState.order.forEach(el=>{
+    const d=document.createElement('button');
+    d.className='eg-tile';
+    d.textContent=el.s;
+    d.style.setProperty('--tile-color', el.cat==='metal'?'var(--eg-metal)':'var(--eg-nonmetal)');
+    d.addEventListener('click',()=>onGridTileTap(el,d));
+    field.appendChild(d);
+  });
+  updateGridTarget();
+  document.getElementById('egQuit').addEventListener('click',()=>{
+    stopGridLevel();
+    renderGridHome();
+  });
+  runGridCountdown();
+}
+function updateGridTarget(){
+  const def=gridState.def, idx=gridState.currentIndex;
+  if(idx>=def.list.length)return;
+  const el=def.list[idx];
+  document.getElementById('egSymbol').textContent=el.s;
+  document.getElementById('egName').textContent=el.n;
+  document.getElementById('egZ').textContent=el.z;
+}
+function runGridCountdown(){
+  const st=gridState;
+  const overlay=document.getElementById('egCountdown'), numEl=document.getElementById('egCountNum');
+  const steps=['3','2','1','START'];
+  let i=0;
+  function showNext(){
+    if(gridState!==st)return;
+    numEl.textContent=steps[i];
+    numEl.style.animation='none'; void numEl.offsetWidth; numEl.style.animation='';
+    i++;
+    if(i<steps.length){ setTimeout(showNext,600); }
+    else{
+      setTimeout(()=>{
+        overlay.classList.remove('active');
+        if(gridState!==st)return;
+        const f=document.getElementById('egField'); if(f)f.classList.remove('eg-pre-start');
+        st.locked=false;
+        st.startTime=performance.now();
+        gridTick();
+      },450);
+    }
+  }
+  showNext();
+}
+function gridTick(){
+  if(!gridState||!gridState.startTime)return;
+  const elapsed=(performance.now()-gridState.startTime)/1000;
+  const timerEl=document.getElementById('egTimer');
+  if(timerEl)timerEl.textContent=fmtGridTime(elapsed);
+  gridRafId=requestAnimationFrame(gridTick);
+}
+function onGridTileTap(el,tileEl){
+  if(!gridState||gridState.locked||tileEl.classList.contains('eg-correct'))return;
+  const expected=gridState.def.list[gridState.currentIndex];
+  if(el.z===expected.z){
+    tileEl.classList.add('eg-correct');
+    gridState.currentIndex++;
+    if(gridState.currentIndex>=gridState.def.list.length){ finishGridLevel(); }
+    else{ updateGridTarget(); }
+  }else{
+    tileEl.classList.remove('eg-wrong'); void tileEl.offsetWidth; tileEl.classList.add('eg-wrong');
+    gridState.misses++;
+    const missEl=document.getElementById('egMiss'); if(missEl)missEl.textContent=gridState.misses;
+    if(navigator.vibrate){try{navigator.vibrate(60);}catch(e){}}
+    setTimeout(()=>tileEl.classList.remove('eg-wrong'),320);
+  }
+}
+function finishGridLevel(){
+  if(gridRafId){cancelAnimationFrame(gridRafId); gridRafId=null;}
+  const st=gridState;
+  const elapsed=(performance.now()-st.startTime)/1000;
+  const rank=gridRank(st.lv,elapsed);
+  const prevBest=getGridBest(st.lv);
+  const isRecord=!prevBest||elapsed<prevBest;
+  const roundedSec=Math.round(elapsed*1000)/1000;
+  addGridResult(st.lv,roundedSec,rank);
+  const kind=st.def.kind;
+  const guest=!LB.currentUser();
+  if(guest) useTrial();
+  const lbSubmit=guest?Promise.resolve():LB.submitScore(kind, st.def.list.length, roundedSec, rank);
+  const selfBestList=gridBestList(st.lv);
+  gridPanel.innerHTML=`
+    <h2>結果発表</h2>
+    <div class="card-ui" style="text-align:center">
+      <div class="score-line" style="font-size:17px">${st.def.label}クリア!</div>
+      <div class="rankbig rank-${rank}">${rank}</div>
+      <div class="score-line" style="font-family:'JetBrains Mono',monospace">${fmtGridTime(elapsed)}${isRecord?' 🆕':''}</div>
+      <div class="muted">MISS ${st.misses}回 ・ BEST ${fmtGridTime(isRecord?elapsed:prevBest)}</div>
+      ${guest?`<div class="eg-trial" style="text-align:left">🎉 お試しはここまで！ログイン（無料）すると、続けて遊べて全国ランキングにも参加できます。</div>`:''}
+      <button class="bigbtn" id="egRetry">もう一度</button>
+      <button class="bigbtn secondary" id="egBack">レベル選択に戻る</button>
+    </div>
+    <div class="card-ui" id="lbBox"></div>
+    <div class="card-ui"><b>🏆 自己ベストTOP3</b>${LB.renderSelfBestHTML(selfBestList,kind)}</div>`;
+  document.getElementById('egRetry').addEventListener('click',()=>canPlay(()=>startGridLevel(st.lv)));
+  document.getElementById('egBack').addEventListener('click',renderGridHome);
+  refreshGridLbBox(kind);
+  lbSubmit.then(()=>refreshGridLbBox(kind));
+  gridState=null;
+}
+
+/* ================= 起動 ================= */
+renderGridHome();
+LB.onAuth(u=>{
+  if(!gridState) renderGridHome();  // ログインしたら「お試し」の案内を消す
+  // ログインしている人は、クラウドに残っている化学基礎クエストの記録も1回だけ取り込む
+  if(!u||state.cloudImported) return;
+  LB.pullState(OLD_SKEY).then(old=>{
+    importOld(old);
+    state.cloudImported=true;
+    save();
+    if(!gridState) renderGridHome();
+  });
+});
 </script>
+</body>
+</html>

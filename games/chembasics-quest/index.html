@@ -8,6 +8,8 @@
 <script>
 // オンライン対戦は独立したページ（games/battle/）になった（2026-10-30）。前のURL（#battle・#battle-aro・#intrude-1234）はそちらへ
 if(/^#(battle|intrude-)/.test(location.hash)) location.replace('../battle/index.html'+location.hash);
+// 元素グリッドEXも独立したページ（games/element-grid/）になった（2026-11-02）。前のURL（#grid）はそちらへ
+if(location.hash==='#grid') location.replace('../element-grid/index.html');
 document.documentElement.setAttribute('data-theme', localStorage.getItem('swTheme')||'default');
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -591,6 +593,7 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
     <option value="../polymer-quest/index.html">高分子クエスト</option>
     <option value="index.html" selected>化学基礎クエスト</option>
     <option value="../battle/index.html#basic">⚔️ オンライン対戦</option>
+    <optgroup label="息抜き"><option value="../element-grid/index.html">🔢 元素グリッドEX</option></optgroup>
   </select>
   <div class="title" id="hdrTitle" style="display:none"></div>
   <button class="themeBtn" id="themeBtn" title="テーマ切替">🎨</button>
@@ -608,7 +611,6 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
     <div class="panel" id="homePanel"></div>
   </div>
   <div class="view" id="view-challenge"><div class="panel" id="chalPanel"></div></div>
-  <div class="view" id="view-grid"><div class="panel" id="gridPanel"></div></div>
   <div class="view" id="view-runner"><div class="panel" id="runnerPanel"></div></div>
   <div class="view" id="view-weak"><div class="panel" id="weakPanel"></div></div>
 </main>
@@ -616,7 +618,6 @@ html[data-theme="navy"] .rn-review-item.is-wrong{background:rgba(255,111,111,.1)
 <nav>
   <button data-view="home" class="active"><span class="ico">🧠</span>暗記</button>
   <button data-view="challenge"><span class="ico"><svg viewBox="0 0 24 22" width="20" height="18" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pdGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe08a"/><stop offset="55%" stop-color="#f4b942"/><stop offset="100%" stop-color="#c8891f"/></linearGradient><linearGradient id="pdSilver" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f1f4f7"/><stop offset="55%" stop-color="#c3ccd6"/><stop offset="100%" stop-color="#8b96a3"/></linearGradient><linearGradient id="pdBronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e3a874"/><stop offset="55%" stop-color="#c2703d"/><stop offset="100%" stop-color="#8f4f28"/></linearGradient></defs><rect x="1" y="11" width="6" height="10" rx="1.2" fill="url(#pdSilver)"/><rect x="9" y="5" width="6" height="16" rx="1.2" fill="url(#pdGold)"/><rect x="17" y="14" width="6" height="7" rx="1.2" fill="url(#pdBronze)"/><text x="4" y="17" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">2</text><text x="12" y="11" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">1</text><text x="20" y="20" font-size="6.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">3</text></svg></span>チャレンジ</button>
-  <button data-view="grid"><span class="ico">🔢</span>元素グリッド</button>
   <button data-view="runner"><span class="ico">🏃</span>化学RUSH！</button>
   <button data-view="weak"><span class="ico">🎯</span>弱点特訓<span class="badge" id="weakBadge" style="display:none">0</span></button>
 </nav>
@@ -2658,6 +2659,7 @@ function nextDrillQ(){
 }
 
 /* ================= 元素グリッド(タイムアタック) ================= */
+// 2026-11-02 元素グリッドEXは独立したページ（games/element-grid/）になった。ここはもう呼ばれない（タブと画面は外した）
 const gridPanel=document.getElementById('gridPanel');
 let gridState=null, gridRafId=null;
 const runnerPanel=document.getElementById('runnerPanel');
@@ -3567,7 +3569,7 @@ function confirmDialog(message,onConfirm){
 }
 
 /* ================= ナビ・共通 ================= */
-const VIEW_TITLES={challenge:'チャレンジモード',grid:'🔢 元素グリッド',runner:'🏃 化学RUSH！',weak:'🎯 弱点特訓'};
+const VIEW_TITLES={challenge:'チャレンジモード',runner:'🏃 化学RUSH！',weak:'🎯 弱点特訓'};
 function switchView(view){
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -3577,7 +3579,6 @@ function switchView(view){
   else t.style.display='none';
   if(view==='home'&&!catDrill)renderHome();
   if(view==='challenge'&&(!chal||chal.over))renderChallengeHome();
-  if(view==='grid'&&!gridState)renderGridHome();
   if(view==='runner'&&!runnerState)renderRunnerHome();
   if(view==='weak'&&!drill)renderWeakHome();
   if(typeof syncQuestSelect==='function')syncQuestSelect();
@@ -3591,13 +3592,6 @@ function requestSwitch(target,after){
     if(activeView==='challenge'&&target!=='challenge'&&chal&&!chal.over){
       confirmDialog('チャレンジを終了しますか？記録は保存されません。',()=>{
         stopChalTimer(); chal.over=true; chal=null;
-        done();
-      });
-      return;
-    }
-    if(activeView==='grid'&&target!=='grid'&&gridState&&!gridState.locked){
-      confirmDialog('元素グリッドを終了しますか？記録は保存されません。',()=>{
-        stopGridLevel();
         done();
       });
       return;
@@ -3631,9 +3625,8 @@ refreshAnswerFxBtn();
 refreshAnswerAutoBtn();
 refreshExplainBtn();
 renderHome();
-// #battle・#intrude-1234 は <head> でオンライン対戦のページ（games/battle/）へ移している
+// #battle・#intrude-1234 は <head> でオンライン対戦のページ（games/battle/）へ、#grid は元素グリッドEXのページ（games/element-grid/）へ移している
 if(location.hash==='#rush'||location.hash==='#runner')LB.requireLogin(()=>switchView('runner'));
-else if(location.hash==='#grid')LB.requireLogin(()=>switchView('grid'));
 </script>
 </body>
 </html>
