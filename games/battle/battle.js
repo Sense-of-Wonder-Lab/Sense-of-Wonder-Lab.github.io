@@ -166,7 +166,8 @@ const RB=(function(){
     const html=t=>it.ci?`<img class="rb-cimg" src="${src(t)}" alt="構造式">`:t;
     const pic=it.img?`<img class="rb-qimg" src="${src(it.img)}" alt="構造式">`:'';
     const right=it.k.map(i=>html(it.c[i])).join(it.ci?'':'・');
-    return {id, field:fk, choice:true, genre:f.label+'｜'+deck.name, q:it.q, pic, multi:it.k.length>1, ci:!!it.ci,
+    const srcs=[it.img].concat(it.ci?it.c:[]).filter(Boolean).map(n=>f.img+encodeURIComponent(n));  // 先読みする画像
+    return {id, field:fk, choice:true, genre:f.label+'｜'+deck.name, q:it.q, pic, srcs, multi:it.k.length>1, ci:!!it.ci,
       choices:order.map(i=>({html:html(it.c[i]), ok:it.k.includes(i)})),
       // 振り返り用
       statement:`${pic}<div>${it.q}</div><div class="rb-cand">正解：<b>${right}</b></div>`,
@@ -587,6 +588,8 @@ const RB=(function(){
     r.localStart=resume?sess.localStart:Math.max(meta.startAt-offset,Date.now());
     saveSess(Object.assign(sess,{round:meta.round,localStart:r.localStart}));
     r.view='countdown';
+    // 最初の数問の構造式の画像はカウントダウン中に読んでおく
+    (meta.qs||[]).slice((resume&&sess.idx)|0).slice(0,PRELOAD).forEach(id=>preloadQ(Q(id)));
     clearInterval(r.countdown);
     const step=()=>{
       if(room!==r||r.view!=='countdown'){ clearInterval(r.countdown); return; }
@@ -728,12 +731,35 @@ const RB=(function(){
     bar.style.stroke= left>.5?'#06d6a0':left>.2?'#ffd166':'#ef476f';
   }
   function choiceHUD(){ if(st&&st.ce) st.ce.hud.textContent=hudText(); }
-  function choiceGoNext(){ if(!st) return; clearTimers(); st.idx++; choiceShow(); }
+  // 画像の先読み（次の切り替えで画像が遅れて出て画面がガタつかないように）。読んだ Image は持っておく
+  const PRELOAD=3, imgCache=new Map();
+  function preloadQ(q){
+    return Promise.all(((q&&q.srcs)||[]).map(src=>{
+      let p=imgCache.get(src);
+      if(!p){
+        const im=new Image(); im.src=src;
+        p=(im.decode?im.decode():new Promise((ok,ng)=>{ im.onload=ok; im.onerror=ng; })).catch(()=>{}).then(()=>im);
+        imgCache.set(src,p);
+      }
+      return p;
+    }));
+  }
+  // 次の問題の画像がまだなら少しだけ待ってから出す（制限時間は出してから数える）
+  function choiceGoNext(){
+    if(!st) return;
+    clearTimers(); st.idx++;
+    if(st.idx>=st.pool.length) st.idx=0;
+    const s0=st; let shown=false;
+    const go=()=>{ if(shown||st!==s0) return; shown=true; choiceShow(); };
+    preloadQ(st.pool[st.idx]).then(go);
+    st.autoAdvanceTimeout=setTimeout(go,1500);
+  }
   function choiceShow(){
     const el=st.ce;
     st.answered=false;
     if(st.idx>=st.pool.length) st.idx=0;
     const q=st.pool[st.idx];
+    for(let k=1;k<=PRELOAD;k++) preloadQ(st.pool[(st.idx+k)%st.pool.length]);
     el.frame.classList.toggle('ox',!!q.ox);
     el.q.innerHTML=`<span class="rb-tag">${esc(q.genre)}</span>${q.pic}<div class="rb-qt">${q.q}</div>`
       +(q.multi?'<div class="rb-multi">☑ あてはまるものをすべて選んで「決定」</div>':'')
