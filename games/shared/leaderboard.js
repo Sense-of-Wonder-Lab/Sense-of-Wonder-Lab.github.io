@@ -34,7 +34,8 @@ const LB = (function(){
     appId: "1:120466477782:web:f0ec79bf0cbbf8ef186f77"
   };
   const GOOGLE_CLIENT_ID = '120466477782-k5o5f91ugi2pc17bpcje8o6ojvj699rv.apps.googleusercontent.com';
-  const TERMS_URL = '../shared/terms.html';
+  // 別ドメインのゲーム(szs-physics.github.io の物理基礎クエストなど)からも開けるように完全なURLにする
+  const TERMS_URL = 'https://sense-of-wonder-lab.github.io/games/shared/terms.html';
   const ONBOARD_FLAG = 'lbOnboardSeen';
   // 同期処理がバグって毎回「更新あり」と誤判定すると location.reload() が延々と
   // 繰り返され、ページが完全に固まる事故になり得る(実際に発生した)。
@@ -52,6 +53,8 @@ const LB = (function(){
     }catch(e){ return true; }
   }
   let db = null, auth = null, gameId = null;
+  // ログイン画面の説明文。全モードを登録なしで遊べるゲーム(物理など)は init の opts.loginLead で差し替える
+  let loginLead = 'ログインすると、暗記以外のモード（チャレンジ・弱点特訓など）も遊べるようになり、進捗が他の端末とも同期されます。';
   let user = null; // {uid,email,nickname}
   const authListeners = [];
   const pushTimers = {};
@@ -133,8 +136,9 @@ const LB = (function(){
     return a; // プリミティブ値(設定系)はローカル側を優先
   }
 
-  function init(gid){
+  function init(gid, opts){
     gameId = gid;
+    if(opts && opts.loginLead) loginLead = opts.loginLead;
     ensureStyle();
     try{
       if(!window.firebase){console.warn('[LB] Firebase SDK not loaded');return;}
@@ -735,7 +739,7 @@ $1      .lb-inapp{font-size:12.5px;line-height:1.7;background:#fff7ed;border:1.5
     opts = opts || {};
     openModal(`
       <h3>${opts.title || '🏆 ログイン'}</h3>
-      ${loginBodyHTML(opts.lead || 'ログインすると、暗記以外のモード（チャレンジ・弱点特訓など）も遊べるようになり、進捗が他の端末とも同期されます。')}
+      ${loginBodyHTML(opts.lead || loginLead)}
       <div class="lb-btns" style="justify-content:center"><button id="lbCancel" class="lb-btn-secondary" style="width:260px">${opts.cancel || 'あとで'}</button></div>
       <a href="${TERMS_URL}" target="_blank" class="lb-terms-link">利用規約・プライバシーポリシー</a>
     `, (wrap, close)=>{
