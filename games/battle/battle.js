@@ -210,6 +210,8 @@ const RB=(function(){
   }
   const serverNow=()=>Date.now()+offset;
 
+  // 物理基礎クエスト（szs-physics.github.io/physics-quest/battle.html）のルーム。mpRooms を共有しているので、化学では一覧に出さず入れない
+  const isPhy=genre=>/^F:phy(:|$)/.test(genre||'');
   /* ---------- 開設中のルーム一覧（ルームに入るカードに出す。誰でも読める） ---------- */
   let roomsOverviewRef=null;
   function stopRoomsOverview(){ if(roomsOverviewRef){ roomsOverviewRef.off(); roomsOverviewRef=null; } }
@@ -224,7 +226,7 @@ const RB=(function(){
       const all=snap.val()||{}, now=serverNow();
       const open=Object.entries(all).filter(([,r])=>{
         const meta=r&&r.meta;
-        return meta&&meta.status==='wait'&&meta.created&&now-meta.created<ROOM_TTL&&Object.keys(r.members||{}).length<MAX_PLAYERS;
+        return meta&&!isPhy(meta.genre)&&meta.status==='wait'&&meta.created&&now-meta.created<ROOM_TTL&&Object.keys(r.members||{}).length<MAX_PLAYERS;
       }).sort((a,b)=>(b[1].meta.created||0)-(a[1].meta.created||0));
       box.innerHTML=open.length ? open.map(([code,r])=>
         `<button class="rb-openroom" data-code="${esc(code)}"><b>${esc(code)}</b><span>${esc(scopeLabel(r.meta.genre))}</span><span>${Object.keys(r.members||{}).length}人</span></button>`
@@ -321,6 +323,7 @@ const RB=(function(){
     const snap=await getDb().ref(ROOT+'/'+code+'/meta').once('value');
     const meta=snap.val();
     if(!meta||!meta.created||serverNow()-meta.created>ROOM_TTL) throw new Error('そのコードのルームは見つかりませんでした');
+    if(isPhy(meta.genre)) throw new Error('そのコードは物理基礎クエストの対戦のルームです');
     const memSnap=await getDb().ref(ROOT+'/'+code+'/members').once('value');
     const mem=memSnap.val()||{};
     if(!mem[m.pid]){
